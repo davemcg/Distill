@@ -1,4 +1,4 @@
----
+#---
 title: "ClinVar pathogenic Retina"
 output: html_notebook
 ---
@@ -7,14 +7,62 @@ output: html_notebook
 ```{r}
 library(data.table)
 library(tidyverse)
-clinvar_single <- fread('gzcat ~/git/clinvar/output/b37/single/clinvar_alleles.single.b37.tsv.gz')
+library(here)
+#clinvar_single <- fread('gzcat ~/git/clinvar/output/b37/single/clinvar_alleles.single.b37.tsv.gz')
+clinvar_single <- fread(paste('gzcat', here('data/clinvar_alleles.single.b37.tsv.gz')))
 ```
 
 # ID RD specific pathogenic variants
 ```{r}
-clinvar_single %>% filter(pathogenic > 0| likely_pathogenic > 0) %>% filter(conflicted=='0') %>% filter(grepl('stargardt|retina|leber|usher|cone-rod|rod-cone|macular|retinitis', all_traits, ignore.case=T))
+clinvar_single %>% 
+  filter(pathogenic > 0| likely_pathogenic > 0) %>% 
+  filter(conflicted=='0') %>% 
+  filter(grepl('stargardt|retina|leber|usher|cone-rod|rod-cone|macular|retinitis', all_traits, ignore.case=T))
+
+out <- clinvar_single %>% 
+  filter(pathogenic > 0| likely_pathogenic > 0) %>% 
+  filter(conflicted=='0') %>% 
+  filter(grepl('stargardt|retina|leber|usher|cone-rod|rod-cone|macular|retinitis', all_traits, ignore.case=T)) %>% 
+  mutate(ID='.', QUAL='.', FILTER='.', INFO='STATUS=PATHOGENIC_RD', FORMAT='GT', FAUX='0/1')
 ```
 
+# ID RD specific benign variants
+```{r}
+clinvar_single %>% 
+  filter(benign > 0) %>% 
+  filter(conflicted=='0') %>% 
+  filter(grepl('stargardt|retina|leber|usher|cone-rod|rod-cone|macular|retinitis', all_traits, ignore.case=T))
+
+out <- rbind(out,
+             clinvar_single %>% 
+  filter(pathogenic > 0| likely_pathogenic > 0) %>% 
+  filter(conflicted=='0') %>% 
+  filter(grepl('stargardt|retina|leber|usher|cone-rod|rod-cone|macular|retinitis', all_traits, ignore.case=T)) %>% 
+  mutate(ID='.', QUAL='.', FILTER='.', INFO='STATUS=BENIGN_RD', FORMAT='GT', FAUX='0/1'))
+```
+
+All benign
+```{r}
+clinvar_single %>% 
+  filter(benign > 0) %>% 
+  filter(conflicted=='0')
+
+out <- rbind(out,
+             clinvar_single %>% 
+  filter(benign > 0, !variation_id %in% out$variation_id) %>% 
+  filter(conflicted=='0') %>% 
+  mutate(ID='.', QUAL='.', FILTER='.', INFO='STATUS=BENIGN', FORMAT='GT', FAUX='0/1'))
+```
+
+Write vcf
 ```{r}
 
+write('##fileformat=VCFv4.2', file=here('processed_data/clinvar_RD.vcf'))
+write('##source=ClinVar', file=here('processed_data/clinvar_RD.vcf'), append = T)
+write('##INFO=<ID=STATUS,Number=1,Type=String,Description=\"Non-conflicting RD pathogenic or benign in ClinVar\">', file=here('processed_data/clinvar_RD.vcf'), append = T)
+write('##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">', file=here('processed_data/clinvar_RD.vcf'), append = T)
+write('#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tFAUX', file=here('processed_data/clinvar_RD.vcf'), append = T)
+write_tsv(out %>% mutate(pos=as.numeric(pos)) %>% select(chrom, pos, ID, ref, alt, QUAL, FILTER, INFO, FORMAT, FAUX) %>% arrange(chrom, pos), path=here('processed_data/clinvar_RD.vcf'), append = T)
+system(command = paste0('bgzip -f ', here('processed_data/clinvar_RD.vcf')))
+system(command = paste0('tabix -p vcf ', here('processed_data/clinvar_RD.vcf.gz')))
 ```
