@@ -1,0 +1,20 @@
+---
+title: "ClinVar pathogenic Retina"
+output: html_notebook
+---
+
+# Read in MacArthur group processed clinvar data
+```{r}
+library(data.table)
+library(tidyverse)
+clinvar_single <- fread('gzcat ~/git/clinvar/output/b37/single/clinvar_alleles.single.b37.tsv.gz')
+```
+
+# ID RD specific pathogenic variants
+```{r}
+clinvar_single %>% filter(pathogenic > 0| likely_pathogenic > 0) %>% filter(conflicted=='0') %>% filter(grepl('stargardt|retina|leber|usher|cone-rod|rod-cone|macular|retinitis', all_traits, ignore.case=T))
+```
+
+```{r}
+
+```
