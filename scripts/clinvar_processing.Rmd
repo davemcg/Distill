@@ -35,7 +35,7 @@ clinvar_single %>%
 
 out <- rbind(out,
              clinvar_single %>% 
-  filter(pathogenic > 0| likely_pathogenic > 0) %>% 
+  filter(benign > 0) %>% 
   filter(conflicted=='0') %>% 
   filter(grepl('stargardt|retina|leber|usher|cone-rod|rod-cone|macular|retinitis', all_traits, ignore.case=T)) %>% 
   mutate(ID='.', QUAL='.', FILTER='.', INFO='STATUS=BENIGN_RD', FORMAT='GT', FAUX='0/1'))
