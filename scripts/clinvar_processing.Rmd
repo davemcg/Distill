@@ -62,7 +62,7 @@ write('##source=ClinVar', file=here('processed_data/clinvar_RD.vcf'), append = T
 write('##INFO=<ID=STATUS,Number=1,Type=String,Description=\"Non-conflicting RD pathogenic or benign in ClinVar\">', file=here('processed_data/clinvar_RD.vcf'), append = T)
 write('##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">', file=here('processed_data/clinvar_RD.vcf'), append = T)
 write('#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tFAUX', file=here('processed_data/clinvar_RD.vcf'), append = T)
-write_tsv(out %>% mutate(pos=as.numeric(pos)) %>% select(chrom, pos, ID, ref, alt, QUAL, FILTER, INFO, FORMAT, FAUX) %>% arrange(chrom, pos), path=here('processed_data/clinvar_RD.vcf'), append = T)
+write_tsv(out %>% mutate(pos=as.integer(pos)) %>% select(chrom, pos, ID, ref, alt, QUAL, FILTER, INFO, FORMAT, FAUX) %>% arrange(chrom, pos), path=here('processed_data/clinvar_RD.vcf'), append = T)
 system(command = paste0('bgzip -f ', here('processed_data/clinvar_RD.vcf')))
 system(command = paste0('tabix -p vcf ', here('processed_data/clinvar_RD.vcf.gz')))
 ```
