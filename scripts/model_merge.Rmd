@@ -197,30 +197,31 @@ avNNetFit <- caret::train(Status ~ ., data=train_set,
                       trControl = fitControl)
 xgbTreeFit <-caret::train(Status ~ ., data=train_set, 
                       preProcess = c("scale", "center"),
-                      method = "xgbTree",  metric='F',
+                      method = "xgbTree",  metric='AUC',
                       trControl = fitControl)
 
 stepLDAFit <- caret::train(Status ~ ., data=train_set, 
                       preProcess = c("scale", "center"),
-                      method = "stepLDA",  metric='F',
+                      method = "stepLDA",  metric='AUC',
                       trControl = fitControl)
 naive_bayesFit <- caret::train(Status ~ ., data=train_set, 
                       preProcess = c("scale", "center"),
-                      method = "naive_bayes",  metric='F',
+                      method = "naive_bayes",  metric='AUC',
                       trControl = fitControl)
 
 dnnFit <- caret::train(Status ~ ., data=train_set, 
                       preProcess = c("scale", "center"),
-                      method = "dnn",  metric='F',
+                      method = "dnn",  metric='AUC',
                       trControl = fitControl)
 
-svmLinearWeights2Fit <- caret::train(Status ~ ., data=train_set, 
+
+svmLinearWeightsFit <- caret::train(Status ~ ., data=train_set, 
                       preProcess = c("scale", "center"),
-                      method = "svmLinearWeights2",  metric='F',
+                      method = "svmLinearWeights",  metric='Precision',
                       trControl = fitControl)
 
-my_models <- list(rfFit,bglmFit,avNNetFit, xgbTreeFit,stepLDAFit, naive_bayesFit, dnnFit)
-names(my_models) <- c('rfFit','bglmFit','avNNetFit', 'xgbTreeFit','stepLDAFit', 'naive_bayesFit', 'dnnFit')
+my_models <- list(rfFit,bglmFit,avNNetFit, xgbTreeFit,stepLDAFit, naive_bayesFit, dnnFit, svmLinearWeightsFit)
+names(my_models) <- c('rfFit','bglmFit','avNNetFit', 'xgbTreeFit','stepLDAFit', 'naive_bayesFit', 'dnnFit', 'svmLinearWeightsFit')
 
 ```
 
