@@ -1,0 +1,4 @@
+#!/bin/bash
+module load gemini
+gemini query --show-samples --header -q "select * from variants where aaf < 0.05 and filter is NULL AND (aaf_esp_all < 0.0001 AND aaf_1kg_all_float < 0.0001 AND af_exac_all < 0.0001  AND (is_coding=1 OR is_splicing=1)) OR impact_severity='HIGH' OR clinvar_sig LIKE '%patho%'" --gt-filter "(gt_types).(phenotype==2).(==HET).(any) and (gt_types).(phenotype==1).(==HOM_REF).(all)" 2018-03-05.gemini.db | bgzip -c > OGVFB.hets.gz
+gemini query --show-samples --header -q "select * from variants where aaf < 0.05 and filter is NULL AND (aaf_esp_all < 0.01 AND aaf_1kg_all_float < 0.01 AND af_exac_all < 0.01  AND (is_coding=1 OR is_splicing=1)) OR impact_severity='HIGH' OR clinvar_sig LIKE '%patho%'" --gt-filter "(gt_types).(phenotype==2).(==HOM_ALT).(any) and (gt_types).(phenotype==1).(!=HOM_ALT).(all)" 2018-03-05.gemini.db | bgzip -c > OGVFB.homs.gz

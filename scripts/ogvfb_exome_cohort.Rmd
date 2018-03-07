@@ -1,0 +1,75 @@
+---
+title: "Build and process OGVFB gemini genotypes"
+output: html_notebook
+---
+
+# Load in metadata
+
+```{r}
+library(tidyverse)
+metadata <- read_delim('~/git/NGS_db/master.ped',delim=' ', col_names = F) 
+colnames(metadata) <- c('Family','Sample','Paternal','Maternal','Gender','Phenotype')
+metadata
+```
+
+# Create gemini query
+Phenotype==2 are the probands, Phenotype==1 are the unaffected
+```{r}
+library(here)
+#hom 
+hom_query <- paste0("gemini query --show-samples --header -q \"select * from variants where aaf < 0.05 and filter is NULL AND (aaf_esp_all < 0.01 AND aaf_1kg_all_float < 0.01 AND af_exac_all < 0.01  AND (is_coding=1 OR is_splicing=1)) OR impact_severity='HIGH' OR clinvar_sig LIKE '%patho%'\" --gt-filter \"",
+                    "(gt_types).(phenotype==2).(==HOM_ALT).(any) and (gt_types).(phenotype==1).(!=HOM_ALT).(all)",
+                    "\" 2018-03-05.gemini.db | bgzip -c > OGVFB.homs.gz")
+
+het_query <- paste0("gemini query --show-samples --header -q \"select * from variants where aaf < 0.05 and filter is NULL AND (aaf_esp_all < 0.0001 AND aaf_1kg_all_float < 0.0001 AND af_exac_all < 0.0001  AND (is_coding=1 OR is_splicing=1)) OR impact_severity='HIGH' OR clinvar_sig LIKE '%patho%'\" --gt-filter \"",
+                    "(gt_types).(phenotype==2).(==HET).(any) and (gt_types).(phenotype==1).(==HOM_REF).(all)",
+                    "\" 2018-03-05.gemini.db | bgzip -c > OGVFB.hets.gz")
+
+#cat(het_query)
+
+write('#!/bin/bash', file = here('scripts/gemini_query_calls_OGVFB.sh'))
+write('module load gemini', file = here('scripts/gemini_query_calls_OGVFB.sh'), append = T)
+write(het_query, file = here('scripts/gemini_query_calls_OGVFB.sh'), append = T)
+write(hom_query, file = here('scripts/gemini_query_calls_OGVFB.sh'), append = T)
+```
+
+# Load in result from gemini query above
+```{r}
+library(data.table)
+het <- fread('gzcat /Volumes/Arges_NFS/PROJECTS/mcgaughey/eye_var_Pathogenicity/raw_data/OGVFB.hets.gz')
+hom <- fread('gzcat /Volumes/Arges_NFS/PROJECTS/mcgaughey/eye_var_Pathogenicity/raw_data/OGVFB.homs.gz')
+```
+
+# Reshape
+We have a column (hom_alt or het)_samples which has a comma separate list of samples with the genotype. I think we should split this up and get a new row for each sample. 
+```{r}
+hom_long <- hom %>% 
+  mutate(Sample = str_split(hom_alt_samples, ","), Genotype = 'Hom') %>%  # split with str_split to create a list
+  unnest(Sample, .drop=F) # unnest will spread the list, creating a row for each entry
+
+het_long <- het %>% 
+  mutate(Sample = str_split(het_samples, ","), Genotype = 'Het') %>%  # split with str_split to create a list
+  unnest(Sample, .drop=F) # unnest will spread the list, creating a row for each entry
+
+
+all <- rbind(hom_long, het_long)
+```
+
+
+# Label samples as having RD (eye disease) or not
+```{r}
+all <- left_join(all, metadata %>% select(Sample, Phenotype), by='Sample')
+```
+
+
+# Save
+
+Save for further analysis (machine learning!)
+```{r}
+
+output_file <- '/Volumes/Arges_NFS/PROJECTS/mcgaughey/EGA_EGAD00001002656_NGS_reanalyze/clean_data/ogvfb_exome_cohort.Rdata'
+if(!file.exists(output_file)){
+  save(ogvfb, file = output_file)
+}
+```
+
