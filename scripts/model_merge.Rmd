@@ -351,7 +351,7 @@ roc_maker <- function(model, data, cutoff=0.5) {
 aucroc_data <- data.frame()
 for (i in names(my_models)){
   print(my_models[[i]]$method)
-  aucroc <- aucroc_maker(my_models[[i]], fuller_data)
+  aucroc <- aucroc_maker(my_models[[i]], fuller_data_CS)
   out <- aucroc$curve[,1:2] %>% data.frame()
   colnames(out) <- c('Recall','Precision')
   out$AUC <- aucroc$auc.integral
@@ -363,7 +363,7 @@ for (i in names(my_models)){
 roc_data <- data.frame()
 for (i in names(my_models)){
   print(my_models[[i]]$method)
-  roc <- roc_maker(my_models[[i]], fuller_data)
+  roc <- roc_maker(my_models[[i]], fuller_data_CS)
   out <- roc$curve[,1:2] %>% data.frame()
   colnames(out) <- c('FPR','Sensitivity')
   out$model <- i
