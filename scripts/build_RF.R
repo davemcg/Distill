@@ -1,10 +1,13 @@
 #!/usr/bin/env Rscript
 
 args = commandArgs(trailingOnly=TRUE)
-
+uk10k_file <- args[1]
+clinvar_file <- args[2]
 
 # Load data from ~/git/EGA_EGAD00001002656_NGS_reanalyze/scripts/stats.Rmd
-load('uk10k_gemini_rare_variants.Rdata')
+#load('uk10k_gemini_rare_variants.Rdata')
+load(uk10k_data)
+
 ## Set up data for modeling
 library(tidyverse)
 
@@ -28,6 +31,7 @@ all_processed <- uk10k_gemini_rare_variants %>%
   filter(max_aaf_all < 0.01) %>% 
   unique() # remove any common variants
 
+# fill missing with -1
 all_processed[is.na(all_processed)] <- -1
 
 all_PATH <- all_processed %>% 
@@ -49,8 +53,8 @@ ML_set__UK10K <- rbind(all_PATH, all_NOT_PATH__CUT)
 
 # Load clinvar 
 library(data.table)
-clinvar <- fread('zcat ~/git/eye_var_Pathogenicity/processed_data/clinvar.gemini.tsv.gz')
-
+#clinvar <- fread('zcat ~/git/eye_var_Pathogenicity/processed_data/clinvar.gemini.tsv.gz')
+clinvar <- fread(paste0('zcat ', clinvar_file))
 
 ## Prep data for modeling
 clinvar_processed <- clinvar %>% 
@@ -72,6 +76,7 @@ clinvar_processed <- clinvar %>%
   select(variant_id, Status, is_exonic, is_coding, is_lof, is_splicing, impact_severity, polyphen_score, sift_score, dann, gerp_elements, DiseaseClass, mpc, revel, aaf_1kg_afr_float:an_exac_sas, fitcons_float, gno_ac_afr:gno_an_popmax, lof_z:precessive, phylop_100way, grantham, cadd_phred, fathmm_mkl_coding_score, genesplicer, spliceregion) %>% 
   filter(max_aaf_all < 0.01) # remove any common variants
 
+# fill missing with -1
 clinvar_processed[is.na(clinvar_processed)] <- -1
 
 all_PATH <- clinvar_processed %>% 
@@ -106,15 +111,17 @@ train_set <- ML_set_dummy %>%
   # filter(!Complicated_Status=='Comp_Het') %>% # remove comp hets for now
   sample_frac(0.33) %>% ungroup()
 
+# center scale
+library(caret)
 train_set_CS <-  preProcess(train_set, method = c('center','scale')) %>% predict(., train_set)
 
-set.seed(115470)
-validate_set <- ML_set_dummy %>% 
-  filter(!variant_id %in% train_set$variant_id) %>% 
-  group_by(Status, Source) %>% 
-  sample_frac(0.5) %>% ungroup()
+# set.seed(115470)
+# validate_set <- ML_set_dummy %>% 
+#   filter(!variant_id %in% train_set$variant_id) %>% 
+#   group_by(Status, Source) %>% 
+#   sample_frac(0.5) %>% ungroup()
 
-library(caret)
+
 library(mlbench)
 library(parallel)
 library(doParallel)
@@ -145,112 +152,119 @@ fitControl_min <- trainControl(
   summaryFunction = prSummary,
   returnData = T)
 
-cluster <- makeCluster(30) 
+cluster <- makeCluster(36) 
 registerDoParallel(cluster)
 
-rfFit <- caret::train(Status ~ ., data=train_set %>% select(-variant_id, -Source), 
-                      preProcess = c("scale", "center"),
+rfFit <- caret::train(Status ~ ., data=train_set_CS %>% select(-variant_id, -Source), 
+                      method = "rf", metric='F',
+                      trControl = fitControl_RF)
+# use the first rf model to pick the useful predictors and limit the models to these
+most_imp_predictors <- varImp(rfFit)$importance  %>% rownames_to_column('Predictors') %>% arrange(-Overall) %>% filter(Overall > 2) %>% pull(Predictors)
+# variant with no disease class predictos
+most_imp_predictors_no_disease_class <- most_imp_predictors[!grepl('DiseaseClass', most_imp_predictors)]
+
+
+rfFit <- caret::train(Status ~ ., data=train_set_CS %>% select_(.dots=c('Status',most_imp_predictors)), 
                       method = "rf", metric='F',
                       trControl = fitControl_RF)
 
-rfFit_noDC <- caret::train(Status ~ ., data=train_set %>% select(-variant_id, -Source, -contains('DiseaseClass')), 
-                      preProcess = c("scale", "center"),
+rfFit_noDC <- caret::train(Status ~ ., data=train_set_CS %>% select_(.dots=c('Status',most_imp_predictors_no_disease_class)), 
                       method = "rf", metric='F',
                       trControl = fitControl_RF)
 
-bglmFit <- caret::train(Status ~ ., data=train_set %>% select(-variant_id, -Source), 
-                        preProcess = c("scale", "center"),
+bglmFit <- caret::train(Status ~ ., data=train_set_CS %>% select_(.dots=c('Status',most_imp_predictors)), 
+                        method = "bayesglm", metric='F',
+                        trControl = fitControl)
+
+bglmFit_noDC <- caret::train(Status ~ ., data=train_set_CS %>% select_(.dots=c('Status',most_imp_predictors_no_disease_class)), 
                         method = "bayesglm", metric='F',
                         trControl = fitControl)
 
 # check again, had errors when running
-glmboostFit <- caret::train(Status ~ ., data=train_set %>% select(-variant_id, -Source),
-                            preProcess = c("scale", "center"),
+glmboostFit <- caret::train(Status ~ ., data=train_set_CS %>% select_(.dots=c('Status',most_imp_predictors)), 
                             method = "glmboost", metric='F',
                             trControl = fitControl)
 
-LogitBoostFit <- caret::train(Status ~ ., data=train_set %>% select(-variant_id, -Source), 
-                              preProcess = c("scale", "center"),
+LogitBoostFit <- caret::train(Status ~ ., data=train_set_CS %>% select_(.dots=c('Status',most_imp_predictors)), 
                               method = "LogitBoost", metric='F',
                               trControl = fitControl)
 
-avNNetFit <- caret::train(Status ~ ., data=train_set %>% select(-variant_id, -Source), 
-                          preProcess = c("scale", "center"),
+avNNetFit <- caret::train(Status ~ ., data=train_set_CS %>% select_(.dots=c('Status',most_imp_predictors)), 
+                          method = "avNNet", metric='F',
+                          trControl = fitControl)
+
+avNNetFit_noDC <- caret::train(Status ~ ., data=train_set_CS %>% select_(.dots=c('Status',most_imp_predictors_no_disease_class)), 
                           method = "avNNet", metric='F',
                           trControl = fitControl)
 
 # tossed, terrible performance
-# xgbTreeFit <- caret::train(Status ~ ., data=train_set %>% select(-variant_id, -Source), 
-#                       preProcess = c("scale", "center"),
+# xgbTreeFit <- caret::train(Status ~ ., data=train_set_CS %>% select(-variant_id, -Source), 
+#                      
 #                       method = "xgbTree",  metric='AUC',
 #                       trControl = fitControl)
 
-stepLDAFit <- caret::train(Status ~ ., data=train_set %>% select(-variant_id, -Source), 
-                           preProcess = c("scale", "center"),
+stepLDAFit <- caret::train(Status ~ ., data=train_set_CS %>% select_(.dots=c('Status',most_imp_predictors)), 
                            method = "stepLDA",  metric='AUC',
                            trControl = fitControl)
 
 # tossed, terrible performance
-# naive_bayesFit <- caret::train(Status ~ ., data=train_set %>% select(-variant_id, -Source), 
-#                       preProcess = c("scale", "center"),
+# naive_bayesFit <- caret::train(Status ~ ., data=train_set_CS %>% select(-variant_id, -Source), 
+#                      
 #                       method = "naive_bayes",  metric='AUC',
 #                       trControl = fitControl)
 
-dnnFit <- caret::train(Status ~ ., data=train_set %>% select(-variant_id, -Source), 
-                       preProcess = c("scale", "center"),
+dnnFit <- caret::train(Status ~ ., data=train_set_CS %>% select_(.dots=c('Status',most_imp_predictors)), 
                        method = "dnn",  metric='AUC',
                        trControl = fitControl)
 
-monmlpFit <- caret::train(Status ~ ., data=train_set %>% select_(.dots=c('Status',most_imp_predictors)), 
-                          preProcess = c("scale", "center"),
-                          method = "monmlp",  metric='F',
+
+monmlpFit <- caret::train(Status ~ ., data=train_set_CS %>% select_(.dots=c('Status',most_imp_predictors)), 
+                          method = "monmlp",  metric='AUC',
                           trControl = fitControl_min)
+
+
+# monmlpFit <- caret::train(Status ~ ., data=train_set_CS %>% select_(.dots=c('Status',most_imp_predictors)), 
+#                           method = "monmlp",  metric='F',
+#                           trControl = fitControl_min)
 
 # mlpKerasDropoutFit <- caret::train(x = train_set %>% select(-variant_id, -Source, -Status),
 #                                  y= train_set$Status,
-#                       preProcess = c("scale", "center"),
+#                      
 #                       method = "mlpKerasDropout",  metric='F',
 #                       trControl = fitControl)
 
 
-svmLinearWeightsFit <- caret::train(Status ~ ., data=train_set %>% select(-variant_id, -Source), 
-                                    preProcess = c("scale", "center"),
+svmLinearWeightsFit <- caret::train(Status ~ ., data=train_set_CS %>% select_(.dots=c('Status',most_imp_predictors)), 
                                     method = "svmLinearWeights",  metric='Precision',
                                     trControl = fitControl)
 
-caddFit <- caret::train(Status ~ ., data=train_set %>% select(cadd_phred, Status), 
-                        preProcess = c("scale", "center"),
+caddFit <- caret::train(Status ~ ., data=train_set_CS %>% select(cadd_phred, Status), 
                         method = "glm",  metric='Precision',
                         trControl = fitControl)
 
-cadd_plus_DiseaseClassFit <- caret::train(Status ~ ., data=train_set %>% select(cadd_phred, Status, `DiseaseClass_-1`), 
-                                          preProcess = c("scale", "center"),
+cadd_plus_DiseaseClassFit <- caret::train(Status ~ ., data=train_set_CS %>% select(cadd_phred, Status, `DiseaseClass_-1`), 
                                           method = "glm",  metric='Precision',
                                           trControl = fitControl)
 
-revelFit <- caret::train(Status ~ ., data=train_set %>% select(revel, Status), 
-                         preProcess = c("scale", "center"),
+revelFit <- caret::train(Status ~ ., data=train_set_CS %>% select(revel, Status), 
                          method = "glm",
                          trControl = fitControl)
 
-revelFit_plus_DiseaseClassFit <- caret::train(Status ~ ., data=train_set %>% select(revel, Status, `DiseaseClass_-1`), 
-                                              preProcess = c("scale", "center"),
+revel_plus_DiseaseClassFit <- caret::train(Status ~ ., data=train_set_CS %>% select(revel, Status, `DiseaseClass_-1`), 
                                               method = "glm",
                                               trControl = fitControl)
 
-dannFit <- caret::train(Status ~ ., data=train_set %>% select(dann, Status), 
-                        preProcess = c("scale", "center"),
+dannFit <- caret::train(Status ~ ., data=train_set_CS %>% select(dann, Status), 
                         method = "glm",
                         trControl = fitControl)
 
-dann_plus_DiseaseClassFit <- caret::train(Status ~ ., data=train_set %>% select(dann, Status, `DiseaseClass_-1`), 
-                                          preProcess = c("scale", "center"),
+dann_plus_DiseaseClassFit <- caret::train(Status ~ ., data=train_set_CS %>% select(dann, Status, `DiseaseClass_-1`), 
                                           method = "glm",
                                           trControl = fitControl)
 
 my_models <-list()
 for (i in ls()[grepl('Fit',ls())]) {my_models[[i]] <- get(i)}
-
+save(my_models, file='eye_var_path_models__2018_03_07__run2.Rdata')
 
 
 most_imp_predictors <- varImp(rfFit)$importance  %>% rownames_to_column('Predictors') %>% arrange(-Overall) %>% filter(Overall > 2) %>% pull(Predictors)
