@@ -1,7 +1,12 @@
 ---
-title: "Modeling"
+title: "Model Assesement"
 output: html_notebook
 ---
+# Load trained models
+From scripts/build_models.R run on biowulf2
+```{r}
+
+```
 
 # Load data from ~/git/EGA_EGAD00001002656_NGS_reanalyze/scripts/stats.Rmd
 UK10K data

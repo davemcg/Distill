@@ -1,5 +1,7 @@
 #!/usr/bin/env Rscript
 
+# give this 30 cores and 128GB of memory on biowulf
+
 args = commandArgs(trailingOnly=TRUE)
 uk10k_file <- args[1]
 clinvar_file <- args[2]
@@ -45,7 +47,8 @@ all_set__uk10k <- all_processed
 all_set__uk10k$Source <- 'UK10K'
 
 all_PATH <- all_set__uk10k %>% filter(Status=='Pathogenic')
-# cut down pathogenic 
+# chance to cut down non pathogenic
+# i'm just keeping all right now
 set.seed(115470)
 all_NOT_PATH__CUT <- all_set__uk10k %>% filter(Status=='NotPathogenic') #%>% sample_n(20000)
 
@@ -264,7 +267,6 @@ dann_plus_DiseaseClassFit <- caret::train(Status ~ ., data=train_set_CS %>% sele
 
 my_models <-list()
 for (i in ls()[grepl('Fit',ls())]) {my_models[[i]] <- get(i)}
-save(my_models, file='eye_var_path_models__2018_03_07__run2.Rdata')
-
-
-most_imp_predictors <- varImp(rfFit)$importance  %>% rownames_to_column('Predictors') %>% arrange(-Overall) %>% filter(Overall > 2) %>% pull(Predictors)
+my_models$most_imp_predictors <- most_imp_predictors
+my_models$most_imp_predictors_no_disease_class <- most_imp_predictors_no_disease_class
+save(my_models, file='eye_var_path_models__2018_03_08.Rdata')
