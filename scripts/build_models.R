@@ -1,5 +1,3 @@
-#!/usr/bin/env Rscript
-
 # give this 30 cores and 200GB of memory on biowulf
 
 # args = commandArgs(trailingOnly=TRUE)
