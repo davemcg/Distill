@@ -185,7 +185,7 @@ test_set <- all_processed %>%
 # Set up fitcontrols for caret modeling
 #########################################
 # CV on rf seems to overfit
-fitControl_RF <- trainControl(
+fitControl_min <- trainControl(
   classProbs=T,
   savePredictions = T,
   allowParallel = T,
@@ -195,13 +195,6 @@ fitControl_RF <- trainControl(
 fitControl <- trainControl(## 5-fold CV
   method = "cv",
   number = 5,
-  classProbs=T,
-  savePredictions = T,
-  allowParallel = T,
-  summaryFunction = prSummary,
-  returnData = T)
-
-fitControl_min <- trainControl(
   classProbs=T,
   savePredictions = T,
   allowParallel = T,
@@ -229,11 +222,11 @@ most_imp_predictors_no_disease_class <- most_imp_predictors[!grepl('DiseaseClass
 
 rfFit <- caret::train(Status ~ ., data=train_set %>% select_(.dots=c('Status',most_imp_predictors)), 
                       method = "rf", metric='F',
-                      trControl = fitControl_RF)
+                      trControl = fitControl_min)
 
 rfFit_noDC <- caret::train(Status ~ ., data=train_set %>% select_(.dots=c('Status',most_imp_predictors_no_disease_class)), 
                            method = "rf", metric='F',
-                           trControl = fitControl_RF)
+                           trControl = fitControl_min)
 
 bglmFit <- caret::train(Status ~ ., data=train_set %>% select_(.dots=c('Status',most_imp_predictors)), 
                         method = "bayesglm", metric='F',
@@ -302,19 +295,19 @@ svmLinearWeightsFit <- caret::train(Status ~ ., data=train_set %>% select_(.dots
                                     trControl = fitControl)
 
 caddFit <- caret::train(Status ~ ., data=train_set %>% select(cadd_phred, Status), 
-                        method = "glm",  metric='Precision',
+                        method = "glm",  metric='AUC',
                         trControl = fitControl)
 
 cadd_plus_DiseaseClassFit <- caret::train(Status ~ ., data=train_set %>% select(cadd_phred, Status, `DiseaseClass_-1`), 
-                                          method = "glm",  metric='Precision',
+                                          method = "glm",  metric='AUC',
                                           trControl = fitControl)
 
 revelFit <- caret::train(Status ~ ., data=train_set %>% select(revel, Status), 
-                         method = "glm",
+                         method = "glm", metric='AUC',
                          trControl = fitControl)
 
 revel_plus_DiseaseClassFit <- caret::train(Status ~ ., data=train_set %>% select(revel, Status, `DiseaseClass_-1`), 
-                                           method = "glm",
+                                           method = "glm", metric='AUC',
                                            trControl = fitControl)
 
 dannFit <- caret::train(Status ~ ., data=train_set %>% select(dann, Status), 
