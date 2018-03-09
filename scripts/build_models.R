@@ -1,11 +1,11 @@
 #!/usr/bin/env Rscript
 
-# give this 30 cores and 128GB of memory on biowulf
+# give this 30 cores and 200GB of memory on biowulf
 
-args = commandArgs(trailingOnly=TRUE)
-uk10k_data <- args[1]
-clinvar_file <- args[2]
-gnomad_file <- args[3]
+# args = commandArgs(trailingOnly=TRUE)
+# uk10k_data <- args[1]
+# clinvar_file <- args[2]
+# gnomad_file <- args[3]
 
 uk10k_data <- '/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/uk10k_gemini_rare_variants.Rdata'
 clinvar_file <- '/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/data/clinvar.gemini.tsv.gz'
@@ -338,4 +338,4 @@ my_models$most_imp_predictors_no_disease_class <- most_imp_predictors_no_disease
 my_models$train_set <- train_set 
 my_models$validate_set <- validate_set
 my_models$test_set <- test_set
-save(my_models, file='eye_var_path_models__2018_03_08.Rdata')
+save(my_models, file='eye_var_path_models__2018_03_09.Rdata')
