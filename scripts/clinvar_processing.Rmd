@@ -16,39 +16,51 @@ clinvar_single <- fread(paste('gzcat', here('processed_data/clinvar_alleles.sing
 
 # ID RD specific pathogenic variants
 ```{r}
-out <- clinvar_single %>% 
+path_eye <- clinvar_single %>% 
   filter(pathogenic > 0 | likely_pathogenic > 0) %>% 
   filter(conflicted=='0', gold_stars > 0) %>% 
   filter(grepl('stargardt|retina|leber|usher|cone-rod|rod-cone|macula|retinitis|eye|cornea', all_traits, ignore.case=T) | 
            grepl('stargardt|retina|leber|usher|cone-rod|rod-cone|macula|retinitis|eye|cornea', xrefs, ignore.case=T)) %>% 
   mutate(ID='.', QUAL='.', FILTER='.', INFO='STATUS=PATHOGENIC_EYE', FORMAT='GT', FAUX='0/1')
-dim(out)
+dim(path_eye)
+```
+# All pathogenic
+```{r}
+path_all <- clinvar_single %>% 
+  filter(pathogenic > 0 | likely_pathogenic > 0) %>% 
+  filter(conflicted=='0', gold_stars > 0) %>% 
+     mutate(ID='.', QUAL='.', FILTER='.', INFO='STATUS=PATHOGENIC_OTHER', FORMAT='GT', FAUX='0/1') 
+dim(path_all)
+
 ```
 
 # ID RD specific benign variants
 ```{r}
-out <- rbind(out,
-             clinvar_single %>% 
+benign_eye <-  clinvar_single %>% 
   filter(benign > 0) %>% 
   filter(conflicted=='0') %>% 
    filter(grepl('stargardt|retina|leber|usher|cone-rod|rod-cone|macula|retinitis|eye|cornea', all_traits, ignore.case=T) | 
            grepl('stargardt|retina|leber|usher|cone-rod|rod-cone|macula|retinitis|eye|cornea', xrefs, ignore.case=T)) %>% 
-  mutate(ID='.', QUAL='.', FILTER='.', INFO='STATUS=BENIGN_EYE', FORMAT='GT', FAUX='0/1'))
+  mutate(ID='.', QUAL='.', FILTER='.', INFO='STATUS=BENIGN_EYE', FORMAT='GT', FAUX='0/1')
 
-out
+dim(benign_eye)
 ```
+
+
 
 # All benign
 ```{r}
-clinvar_single %>% 
-  filter(benign > 0) %>% 
-  filter(conflicted=='0')
-
-out <- rbind(out,
-             clinvar_single %>% 
-  filter(benign > 0, !variation_id %in% out$variation_id) %>% 
+benign_all <- clinvar_single %>% 
+  filter(benign > 0, !variation_id %in% c(benign_eye$variation_id)) %>% 
   filter(conflicted=='0') %>% 
-  mutate(ID='.', QUAL='.', FILTER='.', INFO='STATUS=BENIGN', FORMAT='GT', FAUX='0/1'))
+  mutate(ID='.', QUAL='.', FILTER='.', INFO='STATUS=BENIGN', FORMAT='GT', FAUX='0/1')
+dim(benign_all)
+```
+
+# Merge together
+```{r}
+out <- rbind(path_eye, path_all, benign_eye, benign_all)
+dim(out)
 ```
 
 # Write vcf
@@ -68,3 +80,8 @@ Annotate vcf with `sbatch ~/git/variant_prioritization/Snakemake.wrapper.sh ~/gi
 
 # Pull variants with gemini
 `time gemini query --header -q "SELECT * from variants WHERE (aaf_esp_all < 0.01 AND aaf_1kg_all_float < 0.01 AND af_exac_all < 0.01  AND (is_coding=1 OR is_splicing=1)) OR impact_severity='HIGH' OR clinvar_sig LIKE '%patho%'" clinvar_RD.PED_faux.gemini.db | bgzip > clinvar.gemini.tsv.gz`
+
+# Load in clinvar.gemini.tsv.gz
+```{r}
+clinvar_gemini <- fread(paste0('gzcat ', paste0(data_path, 'data/clinvar.gemini.tsv.gz')))
+```
