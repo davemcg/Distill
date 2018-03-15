@@ -6,7 +6,7 @@
 # gnomad_file <- args[3]
 
 uk10k_data <- '/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/uk10k_gemini_rare_variants.Rdata'
-clinvar_file <- '/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/data/clinvar.gemini.tsv.gz'
+clinvar_file <- '/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/data/clinvar.gemini.tsv.gz2'
 gnomad_file <- '/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/data/gnomad.gemini.tsv.gz'
 
 library(tidyverse)
@@ -76,19 +76,20 @@ clinvar <- fread(paste0('zcat ', clinvar_file))
 
 ## Prep data for modeling
 clinvar_processed <- clinvar %>% 
+  #filter(status!='PATHOGENIC_OTHER') %>% # drop non eye pathogenic variants for the model learning 
   separate(gene_eyediseaseclass, c('RDGene','DiseaseClass'), sep='_') %>%  #split off RD disease type
   select(-RDGene) %>% 
   mutate(impact_severity = case_when(impact_severity == 'HIGH' ~ 3, # convert to integer 
                                      impact_severity == 'MED' ~ 2, 
                                      TRUE ~ 1),
          Status = case_when(status=='PATHOGENIC_EYE' ~ 'Pathogenic',
+                            status=='PATHOGENIC_OTHER' ~ 'Pathogenic_NOTEYE',
                             TRUE ~ 'NotPathogenic'),
          genesplicer = case_when(genesplicer == "" ~ 'No',
                                  grepl('^gain', genesplicer) ~ 'Gain',
                                  grepl('^loss', genesplicer) ~ 'Loss',
                                  grepl('^diff', genesplicer) ~ 'Diff',
                                  TRUE ~ 'Else')) %>% 
-  mutate(Status = factor(Status, levels=c('Pathogenic','NotPathogenic'))) %>% 
   mutate_at(vars(matches('ac_|an_|^n_')), funs(as.integer(.))) %>% # convert columns with ac_|whatever to integer (ac is allele count)
   mutate_at(vars(matches('af_|dann|revel|mpc|gerp|polyphen_score|sift_score|fitcons_float|gerp_elements|^adj|_z$|^pli$|^pnull$|precessive|^phylop_100')), funs(as.numeric(.))) %>%  # af is allele frequency
   select(variant_id, Status, is_exonic, is_coding, is_lof, is_splicing, impact_severity, polyphen_score, sift_score, dann, gerp_elements, DiseaseClass, mpc, revel, aaf_1kg_afr_float:an_exac_sas, fitcons_float, gno_ac_afr:gno_an_popmax, lof_z:precessive, phylop_100way, grantham, cadd_phred, fathmm_mkl_coding_score, genesplicer, spliceregion) %>% 
@@ -97,23 +98,16 @@ clinvar_processed <- clinvar %>%
 # fill missing with -1
 clinvar_processed[is.na(clinvar_processed)] <- -1
 
-all_PATH <- clinvar_processed %>% 
-  filter(Status == 'Pathogenic') %>% 
-  unique()
-all_NOT_PATH <- clinvar_processed %>% 
-  filter(Status != 'Pathogenic') %>% 
-  unique()
+ML_set__clinvar <- clinvar_processed %>% 
+  filter(Status != 'Pathogenic_NOTEYE') %>% 
+  mutate(Status = factor(Status, levels=c('Pathogenic','NotPathogenic'))) 
+ML_set__clinvar$Source <- 'ClinVar'
 
-all_set__clinvar <- clinvar_processed
-all_set__clinvar$Source <- 'ClinVar'
-
-all_PATH <- all_set__clinvar %>% filter(Status=='Pathogenic')
-# cut down pathogenic to 5x of path
-set.seed(115470)
-all_NOT_PATH__CUT <- all_set__clinvar %>% filter(Status=='NotPathogenic')
-
-ML_set__clinvar <- rbind(all_PATH, all_NOT_PATH__CUT)
-
+ML_set__clinvar__otherPath <- clinvar_processed %>% 
+  filter(Status == 'Pathogenic_NOTEYE') %>% 
+  mutate(Status = gsub('Pathogenic_NOTEYE','Pathogenic',Status)) %>% 
+  mutate(Status = factor(Status, levels=c('Pathogenic','NotPathogenic'))) 
+ML_set__clinvar__otherPath$Source <- 'ClinVar'
 
 ###############################################
 # gnomAD benign? processing
@@ -145,8 +139,9 @@ gnomad_processed[is.na(gnomad_processed)] <- -1
 # add 250X the number of clinvar pathogenic variants 
 set.seed(13457)
 gnomad_processed_sub <- gnomad_processed %>% sample_n((ML_set__clinvar %>% filter(Status=='Pathogenic') %>% nrow()) * 250)
+gnomad_processed_other <- gnomad_processed %>% filter(!variant_id %in% gnomad_processed_sub$variant_id) # not used for model building, for potential validation purposes
 gnomad_processed_sub$Source <- 'gnomAD'
-
+gnomad_processed_other$Source <- 'gnomAD'
 ################################################
 # Combine UK10K and ClinVar and gnomAD data
 ################################################
@@ -155,29 +150,38 @@ ML_set__all <- bind_rows(ML_set__clinvar %>% select_(.dots = colnames(ML_set__UK
                          ML_set__UK10K %>% select(-Complicated_Status),
                          gnomad_processed_sub %>% select_(.dots = colnames(ML_set__UK10K %>% select(-Complicated_Status))))
 
+ML_set__other <- bind_rows(gnomad_processed_other, ML_set__clinvar__otherPath)
+
 ################################
 # one hot encode and center scale
 ##################################
 
+# primary set
 temp <- ML_set__all %>% dplyr::select(-Status, -Source, -variant_id)
 temp <- dummy.data.frame(temp, sep='_')
 ML_set_dummy <- temp %>% mutate(variant_id = ML_set__all$variant_id, Status = ML_set__all$Status, Source = ML_set__all$Source)
-# center scale
+# secondary set with non eye path variants
+temp <- ML_set__other  %>% dplyr::select(-Status, -Source, -variant_id)
+temp <- dummy.data.frame(temp, sep='_')
+ML_set_dummy__secondary <- temp %>% mutate(variant_id = ML_set__other $variant_id, Status = ML_set__other $Status, Source = ML_set__other $Source)
+
+# identify new columns (don't center scale these, as they are 0 and 1)
+# center scale 
 ML_set_dummy_CS <- preProcess(ML_set_dummy, method = c('center','scale')) %>% predict(., ML_set_dummy)
 
 set.seed(115470)
-train_set <- ML_set_dummy_CS %>% 
+train_set <- ML_set_dummy %>% 
   group_by(Status, Source) %>% 
   # filter(!Complicated_Status=='Comp_Het') %>% # remove comp hets for now
   sample_frac(0.33) %>% ungroup()
 
 set.seed(115470)
-validate_set <- ML_set_dummy_CS %>% 
+validate_set <- ML_set_dummy %>% 
   filter(!variant_id %in% train_set$variant_id) %>% 
   group_by(Status, Source) %>% 
   sample_frac(0.5) %>% ungroup()
 
-test_set <- all_processed %>% 
+test_set <- ML_set_dummy %>% 
   filter(!variant_id %in% c(train_set$variant_id, validate_set$variant_id))
 
 
@@ -205,13 +209,13 @@ fitControl <- trainControl(## 5-fold CV
 ###########################################
 # multi processing
 ##########################################
-cluster <- makeCluster(30) 
+cluster <- makeCluster(36) 
 registerDoParallel(cluster)
 
 ##############################################
 # BUILD MODELS!!!!!!!!!!!
 #############################################
-rfFit <- caret::train(Status ~ ., data=train_set %>% select(-variant_id, -Source), 
+rfFit_all <- caret::train(Status ~ ., data=train_set %>% select(-variant_id, -Source), 
                       method = "rf", metric='F',
                       trControl = fitControl_RF)
 # use the first rf model to pick the useful predictors and limit the models to these
@@ -289,7 +293,6 @@ monmlpFit <- caret::train(Status ~ ., data=train_set %>% select_(.dots=c('Status
 #                       method = "mlpKerasDropout",  metric='F',
 #                       trControl = fitControl)
 
-
 svmLinearWeightsFit <- caret::train(Status ~ ., data=train_set %>% select_(.dots=c('Status',most_imp_predictors)), 
                                     method = "svmLinearWeights",  metric='Precision',
                                     trControl = fitControl)
@@ -329,4 +332,6 @@ my_models$most_imp_predictors_no_disease_class <- most_imp_predictors_no_disease
 my_models$train_set <- train_set 
 my_models$validate_set <- validate_set
 my_models$test_set <- test_set
-save(my_models, file='eye_var_path_models__2018_03_09.Rdata')
+my_models$ML_set_dummy <- ML_set_dummy__secondary
+my_models$sessionInfo <- sessionInfo()
+save(my_models, file='eye_var_path_models__2018_03_14_noCenterScaling.Rdata')
