@@ -219,7 +219,7 @@ rfFit_all <- caret::train(Status ~ ., data=train_set %>% select(-variant_id, -So
                       method = "rf", metric='F',
                       trControl = fitControl_RF)
 # use the first rf model to pick the useful predictors and limit the models to these
-most_imp_predictors <- varImp(rfFit)$importance  %>% rownames_to_column('Predictors') %>% arrange(-Overall) %>% filter(Overall > 2) %>% pull(Predictors)
+most_imp_predictors <- varImp(rfFit_all)$importance  %>% rownames_to_column('Predictors') %>% arrange(-Overall) %>% filter(Overall > 2) %>% pull(Predictors)
 # variant with no disease class predictos
 most_imp_predictors_no_disease_class <- most_imp_predictors[!grepl('DiseaseClass', most_imp_predictors)]
 
