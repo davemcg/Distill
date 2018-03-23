@@ -66,6 +66,8 @@ hom <- fread('gzcat /Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/d
 
 # Create regions file
 The regions file is used to generate coordinates for the selected variants, which can be used by `tabix --regions` to create a cut-down UK10K vcf to more quickly iterate gemini database / annotation tweaks. The full vcf takes ~5 days to re-annotate
+
+I've gone up into `# Create gemini query` and changed the database to the cut down one I made
 ```{r}
 regions_f <- rbind(het %>% mutate(region=paste0(chrom,'\t',end,'\t',end)),
                    hom %>% mutate(region=paste0(chrom,'\t',end,'\t',end))) %>% 
