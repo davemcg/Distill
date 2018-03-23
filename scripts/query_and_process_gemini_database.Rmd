@@ -17,7 +17,7 @@ Queried with `gemini query -q 'select * from samples' EGAD00001002656.GATK.PED_E
 present_samples <- scan('~/git/EGA_EGAD00001002656_NGS_reanalyze/data/present_samples.txt', what = 'character')
 ```
 
-# Create gemini query
+# Create gemini query 
 Didn't create gemini database with PED labelling which samples are 'solved', so I can't query on that. I'll have to build a fairly long gt-filter query including each solved sample
 ```{r}
 library(here)
@@ -64,6 +64,20 @@ het <- fread('gzcat /Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/d
 hom <- fread('gzcat /Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/data/UK10K_EGAD.homs.gz')
 ```
 
+# Create regions file
+The regions file is used to generate coordinates for the selected variants, which can be used by `tabix --regions` to create a cut-down UK10K vcf to more quickly iterate gemini database / annotation tweaks. The full vcf takes ~5 days to re-annotate
+```{r}
+regions_f <- rbind(het %>% mutate(region=paste0(chrom,'\t',end,'\t',end)),
+                   hom %>% mutate(region=paste0(chrom,'\t',end,'\t',end))) %>% 
+  mutate(end=as.integer(end)) %>% 
+  arrange(chrom, end) %>% 
+  select(region)
+
+write(regions_f$region, file='/Volumes/data/projects/nei/mcgaughey/EGA_EGAD00001002656_7n/vcf_annotated_v2/eye_var_regions.txt')
+# run on biowulf2
+# tabix EGAD00001002656.GATK.vcf.gz --print-header --regions eye_var_regions.txt | bgzip -c > /data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/data/EGAD00001002656.GATK.eye_var_path.vcf.gz &
+# tabix -p vcf /data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/data/EGAD00001002656.GATK.eye_var_path.vcf.gz
+```
 # Reshape
 We have a column (hom_alt or het)_samples which has a comma separate list of samples with the genotype. I think we should split this up and get a new row for each sample. 
 ```{r}
