@@ -24,7 +24,7 @@ Phenotype==2 are the probands, Phenotype==1 are the unaffected
 library(here)
 #hom 
 
-query_writer <- function(family_name, gemini_db = '2018-03-05_OGVFB_cohort.gemini.db') {
+query_writer <- function(family_name, gemini_db = '2018-03-23_OGVFB_cohort.gemini.db') {
   de_novo_query <- paste0("gemini de_novo --filter \"aaf < 0.05 and filter is NULL AND (aaf_esp_all < 0.01 AND aaf_1kg_all_float < 0.01 AND af_exac_all < 0.01  AND (is_coding=1 OR is_splicing=1)) OR impact_severity='HIGH' OR clinvar_sig LIKE '%patho%' \" --families ", family_name, ' ', gemini_db, ' > ogvfb_cohort_calls/', family_name, '.gemini.denovo')
   
   ar_query <- paste0("gemini autosomal_recessive --filter \"aaf < 0.05 and filter is NULL AND (aaf_esp_all < 0.01 AND aaf_1kg_all_float < 0.01 AND af_exac_all < 0.01  AND (is_coding=1 OR is_splicing=1)) OR impact_severity='HIGH' OR clinvar_sig LIKE '%patho%' \" --families ", family_name, ' ', gemini_db, ' > ogvfb_cohort_calls/', family_name, '.gemini.ar')
