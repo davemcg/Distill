@@ -114,7 +114,7 @@ cowplot::plot_grid(roc, pr)
 
 Non ocular pathogenic
 ```{r}
-model_names <- c('rfFit_noDC','rfFit','avNNetFit', 'avNNetFit_noDC','bglmFit', 'bglmFit_noDC')
+model_names <- c('rfFit_noDC', 'bglmFit_noDC', 'caddFit', 'dannFit', 'revelFit')
 aucroc_data <- data.frame()
 for (i in model_names){
   print(model_run[[i]]$method)
@@ -127,29 +127,29 @@ for (i in model_names){
   aucroc_data <- rbind(aucroc_data, out)
 }
 
-roc_data <- data.frame()
-for (i in model_names){
-  print(model_run_core[[i]]$method)
-  roc <- roc_maker(model_run_core[[i]], model_run_core$ML_set_dummy__secondary)
-  out <- roc$curve[,1:2] %>% data.frame()
-  colnames(out) <- c('FPR','Sensitivity')
-  out$model <- i
-  out$AUC <- roc$auc
-  out$'Model (AUC)' <- paste0(i, ' (',round(roc$auc, 2),')' )
-  roc_data <- rbind(roc_data, out)
-}
+# roc_data <- data.frame()
+# for (i in model_names){
+#   print(model_run_core[[i]]$method)
+#   roc <- roc_maker(model_run_core[[i]], model_run_core$ML_set_dummy__secondary)
+#   out <- roc$curve[,1:2] %>% data.frame()
+#   colnames(out) <- c('FPR','Sensitivity')
+#   out$model <- i
+#   out$AUC <- roc$auc
+#   out$'Model (AUC)' <- paste0(i, ' (',round(roc$auc, 2),')' )
+#   roc_data <- rbind(roc_data, out)
+# }
 
 pr <- aucroc_data %>% 
   #filter(model %in% best_models_noDC) %>% 
   ggplot(aes(x=Recall, y=Precision, colour=`Model (AUC)`)) + geom_path() + theme_minimal() + ggtitle('Precision Recall Curve') + ggsci::scale_colour_aaas()
-roc <- roc_data %>% 
-  # filter(model %in% best_models_noDC) %>% 
-  ggplot(aes(x=FPR, y=Sensitivity, colour=`Model (AUC)`)) + geom_path() + theme_minimal()  + ggtitle('ROC')+ ggsci::scale_colour_aaas()
+# roc <- roc_data %>% 
+#   # filter(model %in% best_models_noDC) %>% 
+#   ggplot(aes(x=FPR, y=Sensitivity, colour=`Model (AUC)`)) + geom_path() + theme_minimal()  + ggtitle('ROC')+ ggsci::scale_colour_aaas()
 
 # pr <- aucroc_data %>% ggplot(aes(x=Recall, y=Precision)) + geom_path() + theme_minimal() + ggtitle('Precision Recall Curve')
 # roc <- roc_data %>% ggplot(aes(x=FPR, y=Sensitivity)) + geom_path() + theme_minimal()  + ggtitle('ROC')
 
-cowplot::plot_grid(roc, pr)
+pr
 ```
 
 
