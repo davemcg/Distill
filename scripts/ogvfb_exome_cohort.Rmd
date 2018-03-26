@@ -116,8 +116,8 @@ all_processed <- gemini_ogvfb_candidates %>%
                                  grepl('^diff', genesplicer) ~ 'Diff',
                                  TRUE ~ 'Else')) %>%  
   mutate_at(vars(matches('ac_|an_|^n_')), funs(as.integer(.))) %>% # convert columns with ac_|whatever to integer (ac is allele count)
-  mutate_at(vars(matches('af_|dann|revel|mpc|gerp|polyphen_score|sift_score|fitcons_float|gerp_elements|^adj|_z$|^pli$|^pnull$|precessive|^phylop|grantham|fathmm')), funs(as.numeric(.))) %>%  # af is allele frequency
-  select(variant_id, is_exonic, is_coding, is_lof, is_splicing, impact_severity, polyphen_score, sift_score, dann, gerp_elements, DiseaseClass, mpc, revel, aaf_1kg_afr_float:an_exac_sas, fitcons_float, gno_ac_afr:gno_an_popmax, lof_z:precessive, phylop_100way, grantham, cadd_phred, fathmm_mkl_coding_score, genesplicer, spliceregion) %>% 
+  mutate_at(vars(matches('af_|dann|revel|mpc|gerp|polyphen_score|sift_score|fitcons_float|gerp_elements|^adj|_z$|^pli$|^pnull$|precessive|^phylop|grantham|fathmm|linsight|metalr_score|lrt_converted_rankscore|metasvm|eigen|mutationtaster|provean')), funs(as.numeric(.))) %>%  # af is allele frequency
+  select(variant_id, is_exonic, is_coding, is_lof, is_splicing, impact_severity, polyphen_score, sift_score, dann, gerp_elements, DiseaseClass, mpc, revel, max_aaf_all, gno_ac_afr, gno_ac_eas, gno_ac_all, gno_ac_popmax, ac_exac_sas, ac_exac_fin, aaf_1kg_all_float, aaf_esp_all, ac_exac_all, ac_exac_amr, ac_exac_oth, gno_af_all, gno_an_popmax, an_exac_all, af_exac_all, fitcons_float, lof_z:precessive, phylop_100way, grantham, cadd_phred, fathmm_mkl_coding_score, linsight, metalr_score, lrt_converted_rankscore, metasvm_rankscore, eigen_phred, mutationtaster_score, provean_converted_rankscore, genesplicer, spliceregion) %>% 
   filter(max_aaf_all < 0.01) %>% 
   unique() # remove any common variants
 
@@ -127,8 +127,8 @@ all_processed[is.na(all_processed)] <- -1
 temp <- all_processed %>% dplyr::select(-variant_id)
 temp <- dummy.data.frame(temp %>% data.frame(), sep='_') 
 ML_set_dummy <- temp %>% mutate(variant_id = all_processed$variant_id)
-# center scale
-ML_set_dummy_CS <- preProcess(ML_set_dummy, method = c('center','scale')) %>% predict(., ML_set_dummy)
+# center scale (don't bother, set during training)
+#ML_set_dummy_CS <- preProcess(ML_set_dummy, method = c('center','scale')) %>% predict(., ML_set_dummy)
 
 ```
 Save for further analysis
