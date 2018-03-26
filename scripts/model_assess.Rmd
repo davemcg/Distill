@@ -5,7 +5,8 @@ output: html_notebook
 # Load trained models
 From scripts/build_models.R run on biowulf2
 ```{r}
-model_names <- names(my_models)[grepl('Fit',names(my_models))]
+load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/eye_var_path_models.Rdata')
+model_names <- names(model_run)[grepl('Fit',names(model_run))]
 ```
 
 
@@ -13,18 +14,38 @@ model_names <- names(my_models)[grepl('Fit',names(my_models))]
 ```{r}
 library(tidyverse)
 library(caret)
-cm_maker <- function(model, data, cutoff=0.5) {
+cm_maker <- function(model, data, cutoff=0.5, mode = 'prec_recall') {
   new_predictions <- predict(model, data, type='prob') %>%
     mutate(Answers = data$Status, Prediction = case_when(Pathogenic > cutoff ~ 'Pathogenic', TRUE ~ 'NotPathogenic'))
-  confusionMatrix(data = new_predictions$Prediction, reference = new_predictions$Answers, mode='prec_recall')
+  confusionMatrix(data = new_predictions$Prediction, reference = new_predictions$Answers, mode= mode)
 }
 
 for (i in model_names){
   print(i)
-  print(cm_maker(my_models[[i]], my_models$validate_set))
+  print(cm_maker(model_run[[i]], model_run$validate_set))
 }
 ```
 
+$$TPR = \frac{7}{7+403}=1.7*10^{-2}$$
+
+$$FPR = \frac{38}{38+117017}=3.2*10^{-4}$$
+
+$$Precision = \frac{7}{38+403}=1.6*10^{-2}$$
+# Best predictors (correlation)
+```{r, fig.width=6, fig.height=5}
+library(superheat)
+all <- rbind(model_run$train_set, model_run$validate_set, model_run$test_set)
+
+superheat(cor(all %>% select_(.dots=model_run$most_imp_predictors)), 
+          pretty.order.rows = T, 
+          pretty.order.cols = T, 
+          left.label = 'variable', 
+          force.left.label=T, 
+          bottom.label = 'none', 
+          left.label.text.alignment = 'right', 
+          left.label.text.size = 4, 
+          left.label.size = 0.5)
+```
 
 # AUC ROC
 ```{r, fig.width=5, fig.height=1.5}
@@ -45,14 +66,19 @@ roc_maker <- function(model, data, cutoff=0.5) {
   new_predictions <- predict(model, data, type = 'prob') %>%
     mutate(Answers = data$Status, Prediction = case_when(Pathogenic > cutoff ~ 'Pathogenic', TRUE ~ 'NotPathogenic'))
   roc.curve(scores.class0 = new_predictions %>% filter(Answers=='Pathogenic') %>% pull(Pathogenic),
-           scores.class1 = new_predictions %>% filter(Answers=='NotPathogenic') %>% pull(Pathogenic),
-           curve = T)
+            scores.class1 = new_predictions %>% filter(Answers=='NotPathogenic') %>% pull(Pathogenic),
+            curve = T)
 }
+
+best_models_noDC <- c('rfFit_noDC','avNNetFit_noDC','bglmFit_noDC')
+best_models <- c('rfFit','avNNetFit','bglmFit')
+
+model_names <- best_models
 
 aucroc_data <- data.frame()
 for (i in model_names){
-  print(my_models[[i]]$method)
-  aucroc <- aucroc_maker(my_models[[i]], my_models$validate_set)
+  print(model_run[[i]]$method)
+  aucroc <- aucroc_maker(model_run[[i]], model_run$validate_set)
   out <- aucroc$curve[,1:2] %>% data.frame()
   colnames(out) <- c('Recall','Precision')
   out$AUC <- aucroc$auc.integral
@@ -63,8 +89,8 @@ for (i in model_names){
 
 roc_data <- data.frame()
 for (i in model_names){
-  print(my_models[[i]]$method)
-  roc <- roc_maker(my_models[[i]], my_models$validate_set)
+  print(model_run[[i]]$method)
+  roc <- roc_maker(model_run[[i]], model_run$validate_set)
   out <- roc$curve[,1:2] %>% data.frame()
   colnames(out) <- c('FPR','Sensitivity')
   out$model <- i
@@ -73,8 +99,112 @@ for (i in model_names){
   roc_data <- rbind(roc_data, out)
 }
 
-pr <- aucroc_data %>% ggplot(aes(x=Recall, y=Precision, colour=`Model (AUC)`)) + geom_line() + theme_minimal() + ggtitle('Precision Recall Curve')
-roc <- roc_data %>% ggplot(aes(x=FPR, y=Sensitivity, colour=`Model (AUC)`)) + geom_line() + theme_minimal()  + ggtitle('ROC')
+pr <- aucroc_data %>% 
+  filter(model %in% best_models_noDC) %>% 
+  ggplot(aes(x=Recall, y=Precision, colour=`Model (AUC)`)) + geom_path() + theme_minimal() + ggtitle('Precision Recall Curve') + ggsci::scale_colour_aaas()
+roc <- roc_data %>% 
+  filter(model %in% best_models_noDC) %>% 
+  ggplot(aes(x=FPR, y=Sensitivity, colour=`Model (AUC)`)) + geom_path() + theme_minimal()  + ggtitle('ROC')+ ggsci::scale_colour_aaas()
+
+# pr <- aucroc_data %>% ggplot(aes(x=Recall, y=Precision)) + geom_path() + theme_minimal() + ggtitle('Precision Recall Curve')
+# roc <- roc_data %>% ggplot(aes(x=FPR, y=Sensitivity)) + geom_path() + theme_minimal()  + ggtitle('ROC')
 
 cowplot::plot_grid(roc, pr)
+```
+
+Non ocular pathogenic
+```{r}
+model_names <- c('rfFit_noDC','rfFit','avNNetFit', 'avNNetFit_noDC','bglmFit', 'bglmFit_noDC')
+aucroc_data <- data.frame()
+for (i in model_names){
+  print(model_run[[i]]$method)
+  aucroc <- aucroc_maker(model_run[[i]], model_run$ML_set_dummy__secondary)
+  out <- aucroc$curve[,1:2] %>% data.frame()
+  colnames(out) <- c('Recall','Precision')
+  out$AUC <- aucroc$auc.integral
+  out$model <- i
+  out$'Model (AUC)' <- paste0(i, ' (',round(aucroc$auc.integral,2),')' )
+  aucroc_data <- rbind(aucroc_data, out)
+}
+
+roc_data <- data.frame()
+for (i in model_names){
+  print(model_run_core[[i]]$method)
+  roc <- roc_maker(model_run_core[[i]], model_run_core$ML_set_dummy__secondary)
+  out <- roc$curve[,1:2] %>% data.frame()
+  colnames(out) <- c('FPR','Sensitivity')
+  out$model <- i
+  out$AUC <- roc$auc
+  out$'Model (AUC)' <- paste0(i, ' (',round(roc$auc, 2),')' )
+  roc_data <- rbind(roc_data, out)
+}
+
+pr <- aucroc_data %>% 
+  #filter(model %in% best_models_noDC) %>% 
+  ggplot(aes(x=Recall, y=Precision, colour=`Model (AUC)`)) + geom_path() + theme_minimal() + ggtitle('Precision Recall Curve') + ggsci::scale_colour_aaas()
+roc <- roc_data %>% 
+  # filter(model %in% best_models_noDC) %>% 
+  ggplot(aes(x=FPR, y=Sensitivity, colour=`Model (AUC)`)) + geom_path() + theme_minimal()  + ggtitle('ROC')+ ggsci::scale_colour_aaas()
+
+# pr <- aucroc_data %>% ggplot(aes(x=Recall, y=Precision)) + geom_path() + theme_minimal() + ggtitle('Precision Recall Curve')
+# roc <- roc_data %>% ggplot(aes(x=FPR, y=Sensitivity)) + geom_path() + theme_minimal()  + ggtitle('ROC')
+
+cowplot::plot_grid(roc, pr)
+```
+
+
+# Dive into fails
+First load metadata for UK10K and full dataset
+```{r}
+load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/uk10k_gemini_rare_variants.Rdata')
+metadata <- readxl::read_excel(path='~/git/EGA_EGAD00001002656_NGS_reanalyze/data/1-s2.0-S0002929716305274-mmc3.xlsx') %>% mutate(Sample=Patient)
+
+predictor <- function(model, data_dummy, source){
+  # returns variant id to match to full data frame and pathogenic score
+  # Set source to only return predictions from a certain source
+  # variant id is only unique to each source, as they are separate gemini db
+  # add empty -1 columns to data_dummy if predictor not present
+  columns_needed <- model$trainingData %>% colnames()
+  columns_needed <- columns_needed[2:length(columns_needed)]
+  missing_columns <- columns_needed[!columns_needed %in% colnames(data_dummy)]
+  data_dummy[,missing_columns] <- -1
+  # predict
+  predictions <- predict(model, data_dummy, type = 'prob')
+  data_dummy <- cbind(predictions, data_dummy)
+  return(data_dummy %>% filter(Source == source) %>% select(variant_id, Pathogenic))
+}
+```
+
+## OVPaC labels as pathogenic, but UK10K not labeled path
+Validation subset
+```{r}
+
+left_join(predictor(model_run$rfFit, model_run$validate_set, 'UK10K'), uk10k_gemini_rare_variants) %>% 
+  filter(filter=='None') %>% 
+  separate(hgvsc, c('tx_c', 'hgvsc'), ':') %>% 
+  separate(hgvsp, c('tx_p', 'hgvsp'), ':') %>% 
+  filter(Pathogenic > 0.5, Status=='NotPathogenic') %>% 
+  select(OVPaC=Pathogenic, Status, impact, gene, hgvsc, hgvsp, variant_samples, het_samples, hom_alt_samples, cadd_phred, revel, gno_ac_all, ac_exac_all, exac_num_hom_alt) %>% 
+  rowwise() %>% 
+  mutate(variant_samples = str_split(variant_samples, pattern=',')) %>% 
+  unnest(variant_samples) %>% 
+  mutate(Sample = variant_samples) %>% 
+  select(-variant_samples) %>% 
+  left_join(., metadata %>% select(Sample, Phenotype, Gene, Variant_HGVSp)) %>% 
+  DT::datatable()
+```
+
+## OVPaC labels as non-pathogenic, but UK10K labeled path
+Validation subset
+```{r}
+
+left_join(predictor(model_run$rfFit, model_run$validate_set, 'UK10K'), uk10k_gemini_rare_variants) %>% 
+  filter(filter=='None') %>% 
+  separate(hgvsc, c('tx_c', 'hgvsc'), ':') %>% 
+  separate(hgvsp, c('tx_p', 'hgvsp'), ':') %>% 
+  filter(Pathogenic < 0.5, Status=='Pathogenic') %>% 
+  select(OVPaC=Pathogenic, impact, gene, hgvsc, hgvsp, het_samples, hom_alt_samples, cadd_phred, revel, linsight, ac_exac_all, exac_num_hom_alt, hgmd_overlap, clin_sig) %>% 
+  unique() %>% 
+  DT::datatable()
+ 
 ```
