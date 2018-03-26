@@ -274,7 +274,6 @@ bglmFit_noDC <- caret::train(Status ~ ., data=train_set %>% select_(.dots=c('Sta
                              method = "bayesglm", metric='F',
                              trControl = fitControl_min)
 
-# check again, had errors when running
 glmboostFit <- caret::train(Status ~ ., data=train_set %>% select_(.dots=c('Status',most_imp_predictors)), 
                             method = "glmboost", metric='F',
                             trControl = fitControl_min,
@@ -311,15 +310,15 @@ avNNetFit_noDC <- caret::train(Status ~ ., data=train_set %>% select_(.dots=c('S
 #                       method = "naive_bayes",  metric='AUC',
 #                       trControl = fitControl)
 
-dnnFit <- caret::train(Status ~ ., data=train_set %>% select_(.dots=c('Status',most_imp_predictors)), 
-                       method = "dnn",  metric='AUC',
-                       trControl = fitControl_min,
-                       preProcess = c('center','scale'))
-
-dnnFit_noDC <- caret::train(Status ~ ., data=train_set %>% select_(.dots=c('Status',most_imp_predictors_no_disease_class)), 
-                       method = "dnn",  metric='AUC',
-                       trControl = fitControl_min,
-                       preProcess = c('center','scale'))
+# dnnFit <- caret::train(Status ~ ., data=train_set %>% select_(.dots=c('Status',most_imp_predictors)), 
+#                        method = "dnn",  metric='AUC',
+#                        trControl = fitControl_min,
+#                        preProcess = c('center','scale'))
+# 
+# dnnFit_noDC <- caret::train(Status ~ ., data=train_set %>% select_(.dots=c('Status',most_imp_predictors_no_disease_class)), 
+#                        method = "dnn",  metric='AUC',
+#                        trControl = fitControl_min,
+#                        preProcess = c('center','scale'))
 
 
 # monmlpFit <- caret::train(Status ~ ., data=train_set %>% select_(.dots=c('Status',most_imp_predictors)), 
