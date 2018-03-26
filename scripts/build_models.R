@@ -274,15 +274,23 @@ bglmFit_noDC <- caret::train(Status ~ ., data=train_set %>% select_(.dots=c('Sta
                              method = "bayesglm", metric='F',
                              trControl = fitControl_min)
 
+glmFit <- caret::train(Status ~ ., data=train_set %>% select_(.dots=c('Status',most_imp_predictors)), 
+                        method = "glm", metric='F',
+                        trControl = fitControl_min)
+
+glmFit_noDC <- caret::train(Status ~ ., data=train_set %>% select_(.dots=c('Status',most_imp_predictors_no_disease_class)), 
+                             method = "glm", metric='F',
+                             trControl = fitControl_min)
+
 glmboostFit <- caret::train(Status ~ ., data=train_set %>% select_(.dots=c('Status',most_imp_predictors)), 
                             method = "glmboost", metric='F',
                             trControl = fitControl_min,
                             preProcess = c('center','scale'))
 
-LogitBoostFit <- caret::train(Status ~ ., data=train_set %>% select_(.dots=c('Status',most_imp_predictors)), 
-                              method = "LogitBoost", metric='F',
-                              trControl = fitControl_min,
-                              preProcess = c('center','scale'))
+# LogitBoostFit <- caret::train(Status ~ ., data=train_set %>% select_(.dots=c('Status',most_imp_predictors)), 
+#                               method = "LogitBoost", metric='F',
+#                               trControl = fitControl_min,
+#                               preProcess = c('center','scale'))
 
 avNNetFit <- caret::train(Status ~ ., data=train_set %>% select_(.dots=c('Status',most_imp_predictors)), 
                           method = "avNNet", metric='F',
