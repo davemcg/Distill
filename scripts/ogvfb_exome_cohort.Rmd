@@ -126,18 +126,51 @@ all_processed[is.na(all_processed)] <- -1
 
 temp <- all_processed %>% dplyr::select(-variant_id)
 temp <- dummy.data.frame(temp %>% data.frame(), sep='_') 
-ML_set_dummy <- temp %>% mutate(variant_id = all_processed$variant_id)
+ogvfb_ML_set_dummy <- temp %>% mutate(variant_id = all_processed$variant_id)
 # center scale (don't bother, set during training)
 #ML_set_dummy_CS <- preProcess(ML_set_dummy, method = c('center','scale')) %>% predict(., ML_set_dummy)
 
 ```
 Save for further analysis
 ```{r}
-ogvfb <- all
+ogvfb <- list()
+ogvfb$all_processed  <- all_processed
+ogvfb$ogvfb_ML_set_dummy <- ogvfb_ML_set_dummy
 
 output_file <- '/Volumes/Arges_NFS/PROJECTS/mcgaughey/EGA_EGAD00001002656_NGS_reanalyze/clean_data/ogvfb_exome_cohort.Rdata'
 if(!file.exists(output_file)){
   save(ogvfb, file = output_file)
 }
+```
+
+# Label variants with model!
+```{r}
+load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/model_run_2018_03_26.Rdata')
+
+predictor <- function(model, data_dummy, source){
+  # returns variant id to match to full data frame and pathogenic score
+  # Set source to only return predictions from a certain source
+    # variant id is only unique to each source, as they are separate gemini db
+  # add empty -1 columns to data_dummy if predictor not present
+  columns_needed <- model$trainingData %>% colnames()
+  columns_needed <- columns_needed[2:length(columns_needed)]
+  missing_columns <- columns_needed[!columns_needed %in% colnames(data_dummy)]
+  data_dummy[,missing_columns] <- -1
+  # predict
+  predictions <- predict(model, data_dummy, type = 'prob')
+  data_dummy <- cbind(predictions, data_dummy)
+  return(data_dummy %>% filter(Source == source) %>% select(variant_id, Pathogenic))
+}
+
+# rfFit
+left_join(predictor(model_run$rfFit, ogvfb_ML_set_dummy) %>% filter(Pathogenic>0.4), gemini_ogvfb_candidates, by='variant_id') %>% 
+  select(variant_id:spliceregion, family_id:Family) %>% 
+  filter(filter=='None') %>% 
+  DT::datatable()
+
+# rfFit without disease class
+left_join(predictor(model_run$rfFit_noDC, ogvfb_ML_set_dummy) %>% filter(Pathogenic>0.4), gemini_ogvfb_candidates, by='variant_id') %>% 
+  select(variant_id:spliceregion, family_id:Family) %>% 
+  DT::datatable()
 ```
 
