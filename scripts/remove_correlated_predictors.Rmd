@@ -7,8 +7,8 @@ Remove highly correlated predictors
 # Load data
 ```{r}
 uk10k_data <- '/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/uk10k_gemini_rare_variants.Rdata'
-clinvar_file <- '/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/data/clinvar.gemini.tsv.gz'
-gnomad_file <- '/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/data/gnomad.gemini.tsv.gz'
+clinvar_file <- '/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/data/clinvar/clinvar.gemini.tsv.gz'
+gnomad_file <- '/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/data/gnomad_rare_benign_ish/gnomad.gemini.tsv.gz'
 
 library(tidyverse)
 library(data.table)
@@ -43,8 +43,8 @@ all_processed <- uk10k_gemini_rare_variants %>%
                                  TRUE ~ 'Else')) %>% 
   mutate(Status = factor(Status, levels=c('Pathogenic','NotPathogenic'))) %>% 
   mutate_at(vars(matches('ac_|an_|^n_')), funs(as.integer(.))) %>% # convert columns with ac_|whatever to integer (ac is allele count)
-  mutate_at(vars(matches('af_|dann|revel|mpc|gerp|polyphen_score|sift_score|fitcons_float|gerp_elements|^adj|_z$|^pli$|^pnull$|precessive|^phylop|linsight|metalr_score|lrt_converted_rankscore|metasvm|eigen|mutationtaster|provean')), funs(as.numeric(.))) %>%  # af is allele frequency
-  select(variant_id, Status, Complicated_Status, is_exonic, is_coding, is_lof, is_splicing, impact_severity, polyphen_score, sift_score, dann, gerp_elements, DiseaseClass, mpc, revel, aaf_1kg_afr_float:an_exac_sas, fitcons_float, gno_ac_afr:gno_an_popmax, lof_z:precessive, phylop_100way, grantham, cadd_phred, fathmm_mkl_coding_score, linsight, metalr_score, lrt_converted_rankscore, metasvm_rankscore, eigen_phred, mutationtaster_score, provean_converted_rankscore, genesplicer, spliceregion) %>% 
+  mutate_at(vars(matches('af_|dann|revel|mpc|gerp|polyphen_score|sift_score|fitcons_float|gerp_elements|^adj|_z$|^pli$|^pnull$|precessive|^phylop|linsight|_rankscore$|ccr_pct_v1')), funs(as.numeric(.))) %>%  # af is allele frequency
+  select(variant_id, Status, Complicated_Status, is_exonic, is_coding, is_lof, is_splicing, impact_severity, polyphen_score, sift_score, dann, gerp_elements, DiseaseClass, mpc, revel, aaf_1kg_afr_float:an_exac_sas, fitcons_float, gno_ac_afr:gno_an_popmax, lof_z:precessive, phylop_100way, grantham, cadd_phred, contains("_rankscore"), ccr_pct_v1, genesplicer, spliceregion) %>% 
   filter(max_aaf_all < 0.01) %>% 
   unique() # remove any common variants
 
