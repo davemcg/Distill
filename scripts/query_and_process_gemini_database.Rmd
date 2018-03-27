@@ -60,8 +60,8 @@ write(hom_query, file = here('scripts/gemini_query_calls_UK10K.sh'), append = T)
 # Load in result from gemini query above
 ```{r}
 library(data.table)
-het <- fread('gzcat /Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/data/UK10K_EGAD.hets.gz')
-hom <- fread('gzcat /Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/data/UK10K_EGAD.homs.gz')
+het <- fread('gzcat /Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/data/UK10K/UK10K_EGAD.hets.gz')
+hom <- fread('gzcat /Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/data/UK10K/UK10K_EGAD.homs.gz')
 ```
 
 # Create regions file
