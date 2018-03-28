@@ -1,0 +1,11 @@
+---
+title: "SwissVar"
+output: html_notebook
+---
+
+
+```{r}
+library(tidyverse)
+swissvar_all <- read_tsv('https://swissvar.expasy.org/cgi-bin/swissvar/result?format=tab')
+```
+
