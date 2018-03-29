@@ -187,8 +187,7 @@ ML_set_dummy__secondary <- temp %>% mutate(pos_id = ML_set__other$pos_id) %>% un
 ##################################
 # add back status, remove dups
 ##################################
-pos_id__source %>% group_by(pos_id) %>% summarise(Status=paste(Status, collapse=','), Source=paste(Source,collapse=',')) %>% filter(grepl('^Path|,Path', Status))
-
+pos_id__source <- pos_id__source %>% group_by(pos_id) %>% summarise(Status=paste(unique(Status), collapse=','), Source=paste(Source,collapse=','))
 
 # center scale 
 # ML_set_dummy_CS <- preProcess(ML_set_dummy, method = c('center','scale')) %>% predict(., ML_set_dummy)
