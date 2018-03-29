@@ -3,7 +3,8 @@ title: "SwissVar"
 output: html_notebook
 ---
 
-
+pull unifun from here: https://humgenomics.biomedcentral.com/articles/10.1186/s40246-017-0104-8
+https://ndownloader.figshare.com/articles/4704955/versions/1
 ```{r}
 library(tidyverse)
 swissvar_all <- read_tsv('https://swissvar.expasy.org/cgi-bin/swissvar/result?format=tab')
