@@ -120,7 +120,9 @@ ML_set__clinvar__otherPath <- clinvar_processed %>%
   filter(Status == 'Pathogenic_NOTEYE') %>% 
   mutate(Status = gsub('Pathogenic_NOTEYE','Pathogenic',Status)) %>% 
   mutate(Status = factor(Status, levels=c('Pathogenic','NotPathogenic'))) 
-ML_set__clinvar__otherPath$Source <- 'ClinVar'
+#ML_set__clinvar__otherPath$Source <- 'ClinVar'
+pos_id__source <- rbind(pos_id__source, 
+                        ML_set__clinvar__otherPath %>% select(pos_id, Status) %>% mutate(Source='ClinVar_OtherPath'))
 
 ###############################################
 # gnomAD benign? processing
@@ -158,7 +160,7 @@ pos_id__source <- rbind(pos_id__source,
 set.seed(13457)
 gnomad_processed_sub <- gnomad_processed %>% sample_n((ML_set__clinvar %>% filter(Status=='Pathogenic') %>% nrow()) * 250)
 # the remainder gnomad variants
-gnomad_processed_other <- gnomad_processed %>% filter(!variant_id %in% gnomad_processed_sub$variant_id) # not used for model building, for potential validation purposes
+gnomad_processed_other <- gnomad_processed %>% filter(!pos_id %in% gnomad_processed_sub$pos_id) # not used for model building, for potential validation purposes
 
 #gnomad_processed_sub$Source <- 'gnomAD'
 #gnomad_processed_other$Source <- 'gnomAD'
@@ -168,9 +170,9 @@ gnomad_processed_other <- gnomad_processed %>% filter(!variant_id %in% gnomad_pr
 
 ML_set__all <- bind_rows(ML_set__clinvar %>% select_(.dots = colnames(ML_set__UK10K %>% select(-Complicated_Status, -Status))), 
                          ML_set__UK10K %>% select(-Complicated_Status, -Status),
-                         gnomad_processed_sub %>% select_(.dots = colnames(ML_set__UK10K %>% select(-Complicated_Status, -Status))))
+                         gnomad_processed_sub %>% select_(.dots = colnames(ML_set__UK10K %>% select(-Complicated_Status, -Status)))) 
 
-ML_set__other <- bind_rows(gnomad_processed_other, ML_set__clinvar__otherPath)
+ML_set__other <- bind_rows(gnomad_processed_other %>% select(-Status), ML_set__clinvar__otherPath %>% select(-Status)) 
 
 ################################
 # one hot encode
@@ -188,7 +190,8 @@ ML_set_dummy__secondary <- temp %>% mutate(pos_id = ML_set__other$pos_id) %>% un
 # add back status, remove dups
 ##################################
 pos_id__source <- pos_id__source %>% group_by(pos_id) %>% summarise(Status=paste(unique(Status), collapse=','), Source=paste(Source,collapse=','))
-
+pos_id__source__noConflict <- pos_id__source %>% filter(!grepl(',', Status)) %>% filter(Source!='ClinVar_OtherPath')
+ML_set_dummy <- inner_join(ML_set_dummy, pos_id__source %>% filter(!grepl(',', Status)) %>% filter(Source!='ClinVar_OtherPath'))
 # center scale 
 # ML_set_dummy_CS <- preProcess(ML_set_dummy, method = c('center','scale')) %>% predict(., ML_set_dummy)
 
@@ -203,16 +206,16 @@ set.seed(115470)
 train_set <- ML_set_dummy %>% 
   group_by(Status, Source) %>% 
   # filter(!Complicated_Status=='Comp_Het') %>% # remove comp hets for now
-  sample_frac(0.5) %>% ungroup()
+  sample_frac(0.6) %>% ungroup()
 
 set.seed(115470)
 validate_set <- ML_set_dummy %>% 
-  filter(!variant_id %in% train_set$variant_id) %>% 
+  filter(!pos_id %in% train_set$pos_id) %>% 
   group_by(Status, Source) %>% 
   sample_frac(0.5) %>% ungroup()
 
 test_set <- ML_set_dummy %>% 
-  filter(!variant_id %in% c(train_set$variant_id, validate_set$variant_id))
+  filter(!pos_id %in% c(train_set$pos_id, validate_set$pos_id))
 
 
 ########################################
@@ -253,8 +256,9 @@ model_run$test_set <- test_set
 model_run$ML_set_dummy <- ML_set_dummy
 model_run$ML_set_dummy__secondary <- ML_set_dummy__secondary
 model_run$ML_set__all <- ML_set__all
+model_run$pos_id__source <- pos_id__source
 model_run$sessionInfo <- sessionInfo()
-save(model_run, file='model_run__2018_03_27.Rdata')
+save(model_run, file='model_run__2018_03_29.Rdata')
 
 ###########################################
 # multi processing
@@ -265,7 +269,7 @@ registerDoParallel(cluster)
 ##############################################
 # BUILD MODELS!!!!!!!!!!!
 #############################################
-rfFit_all <- caret::train(Status ~ ., data=train_set %>% select(-pos_id, -variant_id, -Source), 
+rfFit_all <- caret::train(Status ~ ., data=train_set %>% select(-pos_id, -Source), 
                       method = "rf", metric='F',
                       trControl = fitControl_min)
 # use the first rf model to pick the semi-useful predictors and limit the models to these
@@ -276,7 +280,7 @@ most_imp_predictors_no_disease_class <- most_imp_predictors[!grepl('DiseaseClass
 
 model_run$most_imp_predictors <- most_imp_predictors
 model_run$most_imp_predictors_no_disease_class <- most_imp_predictors_no_disease_class
-save(model_run, file='model_run__2018_03_28.Rdata')
+save(model_run, file='model_run__2018_03_29.Rdata')
 
 rfFit <- caret::train(Status ~ ., data=train_set %>% select_(.dots=c('Status',most_imp_predictors)), 
                       method = "rf", metric='F',
