@@ -192,6 +192,7 @@ ML_set_dummy__secondary <- temp %>% mutate(pos_id = ML_set__other$pos_id) %>% un
 pos_id__source <- pos_id__source %>% group_by(pos_id) %>% summarise(Status=paste(unique(Status), collapse=','), Source=paste(Source,collapse=','))
 pos_id__source__noConflict <- pos_id__source %>% filter(!grepl(',', Status)) %>% filter(Source!='ClinVar_OtherPath')
 ML_set_dummy <- inner_join(ML_set_dummy, pos_id__source %>% filter(!grepl(',', Status)) %>% filter(Source!='ClinVar_OtherPath'))
+ML_set_dummy$Status <- factor(ML_set_dummy$Status, levels = c('Pathogenic','NotPathogenic'))
 # center scale 
 # ML_set_dummy_CS <- preProcess(ML_set_dummy, method = c('center','scale')) %>% predict(., ML_set_dummy)
 
@@ -206,7 +207,7 @@ set.seed(115470)
 train_set <- ML_set_dummy %>% 
   group_by(Status, Source) %>% 
   # filter(!Complicated_Status=='Comp_Het') %>% # remove comp hets for now
-  sample_frac(0.6) %>% ungroup()
+  sample_frac(0.5) %>% ungroup()
 
 set.seed(115470)
 validate_set <- ML_set_dummy %>% 
@@ -277,7 +278,7 @@ most_imp_predictors <- varImp(rfFit_all)$importance  %>% rownames_to_column('Pre
 # variant with no disease class predictors
 most_imp_predictors_no_disease_class <- most_imp_predictors[!grepl('DiseaseClass', most_imp_predictors)]
 
-
+model_run$rfFit_all <- rfFit_all
 model_run$most_imp_predictors <- most_imp_predictors
 model_run$most_imp_predictors_no_disease_class <- most_imp_predictors_no_disease_class
 save(model_run, file='model_run__2018_03_29.Rdata')
@@ -290,13 +291,13 @@ rfFit_noDC <- caret::train(Status ~ ., data=train_set %>% select_(.dots=c('Statu
                            method = "rf", metric='F',
                            trControl = fitControl_min)
 
-bglmFit <- caret::train(Status ~ ., data=train_set %>% select_(.dots=c('Status',most_imp_predictors)), 
-                        method = "bayesglm", metric='F',
-                        trControl = fitControl_min)
-
-bglmFit_noDC <- caret::train(Status ~ ., data=train_set %>% select_(.dots=c('Status',most_imp_predictors_no_disease_class)), 
-                             method = "bayesglm", metric='F',
-                             trControl = fitControl_min)
+# bglmFit <- caret::train(Status ~ ., data=train_set %>% select_(.dots=c('Status',most_imp_predictors)), 
+#                         method = "bayesglm", metric='F',
+#                         trControl = fitControl_min)
+# 
+# bglmFit_noDC <- caret::train(Status ~ ., data=train_set %>% select_(.dots=c('Status',most_imp_predictors_no_disease_class)), 
+#                              method = "bayesglm", metric='F',
+#                              trControl = fitControl_min)
 
 glmFit <- caret::train(Status ~ ., data=train_set %>% select_(.dots=c('Status',most_imp_predictors)), 
                         method = "glm", metric='F',
