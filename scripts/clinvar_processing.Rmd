@@ -34,6 +34,17 @@ dim(path_all)
 
 ```
 
+# High confidence pathogenic
+Over two starts
+```{r}
+star_path <- clinvar_single %>% 
+  filter(pathogenic > 0 | likely_pathogenic > 0) %>% 
+  filter(conflicted=='0', gold_stars > 2) %>% 
+     mutate(pos_id=paste0(chrom, ':', pos, '_', ref, '_', alt))
+
+write(star_path$pos_id, file='../processed_data/clinvar_star_path_ids.txt')
+```
+
 # ID RD specific benign variants
 ```{r}
 benign_eye <-  clinvar_single %>% 
