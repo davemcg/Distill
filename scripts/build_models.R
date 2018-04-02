@@ -50,8 +50,8 @@ all_processed <- uk10k_gemini_rare_variants %>%
                                  TRUE ~ 'Else')) %>% 
   mutate(Status = factor(Status, levels=c('Pathogenic','NotPathogenic'))) %>% 
   mutate_at(vars(matches('ac_|an_|^n_')), funs(as.integer(.))) %>% # convert columns with ac_|whatever to integer (ac is allele count)
-  mutate_at(vars(matches('af_|dann|revel|mpc|gerp|polyphen_score|sift_score|fitcons_float|gerp_elements|^adj|_z$|^pli$|^pnull$|precessive|^phylop|linsight|_rankscore$|ccr_pct_v1')), funs(as.numeric(.))) %>%  # af is allele frequency
-  select(pos_id, Status, Complicated_Status, is_exonic, is_coding, is_lof, is_splicing, impact_severity, polyphen_score, sift_score, dann, gerp_elements, DiseaseClass, mpc, revel, max_aaf_all, gno_ac_afr, gno_ac_eas, gno_ac_all, gno_ac_popmax, ac_exac_sas, ac_exac_fin, aaf_1kg_all_float, aaf_esp_all, ac_exac_all, ac_exac_amr, ac_exac_oth, gno_af_all, gno_an_popmax, an_exac_all, af_exac_all, fitcons_float, lof_z:precessive, phylop_100way, grantham, cadd_phred, contains("_rankscore"), ccr_pct_v1, genesplicer, spliceregion) %>% 
+  mutate_at(vars(matches('af_|dann|revel|mpc|gerp|polyphen_score|sift_score|fitcons_float|gerp_elements|^adj|_z$|^pli$|^pnull$|precessive|^phylop|linsight|_rankscore$|ccr_pct_v1|linsight')), funs(as.numeric(.))) %>%  # af is allele frequency
+  select(pos_id, Status, Complicated_Status, is_exonic, is_coding, is_lof, is_splicing, impact_severity, polyphen_score, sift_score, dann, gerp_elements, DiseaseClass, mpc, revel, max_aaf_all, gno_ac_afr, gno_ac_eas, gno_ac_all, gno_ac_popmax, ac_exac_sas, ac_exac_fin, aaf_1kg_all_float, aaf_esp_all, ac_exac_all, ac_exac_amr, ac_exac_oth, gno_af_all, gno_an_popmax, an_exac_all, af_exac_all, fitcons_float, linsight, lof_z:precessive, phylop_100way, grantham, cadd_phred, contains("_rankscore"), ccr_pct_v1, genesplicer, spliceregion) %>% 
   filter(max_aaf_all < 0.01) %>% 
   unique() # remove any common variants
 
@@ -94,6 +94,7 @@ clinvar_processed <- clinvar %>%
                                      TRUE ~ 1),
          Status = case_when(status=='PATHOGENIC_EYE' ~ 'Pathogenic',
                             status=='PATHOGENIC_OTHER' ~ 'Pathogenic_NOTEYE',
+                            status=='PATHOGENIC_OTHER_HC' ~ 'Pathogenic_NOTEYE_HC',
                             TRUE ~ 'NotPathogenic'),
          genesplicer = case_when(genesplicer == "" ~ 'No',
                                  grepl('^gain', genesplicer) ~ 'Gain',
@@ -102,18 +103,26 @@ clinvar_processed <- clinvar %>%
                                  TRUE ~ 'Else')) %>% 
   mutate_at(vars(matches('ac_|an_|^n_')), funs(as.integer(.))) %>% # convert columns with ac_|whatever to integer (ac is allele count)
   mutate_at(vars(matches('af_|dann|revel|mpc|gerp|polyphen_score|sift_score|fitcons_float|gerp_elements|^adj|_z$|^pli$|^pnull$|precessive|^phylop_100|linsight|_rankscore$|ccr_pct_v1')), funs(as.numeric(.))) %>%  # af is allele frequency
-  select(pos_id, Status, is_exonic, is_coding, is_lof, is_splicing, impact_severity, polyphen_score, sift_score, dann, gerp_elements, DiseaseClass, mpc, revel, max_aaf_all, gno_ac_afr, gno_ac_eas, gno_ac_all, gno_ac_popmax, ac_exac_sas, ac_exac_fin, aaf_1kg_all_float, aaf_esp_all, ac_exac_all, ac_exac_amr, ac_exac_oth, gno_af_all, gno_an_popmax, an_exac_all, af_exac_all, fitcons_float, lof_z:precessive, phylop_100way, grantham, cadd_phred, contains("_rankscore"), ccr_pct_v1, genesplicer, spliceregion) %>% 
+  select(pos_id, Status, is_exonic, is_coding, is_lof, is_splicing, impact_severity, polyphen_score, sift_score, dann, gerp_elements, DiseaseClass, mpc, revel, max_aaf_all, gno_ac_afr, gno_ac_eas, gno_ac_all, gno_ac_popmax, ac_exac_sas, ac_exac_fin, aaf_1kg_all_float, aaf_esp_all, ac_exac_all, ac_exac_amr, ac_exac_oth, gno_af_all, gno_an_popmax, an_exac_all, af_exac_all, fitcons_float, linsight, lof_z:precessive, phylop_100way, grantham, cadd_phred, contains("_rankscore"), ccr_pct_v1, genesplicer, spliceregion) %>% 
   filter(max_aaf_all < 0.01) # remove any common variants
 
 # fill missing with -1
 clinvar_processed[is.na(clinvar_processed)] <- -1
 
 ML_set__clinvar <- clinvar_processed %>% 
-  filter(Status != 'Pathogenic_NOTEYE') %>% 
+  filter(Status != 'Pathogenic_NOTEYE' & Status != 'Pathogenic_NOTEYE_HC') %>% 
   mutate(Status = factor(Status, levels=c('Pathogenic','NotPathogenic'))) 
 #ML_set__clinvar$Source <- 'ClinVar'
 pos_id__source <- rbind(pos_id__source, 
                         ML_set__clinvar %>% select(pos_id, Status) %>% mutate(Source='ClinVar'))
+
+ML_set__clinvar__otherPath_HC <- clinvar_processed %>% 
+  filter(Status == 'Pathogenic_NOTEYE_HC') %>% 
+  mutate(Status = gsub('Pathogenic_NOTEYE_HC','Pathogenic',Status)) %>% 
+  mutate(Status = factor(Status, levels=c('Pathogenic','NotPathogenic'))) 
+
+pos_id__source <- rbind(pos_id__source, 
+                        ML_set__clinvar__otherPath_HC %>% select(pos_id, Status) %>% mutate(Source='ClinVar_OtherPath_HC'))
 
 
 ML_set__clinvar__otherPath <- clinvar_processed %>% 
@@ -146,7 +155,7 @@ gnomad_processed <- gnomad %>%
   filter(hgmd_overlap=='None' & clinvar_pathogenic == 'None') %>% # remove possible pathogenic by checking against hgmd or clinvar presence
   mutate_at(vars(matches('ac_|an_|^n_')), funs(as.integer(.))) %>% # convert columns with ac_|whatever to integer (ac is allele count)
   mutate_at(vars(matches('af_|dann|revel|mpc|gerp|polyphen_score|sift_score|fitcons_float|gerp_elements|^adj|_z$|^pli$|^pnull$|precessive|^phylop_100|linsight|_rankscore$|ccr_pct_v1')), funs(as.numeric(.))) %>%  # af is allele frequency
-  select(pos_id, Status, is_exonic, is_coding, is_lof, is_splicing, impact_severity, polyphen_score, sift_score, dann, gerp_elements, DiseaseClass, mpc, revel, max_aaf_all, gno_ac_afr, gno_ac_eas, gno_ac_all, gno_ac_popmax, ac_exac_sas, ac_exac_fin, aaf_1kg_all_float, aaf_esp_all, ac_exac_all, ac_exac_amr, ac_exac_oth, gno_af_all, gno_an_popmax, an_exac_all, af_exac_all, fitcons_float, lof_z:precessive, phylop_100way, grantham, cadd_phred, contains("_rankscore"), ccr_pct_v1, genesplicer, spliceregion) %>% 
+  select(pos_id, Status, is_exonic, is_coding, is_lof, is_splicing, impact_severity, polyphen_score, sift_score, dann, gerp_elements, DiseaseClass, mpc, revel, max_aaf_all, gno_ac_afr, gno_ac_eas, gno_ac_all, gno_ac_popmax, ac_exac_sas, ac_exac_fin, aaf_1kg_all_float, aaf_esp_all, ac_exac_all, ac_exac_amr, ac_exac_oth, gno_af_all, gno_an_popmax, an_exac_all, af_exac_all, fitcons_float, linsight, lof_z:precessive, phylop_100way, grantham, cadd_phred, contains("_rankscore"), ccr_pct_v1, genesplicer, spliceregion) %>% 
   filter(max_aaf_all < 0.01) # remove any common variants
 
 # fill missing with -1
@@ -156,11 +165,12 @@ pos_id__source <- rbind(pos_id__source,
                         gnomad_processed %>% select(pos_id, Status) %>% mutate(Source='gnomAD')) %>% 
   unique()
 
-# add 250X gnomad benign relative to the number of clinvar pathogenic variants 
+# no more than 250X gnomad benign relative to the number of clinvar pathogenic variants 
 set.seed(13457)
 gnomad_processed_sub <- gnomad_processed %>% sample_n((ML_set__clinvar %>% filter(Status=='Pathogenic') %>% nrow()) * 250)
+gnomad_processed_sub_nonEye <- gnomad_processed %>% filter(!pos_id %in% gnomad_processed_sub$pos_id) %>% sample_n((ML_set__clinvar__otherPath_HC %>% filter(Status=='Pathogenic') %>% nrow()) * 250)
 # the remainder gnomad variants
-gnomad_processed_other <- gnomad_processed %>% filter(!pos_id %in% gnomad_processed_sub$pos_id) # not used for model building, for potential validation purposes
+gnomad_processed_other <- gnomad_processed %>% filter(!pos_id %in% c(gnomad_processed_sub$pos_id,gnomad_processed_sub_nonEye$pos_id)) # not used for model building, for potential validation purposes
 
 #gnomad_processed_sub$Source <- 'gnomAD'
 #gnomad_processed_other$Source <- 'gnomAD'
@@ -168,9 +178,12 @@ gnomad_processed_other <- gnomad_processed %>% filter(!pos_id %in% gnomad_proces
 # Combine UK10K and ClinVar and gnomAD data
 ################################################
 
-ML_set__all <- bind_rows(ML_set__clinvar %>% select_(.dots = colnames(ML_set__UK10K %>% select(-Complicated_Status, -Status))), 
+ML_set__eye <- bind_rows(ML_set__clinvar %>% select_(.dots = colnames(ML_set__UK10K %>% select(-Complicated_Status, -Status))), 
                          ML_set__UK10K %>% select(-Complicated_Status, -Status),
                          gnomad_processed_sub %>% select_(.dots = colnames(ML_set__UK10K %>% select(-Complicated_Status, -Status)))) 
+
+ML_set__general <- bind_rows(ML_set__clinvar__otherPath_HC %>% select_(.dots = colnames(ML_set__UK10K %>% select(-Complicated_Status, -Status))), 
+                         gnomad_processed_sub_nonEye %>% select_(.dots = colnames(ML_set__UK10K %>% select(-Complicated_Status, -Status)))) 
 
 ML_set__other <- bind_rows(gnomad_processed_other %>% select(-Status), ML_set__clinvar__otherPath %>% select(-Status)) 
 
@@ -178,21 +191,32 @@ ML_set__other <- bind_rows(gnomad_processed_other %>% select(-Status), ML_set__c
 # one hot encode
 ##################################
 
-temp <- ML_set__all %>% dplyr::select(-pos_id)
-temp <- dummy.data.frame(temp, sep='_')
-ML_set_dummy <- temp %>% mutate(pos_id = ML_set__all$pos_id) %>% unique()
-# secondary set with non eye path variants
-temp <- ML_set__other  %>% dplyr::select(-pos_id)
-temp <- dummy.data.frame(temp, sep='_')
-ML_set_dummy__secondary <- temp %>% mutate(pos_id = ML_set__other$pos_id) %>% unique()
+one_hot_encode <- function(df){
+  temp <- df %>% dplyr::select(-pos_id)
+  temp <- dummy.data.frame(temp, sep='_')
+  ML_set_dummy <- temp %>% mutate(pos_id = df$pos_id) %>% unique()
+  ML_set_dummy
+}
+
+ML_set__eye_dummy <- one_hot_encode(ML_set__eye)
+ML_set__general_dummy <- one_hot_encode(ML_set__general)
+ML_set__other_dummy <- one_hot_encode(ML_set__other)
 
 ##################################
 # add back status, remove dups
 ##################################
 pos_id__source <- pos_id__source %>% group_by(pos_id) %>% summarise(Status=paste(unique(Status), collapse=','), Source=paste(Source,collapse=','))
 pos_id__source__noConflict <- pos_id__source %>% filter(!grepl(',', Status)) %>% filter(Source!='ClinVar_OtherPath')
-ML_set_dummy <- inner_join(ML_set_dummy, pos_id__source %>% filter(!grepl(',', Status)) %>% filter(Source!='ClinVar_OtherPath'))
-ML_set_dummy$Status <- factor(ML_set_dummy$Status, levels = c('Pathogenic','NotPathogenic'))
+
+ML_set__eye_dummy <- inner_join(ML_set__eye_dummy, pos_id__source %>% filter(!grepl(',', Status)) %>% filter(Source!='ClinVar_OtherPath'))
+ML_set__eye_dummy$Status <- factor(ML_set__eye_dummy$Status, levels = c('Pathogenic','NotPathogenic'))
+
+ML_set__general_dummy <- inner_join(ML_set__general_dummy, pos_id__source %>% filter(!grepl(',', Status)) %>% filter(Source!='ClinVar_OtherPath'))
+ML_set__general_dummy$Status <- factor(ML_set__general_dummy$Status, levels = c('Pathogenic','NotPathogenic'))
+
+ML_set__other_dummy <- inner_join(ML_set__other_dummy, pos_id__source %>% filter(!grepl(',', Status)) %>% filter(Source!='ClinVar_OtherPath'))
+ML_set__other_dummy$Status <- factor(ML_set__other_dummy$Status, levels = c('Pathogenic','NotPathogenic'))
+
 # center scale 
 # ML_set_dummy_CS <- preProcess(ML_set_dummy, method = c('center','scale')) %>% predict(., ML_set_dummy)
 
@@ -203,21 +227,29 @@ ML_set_dummy$Status <- factor(ML_set_dummy$Status, levels = c('Pathogenic','NotP
 # 1/4 to test (only use when I think I'm done building models)
 ##################################
 
-set.seed(115470)
-train_set <- ML_set_dummy %>% 
-  group_by(Status, Source) %>% 
-  # filter(!Complicated_Status=='Comp_Het') %>% # remove comp hets for now
-  sample_frac(0.5) %>% ungroup()
-
-set.seed(115470)
-validate_set <- ML_set_dummy %>% 
-  filter(!pos_id %in% train_set$pos_id) %>% 
-  group_by(Status, Source) %>% 
-  sample_frac(0.5) %>% ungroup()
-
-test_set <- ML_set_dummy %>% 
-  filter(!pos_id %in% c(train_set$pos_id, validate_set$pos_id))
-
+train_test_maker <- function(df){
+  set.seed(115470)
+  train_set <- df %>% 
+    group_by(Status, Source) %>% 
+    # filter(!Complicated_Status=='Comp_Het') %>% # remove comp hets for now
+    sample_frac(0.7) %>% ungroup()
+  
+  # train_set__UK <- train_set %>% filter(grepl('UK10K',Source))
+  # train_set__ClinVarG <- train_set %>% filter(grepl('Clin|gno', ignore.case=T, Source))
+  
+  # set.seed(115470)
+  # validate_set <- ML_set_dummy %>% 
+  #   filter(!pos_id %in% train_set$pos_id) %>% 
+  #   group_by(Status, Source) %>% 
+  #   sample_frac(0.5) %>% ungroup()
+  
+  test_set <- df %>% 
+    filter(!pos_id %in% c(train_set$pos_id))#, validate_set$pos_id))
+  out <- list
+  out$train_set <- train_set
+  out$test_set <- test_set
+  out
+}
 
 ########################################
 # Set up fitcontrols for caret modeling
@@ -246,6 +278,11 @@ fitControl_min <- trainControl(
 #   allowParallel = T,
 #   summaryFunction = prSummary,
 #   returnData = T)
+######################################
+# Predictors
+#######################################
+most_imp_predictors <- c('is_lof','impact_severity','`DiseaseClass_-1`','mis_z','ccr_pct_v1','cadd_phred','phylop_100way','n_mis','revel','fitcons_float','precessive','n_lof','`DiseaseClass_Stargardt,RD`','m_cap_rankscore','dann','DiseaseClass_RD','vest3_rankscore','n_syn','pnull','pli','lof_z','fathmm_mkl_coding_rankscore','an_exac_all','eigen_pc_raw_rankscore','gerp_elements','mutationassessor_score_rankscore','mpc','metasvm_rankscore','polyphen_score','metalr_rankscore','lrt_converted_rankscore','genocanyon_score_rankscore','mutationtaster_converted_rankscore','gno_an_popmax','grantham','max_aaf_all','ac_exac_all','fathmm_converted_rankscore','aaf_esp_all','sift_score','ac_exac_sas', 'linsight')
+most_imp_predictors_no_disease_class <- c('is_lof','impact_severity','mis_z','ccr_pct_v1','cadd_phred','phylop_100way','n_mis','revel','fitcons_float','precessive','n_lof','m_cap_rankscore','dann','vest3_rankscore','n_syn','pnull','pli','lof_z','fathmm_mkl_coding_rankscore','an_exac_all','eigen_pc_raw_rankscore','gerp_elements','mutationassessor_score_rankscore','mpc','metasvm_rankscore','polyphen_score','metalr_rankscore','lrt_converted_rankscore','genocanyon_score_rankscore','mutationtaster_converted_rankscore','gno_an_popmax','grantham','max_aaf_all','ac_exac_all','fathmm_converted_rankscore','aaf_esp_all','sift_score','ac_exac_sas','linsight')
 
 ###########################################
 # SAVE DATA
@@ -259,29 +296,29 @@ model_run$ML_set_dummy__secondary <- ML_set_dummy__secondary
 model_run$ML_set__all <- ML_set__all
 model_run$pos_id__source <- pos_id__source
 model_run$sessionInfo <- sessionInfo()
-save(model_run, file='model_run__2018_03_29.Rdata')
+save(model_run, file='model_run__2018_03_30.X.Rdata')
 
 ###########################################
 # multi processing
 ##########################################
-cluster <- makeCluster(50) 
+cluster <- makeCluster(60) 
 registerDoParallel(cluster)
 
 ##############################################
 # BUILD MODELS!!!!!!!!!!!
 #############################################
-rfFit_all <- caret::train(Status ~ ., data=train_set %>% select(-pos_id, -Source), 
-                      method = "rf", metric='F',
-                      trControl = fitControl_min)
-# use the first rf model to pick the semi-useful predictors and limit the models to these
-most_imp_predictors <- varImp(rfFit_all)$importance  %>% rownames_to_column('Predictors') %>% arrange(-Overall) %>% filter(Overall > 4) %>% pull(Predictors)
-# variant with no disease class predictors
-most_imp_predictors_no_disease_class <- most_imp_predictors[!grepl('DiseaseClass', most_imp_predictors)]
-
-model_run$rfFit_all <- rfFit_all
-model_run$most_imp_predictors <- most_imp_predictors
-model_run$most_imp_predictors_no_disease_class <- most_imp_predictors_no_disease_class
-save(model_run, file='model_run__2018_03_29.Rdata')
+# rfFit_all <- caret::train(Status ~ ., data=train_set %>% select(-pos_id, -Source), 
+#                       method = "rf", metric='F',
+#                       trControl = fitControl_min)
+# # use the first rf model to pick the semi-useful predictors and limit the models to these
+# most_imp_predictors <- varImp(rfFit_all)$importance  %>% rownames_to_column('Predictors') %>% arrange(-Overall) %>% filter(Overall > 4) %>% pull(Predictors)
+# # variant with no disease class predictors
+# most_imp_predictors_no_disease_class <- most_imp_predictors[!grepl('DiseaseClass', most_imp_predictors)]
+# 
+# model_run$rfFit_all <- rfFit_all
+# model_run$most_imp_predictors <- most_imp_predictors
+# model_run$most_imp_predictors_no_disease_class <- most_imp_predictors_no_disease_class
+# save(model_run, file='model_run__2018_03_29.Rdata')
 
 rfFit <- caret::train(Status ~ ., data=train_set %>% select_(.dots=c('Status',most_imp_predictors)), 
                       method = "rf", metric='F',
@@ -299,7 +336,7 @@ rfFit_noDC <- caret::train(Status ~ ., data=train_set %>% select_(.dots=c('Statu
 #                              method = "bayesglm", metric='F',
 #                              trControl = fitControl_min)
 
-glmFit <- caret::train(Status ~ ., data=train_set %>% select_(.dots=c('Status',most_imp_predictors)), 
+glmFit <- caret::train(Status ~ ., data=validate_set %>% select_(.dots=c('Status','pathUK','pathC')), 
                         method = "glm", metric='F',
                         trControl = fitControl_min)
 
