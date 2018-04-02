@@ -24,25 +24,16 @@ path_eye <- clinvar_single %>%
   mutate(ID='.', QUAL='.', FILTER='.', INFO='STATUS=PATHOGENIC_EYE', FORMAT='GT', FAUX='0/1')
 dim(path_eye)
 ```
-# All pathogenic
+# All pathogenic, marking ones with over 2 starts as high quality
 ```{r}
 path_all <- clinvar_single %>% 
   filter(pathogenic > 0 | likely_pathogenic > 0) %>% 
   filter(conflicted=='0', gold_stars > 0) %>% 
-     mutate(ID='.', QUAL='.', FILTER='.', INFO='STATUS=PATHOGENIC_OTHER', FORMAT='GT', FAUX='0/1') 
+  mutate(ID='.', QUAL='.', FILTER='.', INFO='STATUS=PATHOGENIC_OTHER', FORMAT='GT', FAUX='0/1') %>% 
+  mutate(INFO = case_when(gold_stars > 2 ~ gsub('PATHOGENIC_OTHER','PATHOGENIC_OTHER_HC', INFO),
+                          TRUE ~ INFO))
 dim(path_all)
 
-```
-
-# High confidence pathogenic
-Over two starts
-```{r}
-star_path <- clinvar_single %>% 
-  filter(pathogenic > 0 | likely_pathogenic > 0) %>% 
-  filter(conflicted=='0', gold_stars > 2) %>% 
-     mutate(pos_id=paste0(chrom, ':', pos, '_', ref, '_', alt))
-
-write(star_path$pos_id, file='../processed_data/clinvar_star_path_ids.txt')
 ```
 
 # ID RD specific benign variants
@@ -50,7 +41,7 @@ write(star_path$pos_id, file='../processed_data/clinvar_star_path_ids.txt')
 benign_eye <-  clinvar_single %>% 
   filter(benign > 0) %>% 
   filter(conflicted=='0') %>% 
-   filter(grepl('stargardt|retina|leber|usher|cone-rod|rod-cone|macula|retinitis|eye|cornea', all_traits, ignore.case=T) | 
+  filter(grepl('stargardt|retina|leber|usher|cone-rod|rod-cone|macula|retinitis|eye|cornea', all_traits, ignore.case=T) | 
            grepl('stargardt|retina|leber|usher|cone-rod|rod-cone|macula|retinitis|eye|cornea', xrefs, ignore.case=T)) %>% 
   mutate(ID='.', QUAL='.', FILTER='.', INFO='STATUS=BENIGN_EYE', FORMAT='GT', FAUX='0/1')
 
