@@ -57,4 +57,4 @@ assign(rand_name, rfFit_OVPaC)
 ##############################
 # SAVE MODEL
 ###############################
-save(rand_name, file=paste0('/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/OVPaC_pieces/', rand_name, '.Rdata'))
+save(list = rand_name, file=paste0('/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/OVPaC_pieces/', rand_name, '.Rdata'))

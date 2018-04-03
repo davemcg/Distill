@@ -33,14 +33,14 @@ most_imp_predictors_no_disease_class <- c('is_lof','impact_severity','mis_z','cc
 rand_num <- as.integer(paste(sample(0:9, 6, replace=F), collapse = ''))
 set.seed(rand_num)
 model_data$ML_set__general_dummy_TT$train_set$Status <- factor(model_data$ML_set__general_dummy_TT$train_set$Status, levels=c('Pathogenic','NotPathogenic'))
-rfFit_OVPaC <- randomForest(Status ~ ., data=model_data$ML_set__general_dummy_TT$train_set %>% select_(.dots=c('Status',most_imp_predictors_no_disease_class)), 
+rfFit_VPaC <- randomForest(Status ~ ., data=model_data$ML_set__general_dummy_TT$train_set %>% select_(.dots=c('Status',most_imp_predictors_no_disease_class)), 
                            ntree=33,
                            mtry=20,
                            importance = TRUE,
                            norm.votes = FALSE)
 
 rand_name = paste0('VPaC__', rand_num)
-assign(rand_name, rfFit_OVPaC)
+assign(rand_name, rfFit_VPaC)
 
 
 ##############################
