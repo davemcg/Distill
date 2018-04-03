@@ -2,11 +2,13 @@
 title: "Model Assesement"
 output: html_notebook
 ---
-# Load trained models
+# Load processed data and models
 From scripts/build_models.R run on biowulf2
 ```{r}
-load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/eye_var_path_models.Rdata')
-model_names <- names(model_run)[grepl('Fit',names(model_run))]
+load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/model_data.Rdata')
+load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/VPaC_RF.Rdata')
+load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/OVPaC_RF.Rdata')
+#model_names <- names(model_run)[grepl('Fit',names(model_run))]
 ```
 
 
@@ -15,28 +17,30 @@ model_names <- names(model_run)[grepl('Fit',names(model_run))]
 library(tidyverse)
 library(caret)
 cm_maker <- function(model, data, cutoff=0.5, mode = 'prec_recall') {
-  new_predictions <- predict(model, data, type='prob') %>%
+  new_predictions <- predict(model, data, type='prob') %>% data.frame() %>% 
     mutate(Answers = data$Status, Prediction = case_when(Pathogenic > cutoff ~ 'Pathogenic', TRUE ~ 'NotPathogenic'))
   confusionMatrix(data = new_predictions$Prediction, reference = new_predictions$Answers, mode= mode)
 }
 
+cm_maker(VPaC, model_data$ML_set__general_dummy_TT$test_set)
+#cm_maker(VPaC, model_data$ML_set__general_dummy_TT$train_set)
+
+cm_maker(OVPaC, model_data$ML_set__eye_TT$test_set)
+#cm_maker(OVPaC, model_data$ML_set__eye_TT$train_set)
 for (i in model_names){
   print(i)
   print(cm_maker(model_run[[i]], model_run$validate_set))
 }
 ```
 
-$$TPR = \frac{7}{7+403}=1.7*10^{-2}$$
-
-$$FPR = \frac{38}{38+117017}=3.2*10^{-4}$$
-
-$$Precision = \frac{7}{38+403}=1.6*10^{-2}$$
 # Best predictors (correlation)
 ```{r, fig.width=6, fig.height=5}
 library(superheat)
 all <- rbind(model_run$train_set, model_run$validate_set, model_run$test_set)
+all$OVPaC <-predict(model_run$rfFit, all, type='prob')[,1]
+all$VPaC <-predict(model_run$rfFit_noDC, all, type='prob')[,1]
 
-superheat(cor(all %>% select_(.dots=model_run$most_imp_predictors)), 
+superheat(cor(all %>% select_(.dots=c(model_run$most_imp_predictors, 'OVPaC', 'VPaC'))), 
           pretty.order.rows = T, 
           pretty.order.cols = T, 
           left.label = 'variable', 
@@ -54,7 +58,7 @@ library(cowplot)
 
 # precision recall AUC
 aucroc_maker <- function(model, data, cutoff=0.5) {
-  new_predictions <- predict(model, data, type = 'prob') %>%
+  new_predictions <- predict(model, data, type = 'prob') %>% data.frame() %>% 
     mutate(Answers = data$Status, Prediction = case_when(Pathogenic > cutoff ~ 'Pathogenic', TRUE ~ 'NotPathogenic'))
   pr.curve(scores.class0 = new_predictions %>% filter(Answers=='Pathogenic') %>% pull(Pathogenic),
            scores.class1 = new_predictions %>% filter(Answers=='NotPathogenic') %>% pull(Pathogenic),
@@ -63,22 +67,22 @@ aucroc_maker <- function(model, data, cutoff=0.5) {
 
 # ROC AUC
 roc_maker <- function(model, data, cutoff=0.5) {
-  new_predictions <- predict(model, data, type = 'prob') %>%
+  new_predictions <- predict(model, data, type = 'prob') %>%  data.frame() %>% 
     mutate(Answers = data$Status, Prediction = case_when(Pathogenic > cutoff ~ 'Pathogenic', TRUE ~ 'NotPathogenic'))
   roc.curve(scores.class0 = new_predictions %>% filter(Answers=='Pathogenic') %>% pull(Pathogenic),
             scores.class1 = new_predictions %>% filter(Answers=='NotPathogenic') %>% pull(Pathogenic),
             curve = T)
 }
 
-best_models_noDC <- c('rfFit_noDC','avNNetFit_noDC','bglmFit_noDC')
-best_models <- c('rfFit','avNNetFit','bglmFit')
+# best_models_noDC <- c('rfFit_noDC','avNNetFit_noDC','bglmFit_noDC')
+# best_models <- c('rfFit','avNNetFit','bglmFit')
 
-model_names <- best_models
+model_names <- c('OVPaC','VPaC')#best_models_noDC
 
 aucroc_data <- data.frame()
 for (i in model_names){
-  print(model_run[[i]]$method)
-  aucroc <- aucroc_maker(model_run[[i]], model_run$validate_set)
+  #print(model_run[[i]]$method)
+  aucroc <- aucroc_maker(model_run[[i]], model_data$ML_set__other_TT$test_set)
   out <- aucroc$curve[,1:2] %>% data.frame()
   colnames(out) <- c('Recall','Precision')
   out$AUC <- aucroc$auc.integral
@@ -89,8 +93,8 @@ for (i in model_names){
 
 roc_data <- data.frame()
 for (i in model_names){
-  print(model_run[[i]]$method)
-  roc <- roc_maker(model_run[[i]], model_run$validate_set)
+  #print(model_run[[i]]$method)
+  roc <- roc_maker(model_run[[i]], model_data$ML_set__eye_TT$test_set)
   out <- roc$curve[,1:2] %>% data.frame()
   colnames(out) <- c('FPR','Sensitivity')
   out$model <- i
@@ -100,10 +104,10 @@ for (i in model_names){
 }
 
 pr <- aucroc_data %>% 
-  filter(model %in% best_models_noDC) %>% 
+  #filter(model %in% best_models_noDC) %>% 
   ggplot(aes(x=Recall, y=Precision, colour=`Model (AUC)`)) + geom_path() + theme_minimal() + ggtitle('Precision Recall Curve') + ggsci::scale_colour_aaas()
 roc <- roc_data %>% 
-  filter(model %in% best_models_noDC) %>% 
+  #filter(model %in% best_models_noDC) %>% 
   ggplot(aes(x=FPR, y=Sensitivity, colour=`Model (AUC)`)) + geom_path() + theme_minimal()  + ggtitle('ROC')+ ggsci::scale_colour_aaas()
 
 # pr <- aucroc_data %>% ggplot(aes(x=Recall, y=Precision)) + geom_path() + theme_minimal() + ggtitle('Precision Recall Curve')
