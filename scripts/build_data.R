@@ -263,10 +263,12 @@ train_test_maker <- function(df){
   set.seed(115470)
   train_set <- df %>% 
     group_by(Status, Source) %>% 
-    sample_frac(0.7) %>% ungroup()
+    sample_frac(0.7) %>% ungroup() %>% 
+  mutate(Status = factor(Status, levels = c('Pathogenic','NotPathogenic')))
   
   test_set <- df %>% 
-    filter(!pos_id %in% c(train_set$pos_id))#, validate_set$pos_id))
+    filter(!pos_id %in% c(train_set$pos_id)) %>% 
+    mutate(Status = factor(Status, levels = c('Pathogenic','NotPathogenic')))
   
   out <- list()
   out$train_set <- train_set
@@ -278,6 +280,10 @@ ML_set__eye_dummy_TT <- train_test_maker(ML_set__eye_dummy)
 ML_set__general_dummy_TT <- train_test_maker(ML_set__general_dummy)
 ML_set__other_dummy_TT <- train_test_maker(ML_set__other_dummy)
 
+ML_set__eye_TT <- train_test_maker(ML_set__eye)
+ML_set__general_TT <- train_test_maker(ML_set__general)
+ML_set__other_TT <- train_test_maker(ML_set__other)
+
 ###########################################
 # SAVE DATA
 ##########################################
@@ -285,6 +291,9 @@ model_data <- list()
 model_data$ML_set__eye_dummy_TT  <- ML_set__eye_dummy_TT
 model_data$ML_set__general_dummy_TT <- ML_set__general_dummy_TT
 model_data$ML_set__other_dummy_TT <- ML_set__other_dummy_TT
+model_data$ML_set__eye_TT <- ML_set__eye_TT
+model_data$ML_set__general_TT <- ML_set__general_TT
+model_data$ML_set__other_TT <- ML_set__other_TT
 model_data$pos_id__source <- pos_id__source
 model_data$sessionInfo <- sessionInfo()
 save(model_data, file='/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/model_data.Rdata')
