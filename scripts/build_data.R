@@ -232,6 +232,13 @@ pos_id__source <- pos_id__source %>%
 print('Position ID table created')
 # eye pathogenicity 
 # select variants pathogenic in eye (either from ClinVar eye related or UK10K) or benign (clinvar, uk10k, gnomad)
+ML_set__eye <- inner_join(ML_set__eye, 
+                                pos_id__source %>% 
+                                  filter((Path_Eye == 1) | Status=='NotPathogenic') %>% 
+                                  dplyr::select(pos_id, Status, Source))
+ML_set__eye$Status <- factor(ML_set__eye$Status, levels = c('Pathogenic','NotPathogenic'))
+ML_set__eye$DiseaseClass <- factor(ML_set__eye$DiseaseClass)
+
 ML_set__eye_dummy <- inner_join(ML_set__eye_dummy, 
                                 pos_id__source %>% 
                                   filter((Path_Eye == 1) | Status=='NotPathogenic') %>% 
@@ -240,11 +247,23 @@ ML_set__eye_dummy$Status <- factor(ML_set__eye_dummy$Status, levels = c('Pathoge
 
 
 # general pathogenicity (can include eye)
+ML_set__general <- inner_join(ML_set__general, 
+                              pos_id__source %>% 
+                                filter((Path_Eye == 1 | Path_ClinVar_Other_HC == 1) | Status=='NotPathogenic') %>% 
+                                dplyr::select(pos_id, Status, Source))
+ML_set__general$Status <- factor(ML_set__general$Status, levels = c('Pathogenic','NotPathogenic'))
+ML_set__general$DiseaseClass <- factor(ML_set__general$DiseaseClass)
+
 ML_set__general_dummy <- inner_join(ML_set__general_dummy, 
                                     pos_id__source %>% 
                                       filter((Path_Eye == 1 | Path_ClinVar_Other_HC == 1) | Status=='NotPathogenic') %>% 
                                       dplyr::select(pos_id, Status, Source))
-ML_set__eye_dummy$Status <- factor(ML_set__eye_dummy$Status, levels = c('Pathogenic','NotPathogenic'))
+ML_set__general_dummy$Status <- factor(ML_set__general_dummy$Status, levels = c('Pathogenic','NotPathogenic'))
+
+# the remainder
+ML_set__other <- inner_join(ML_set__other, pos_id__source %>% dplyr::select(pos_id, Status, Source))
+ML_set__other$Status <- factor(ML_set__other$Status, levels = c('Pathogenic','NotPathogenic'))
+ML_set__other$DiseaseClass <- factor(ML_set__other$DiseaseClass)
 
 ML_set__other_dummy <- inner_join(ML_set__other_dummy, pos_id__source %>% dplyr::select(pos_id, Status, Source))
 ML_set__other_dummy$Status <- factor(ML_set__other_dummy$Status, levels = c('Pathogenic','NotPathogenic'))
@@ -263,12 +282,10 @@ train_test_maker <- function(df){
   set.seed(115470)
   train_set <- df %>% 
     group_by(Status, Source) %>% 
-    sample_frac(0.7) %>% ungroup() %>% 
-  mutate(Status = factor(Status, levels = c('Pathogenic','NotPathogenic')))
+    sample_frac(0.7) %>% ungroup() 
   
   test_set <- df %>% 
-    filter(!pos_id %in% c(train_set$pos_id)) %>% 
-    mutate(Status = factor(Status, levels = c('Pathogenic','NotPathogenic')))
+    filter(!pos_id %in% c(train_set$pos_id))
   
   out <- list()
   out$train_set <- train_set
