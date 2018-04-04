@@ -26,7 +26,9 @@ Prep data
 all_processed <- unifun %>% 
   separate(gene_eyediseaseclass, c('RDGene','DiseaseClass'), sep='_') %>%  #split off RD disease type
   select(-RDGene) %>% 
-  mutate(pos_id=paste0(chrom, ':', end, '_', ref, '_', alt),
+  mutate(Status = factor(Status,levels=c('Pathogenic','NotPathogenic')),
+         DiseaseClass = factor(DiseaseClass, levels=c('-1','Albinism','Albinism,Albinism','Developmental','RD','RD,Developmental','Stargardt,RD')),
+         pos_id=paste0(chrom, ':', end, '_', ref, '_', alt),
          impact_severity = case_when(impact_severity == 'HIGH' ~ 3, # convert to integer 
                                      impact_severity == 'MED' ~ 2, 
                                      TRUE ~ 1),
@@ -37,7 +39,7 @@ all_processed <- unifun %>%
                                  TRUE ~ 'Else')) %>% 
   mutate_at(vars(matches('ac_|an_|^n_')), funs(as.integer(.))) %>% # convert columns with ac_|whatever to integer (ac is allele count)
   mutate_at(vars(matches('af_|dann|revel|mpc|gerp|polyphen_score|sift_score|fitcons_float|gerp_elements|^adj|_z$|^pli$|^pnull$|precessive|^phylop|linsight|_rankscore$|ccr_pct_v1|linsight')), funs(as.numeric(.))) %>%  # af is allele frequency
-  select(pos_id, is_exonic, is_coding, is_lof, is_splicing, impact_severity, polyphen_score, sift_score, dann, gerp_elements, DiseaseClass, mpc, revel, max_aaf_all, gno_ac_afr, gno_ac_eas, gno_ac_all, gno_ac_popmax, ac_exac_sas, ac_exac_fin, aaf_1kg_all_float, aaf_esp_all, ac_exac_all, ac_exac_amr, ac_exac_oth, gno_af_all, gno_an_popmax, an_exac_all, af_exac_all, fitcons_float, linsight, lof_z:precessive, phylop_100way, grantham, cadd_phred, contains("_rankscore"), ccr_pct_v1, genesplicer, spliceregion) %>% 
+  select(pos_id, Status, DiseaseClass, is_exonic, is_coding, is_lof, is_splicing, impact_severity, polyphen_score, sift_score, dann, gerp_elements, DiseaseClass, mpc, revel, max_aaf_all, gno_ac_afr, gno_ac_eas, gno_ac_all, gno_ac_popmax, ac_exac_sas, ac_exac_fin, aaf_1kg_all_float, aaf_esp_all, ac_exac_all, ac_exac_amr, ac_exac_oth, gno_af_all, gno_an_popmax, an_exac_all, af_exac_all, fitcons_float, linsight, lof_z:precessive, phylop_100way, grantham, cadd_phred, contains("_rankscore"), ccr_pct_v1, genesplicer, spliceregion) %>% 
   filter(max_aaf_all < 0.01) %>% 
   unique() # remove any common variants
 
@@ -46,12 +48,13 @@ all_processed[is.na(all_processed)] <- -1
 
 
 unifun_ML_set <- all_processed 
+unifun_orig <- unifun
 ```
 
 # save data
 ```{r}
 unifun <- list()
-unifun$unifun_orig  <- unifun
+unifun$unifun_orig  <- unifun_orig
 unifun$unifun_ML_set <- unifun_ML_set 
 
 output_file <- '/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/unifun_ML.Rdata'
