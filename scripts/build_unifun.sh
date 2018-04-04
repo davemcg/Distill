@@ -12,3 +12,8 @@ tabix -p vcf UniFun_benign.fakeS.vcf.gz
 
 bash ~/git/variant_prioritization/Snakemake.wrapper.sh ~/git/eye_var_Pathogenicity/config_variant_prioritization__unifunD.yaml
 bash ~/git/variant_prioritization/Snakemake.wrapper.sh ~/git/eye_var_Pathogenicity/config_variant_prioritization__unifunB.yaml
+
+
+module load gemini
+time gemini query --header -q "SELECT * from variants" UniFun_deleterious.fakeS.PED_faux.gemini.db | bgzip > unifun_deleterious.gemini.tsv.gz
+time gemini query --header -q "SELECT * from variants" UniFun_benign.fakeS.PED_faux.gemini.db | bgzip > unifun_benign.gemini.tsv.gz
