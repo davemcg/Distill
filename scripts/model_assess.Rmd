@@ -8,7 +8,10 @@ From scripts/build_models.R run on biowulf2
 load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/model_data.Rdata')
 load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/VPaC_RF.Rdata')
 load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/OVPaC_RF.Rdata')
-#model_names <- names(model_run)[grepl('Fit',names(model_run))]
+# ogvfb cohort
+load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/ogvfb_exome_cohort.Rdata')
+# unifun
+load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/unifun_ML.Rdata')
 ```
 
 
@@ -36,9 +39,10 @@ for (i in model_names){
 # Best predictors (correlation)
 ```{r, fig.width=6, fig.height=5}
 library(superheat)
-all <- rbind(model_run$train_set, model_run$validate_set, model_run$test_set)
-all$OVPaC <-predict(model_run$rfFit, all, type='prob')[,1]
-all$VPaC <-predict(model_run$rfFit_noDC, all, type='prob')[,1]
+library(randomForest)
+all <- rbind(model_data$ML_set__general_TT$train_set, model_data$ML_set__general_TT$test_set)
+all$OVPaC <-predict(OVPaC, all, type='prob')[,1]
+all$VPaC <-predict(VPaC, all, type='prob')[,1]
 
 superheat(cor(all %>% select_(.dots=c(model_run$most_imp_predictors, 'OVPaC', 'VPaC'))), 
           pretty.order.rows = T, 
