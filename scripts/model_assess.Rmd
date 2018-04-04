@@ -44,7 +44,9 @@ all <- rbind(model_data$ML_set__general_TT$train_set, model_data$ML_set__general
 all$OVPaC <-predict(OVPaC, all, type='prob')[,1]
 all$VPaC <-predict(VPaC, all, type='prob')[,1]
 
-superheat(cor(all %>% select_(.dots=c(model_run$most_imp_predictors, 'OVPaC', 'VPaC'))), 
+predictors <- c('is_lof','impact_severity','mis_z','ccr_pct_v1','cadd_phred','phylop_100way','n_mis','revel','fitcons_float','precessive','n_lof','m_cap_rankscore','dann','vest3_rankscore','n_syn','pnull','pli','lof_z','fathmm_mkl_coding_rankscore','an_exac_all','eigen_pc_raw_rankscore','gerp_elements','mutationassessor_score_rankscore','mpc','metasvm_rankscore','polyphen_score','metalr_rankscore','lrt_converted_rankscore','genocanyon_score_rankscore','mutationtaster_converted_rankscore','gno_an_popmax','grantham','max_aaf_all','ac_exac_all','fathmm_converted_rankscore','aaf_esp_all','sift_score','ac_exac_sas', 'linsight')
+
+superheat(cor(all %>% select_(.dots=c(predictors, 'OVPaC', 'VPaC'))), 
           pretty.order.rows = T, 
           pretty.order.cols = T, 
           left.label = 'variable', 
