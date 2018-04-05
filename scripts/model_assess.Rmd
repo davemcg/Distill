@@ -19,11 +19,24 @@ load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/unif
 ```{r}
 library(tidyverse)
 library(caret)
-cm_maker <- function(model, data, cutoff=0.5, mode = 'prec_recall') {
+
+# confusion matrix maker for built models
+cm_maker_model <- function(model, data, cutoff=0.5, mode = 'prec_recall') {
   new_predictions <- predict(model, data, type='prob') %>% data.frame() %>% 
     mutate(Answers = data$Status, Prediction = case_when(Pathogenic > cutoff ~ 'Pathogenic', TRUE ~ 'NotPathogenic'))
   confusionMatrix(data = new_predictions$Prediction, reference = new_predictions$Answers, mode= mode)
 }
+
+# confusion matrix maker for precomputed scores like cadd, revel, etc
+cm_maker_values <- function(data, predictor='revel', cutoff=0.5, mode = 'prec_recall') {
+  new_predictions <- data 
+  new_predictions$Prediction <- 'NotPathogenic'
+  new_predictions[(new_predictions[,predictor] > cutoff), 'Prediction'] <- "Pathogenic"
+  out <- confusionMatrix(data = new_predictions$Prediction, reference = new_predictions$Status, mode= mode)
+  return(out)
+}
+
+
 
 cm_maker(VPaC, model_data$ML_set__general_dummy_TT$test_set)
 #cm_maker(VPaC, model_data$ML_set__general_dummy_TT$train_set)
