@@ -6,7 +6,7 @@ output: html_notebook
 From scripts/build_models.R run on biowulf2
 ```{r}
 load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/model_data.Rdata')
-load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/VPaC_RF.Rdata')
+load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/VPaC_RF__5mtry.Rdata')
 load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/OVPaC_RF.Rdata')
 # ogvfb cohort
 load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/ogvfb_exome_cohort.Rdata')
@@ -21,11 +21,32 @@ library(tidyverse)
 library(caret)
 
 # confusion matrix maker for built models
-cm_maker_model <- function(model, data, cutoff=0.5, mode = 'prec_recall') {
-  new_predictions <- predict(model, data, type='prob') %>% data.frame() %>% 
-    mutate(Answers = data$Status, Prediction = case_when(Pathogenic > cutoff ~ 'Pathogenic', TRUE ~ 'NotPathogenic'))
-  confusionMatrix(data = new_predictions$Prediction, reference = new_predictions$Answers, mode= mode)
+cm_maker <- function(predictor = 'cadd_phred', data, cutoff=0.5, mode = 'prec_recall', model='no') {
+  if (model=='yes'){
+    print("Running in predictor is a model mode")
+    new_predictions <- predict(predictor, data, type='prob') %>% data.frame() %>% 
+      mutate(Answers = data$Status, Prediction = case_when(Pathogenic > cutoff ~ 'Pathogenic', TRUE ~ 'NotPathogenic'))
+    new_predictions <- new_predictions %>% mutate(preds = case_when(Prediction == 'Pathogenic' ~ 1,
+                                                TRUE ~ 0),
+                              actuals = case_when(Answers == 'Pathogenic' ~ 1,
+                                                  TRUE ~ 0))
+    out <- confusionMatrix(data = new_predictions$Prediction, reference = new_predictions$Answers, mode= mode)
+    print(mcc(new_predictions$preds, new_predictions$actuals))
+  } else {
+    print("Running in predictor is a precomputed column in data mode")
+    new_predictions <- data 
+    new_predictions$Prediction <- 'NotPathogenic'
+    new_predictions[(new_predictions[,predictor] > cutoff), 'Prediction'] <- "Pathogenic"
+    new_predictions <- new_predictions %>% mutate(preds = case_when(Prediction == 'Pathogenic' ~ 1,
+                                                TRUE ~ 0),
+                              actuals = case_when(Status == 'Pathogenic' ~ 1,
+                                                  TRUE ~ 0))
+    out <- confusionMatrix(data = new_predictions$Prediction, reference = new_predictions$Status, mode= mode)
+    print(mcc(new_predictions$preds, new_predictions$actuals))
+  }
+  out
 }
+
 
 # confusion matrix maker for precomputed scores like cadd, revel, etc
 cm_maker_values <- function(data, predictor='revel', cutoff=0.5, mode = 'prec_recall') {
@@ -57,7 +78,7 @@ all <- rbind(model_data$ML_set__general_TT$train_set, model_data$ML_set__general
 all$OVPaC <-predict(OVPaC, all, type='prob')[,1]
 all$VPaC <-predict(VPaC, all, type='prob')[,1]
 
-predictors <- c('is_lof','impact_severity','mis_z','ccr_pct_v1','cadd_phred','phylop_100way','n_mis','revel','fitcons_float','precessive','n_lof','m_cap_rankscore','dann','vest3_rankscore','n_syn','pnull','pli','lof_z','fathmm_mkl_coding_rankscore','an_exac_all','eigen_pc_raw_rankscore','gerp_elements','mutationassessor_score_rankscore','mpc','metasvm_rankscore','polyphen_score','metalr_rankscore','lrt_converted_rankscore','genocanyon_score_rankscore','mutationtaster_converted_rankscore','gno_an_popmax','grantham','max_aaf_all','ac_exac_all','fathmm_converted_rankscore','aaf_esp_all','sift_score','ac_exac_sas', 'linsight')
+predictors <- c('is_lof','impact_severity','mis_z','ccr_pct_v1','cadd_phred','phylop_100way','n_mis','revel','fitcons_float','precessive','n_lof','m_cap_rankscore','dann','vest3_rankscore','n_syn','pnull','pli','lof_z','fathmm_mkl_coding_rankscore','an_exac_all','eigen_pc_raw_rankscore','gerp_elements','mutationassessor_score_rankscore','mpc','metasvm_rankscore','polyphen_score','metalr_rankscore','lrt_converted_rankscore','genocanyon_score_rankscore','mutationtaster_converted_rankscore','gno_an_popmax','grantham','max_aaf_all','ac_exac_all','fathmm_converted_rankscore','aaf_esp_all','linsight', 'sift_score','ac_exac_sas')
 
 superheat(cor(all %>% select_(.dots=c(predictors, 'OVPaC', 'VPaC'))), 
           pretty.order.rows = T, 
@@ -96,24 +117,24 @@ roc_maker <- function(model, data, cutoff=0.5) {
 # best_models_noDC <- c('rfFit_noDC','avNNetFit_noDC','bglmFit_noDC')
 # best_models <- c('rfFit','avNNetFit','bglmFit')
 
-model_names <- c('OVPaC','VPaC')#best_models_noDC
+model_names <- list(OVPaC=OVPaC,VPaC=VPaC)#best_models_noDC
 
 aucroc_data <- data.frame()
-for (i in model_names){
+for (i in names(model_names)){
   #print(model_run[[i]]$method)
-  aucroc <- aucroc_maker(model_run[[i]], model_data$ML_set__other_TT$test_set)
+  aucroc <- aucroc_maker(model_names[[i]], model_data$ML_set__other_TT$test_set)
   out <- aucroc$curve[,1:2] %>% data.frame()
   colnames(out) <- c('Recall','Precision')
   out$AUC <- aucroc$auc.integral
-  out$model <- i
+  #out$model <- i
   out$'Model (AUC)' <- paste0(i, ' (',round(aucroc$auc.integral,2),')' )
   aucroc_data <- rbind(aucroc_data, out)
 }
 
 roc_data <- data.frame()
-for (i in model_names){
+for (i in names(model_names)){
   #print(model_run[[i]]$method)
-  roc <- roc_maker(model_run[[i]], model_data$ML_set__eye_TT$test_set)
+  roc <- roc_maker(model_names[[i]], model_data$ML_set__eye_TT$test_set)
   out <- roc$curve[,1:2] %>% data.frame()
   colnames(out) <- c('FPR','Sensitivity')
   out$model <- i
@@ -229,5 +250,5 @@ left_join(predictor(model_run$rfFit, model_run$validate_set, 'UK10K'), uk10k_gem
   select(OVPaC=Pathogenic, impact, gene, hgvsc, hgvsp, het_samples, hom_alt_samples, cadd_phred, revel, linsight, ac_exac_all, exac_num_hom_alt, hgmd_overlap, clin_sig) %>% 
   unique() %>% 
   DT::datatable()
- 
+
 ```
