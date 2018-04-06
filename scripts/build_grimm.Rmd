@@ -1,0 +1,41 @@
+---
+title: "Pull grimm data and create vcf"
+output: html_notebook
+---
+
+The Evaluation of Tools Used to Predict the Impact ofMissense Variants Is Hindered by Two Types of Circularity
+http://structure.bmc.lu.se/VariBench/GrimmDatasets.php
+Five data-sets here - the manuscrdipt discusses the sources for each of these
+
+# On local computer
+```{bash}
+cd /Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/data/grimm
+# humvar
+wget http://structure.bmc.lu.se/VariBench/humvar_filtered_tool_scores.csv
+# ExoVar
+wget http://structure.bmc.lu.se/VariBench/exovar_filtered_tool_scores.csv
+# varibench
+wget http://structure.bmc.lu.se/VariBench/varibench_selected_tool_scores.csv
+# predictSNP
+wget http://structure.bmc.lu.se/VariBench/predictSNP_selected_tool_scores.csv
+# swissVar
+wget http://structure.bmc.lu.se/VariBench/swissvar_selected_tool_scores.csv
+```
+
+
+Load csvs
+```{r}
+library(tidyverse)
+library(stringr)
+grimm_csvs <- list.files('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/data/grimm/', pattern = '*csv', full.names = T)
+
+grimm_data <- data.frame()
+for (i in grimm_csvs){
+  temp <- read_csv(i) %>% mutate(source= (str_split(i, '\\/\\/')[[1]][2] %>% str_split(., '_'))[[1]][1])
+  grimm_data <- rbind(grimm_data, temp)
+}
+
+grimm_data %>% mutate(Status = case_when(`True Label` > 0 ~ 'Pathogenic',
+                                         TRUE ~ 'NotPathogenic')) %>% head()
+```
+  
