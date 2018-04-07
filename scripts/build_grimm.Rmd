@@ -27,15 +27,90 @@ Load csvs
 ```{r}
 library(tidyverse)
 library(stringr)
+library(data.table)
 grimm_csvs <- list.files('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/data/grimm/', pattern = '*csv', full.names = T)
 
 grimm_data <- data.frame()
 for (i in grimm_csvs){
-  temp <- read_csv(i) %>% mutate(source= (str_split(i, '\\/\\/')[[1]][2] %>% str_split(., '_'))[[1]][1])
+  temp <- read_csv(i, col_types = cols(.defaults='c')) %>% mutate(Source= (str_split(i, '\\/\\/')[[1]][2] %>% str_split(., '_'))[[1]][1])
   grimm_data <- rbind(grimm_data, temp)
 }
 
-grimm_data %>% mutate(Status = case_when(`True Label` > 0 ~ 'Pathogenic',
-                                         TRUE ~ 'NotPathogenic')) %>% head()
+grimm_data <- grimm_data %>% mutate(Status = case_when(`True Label` > 0 ~ 'Pathogenic',
+                                         TRUE ~ 'NotPathogenic')) %>% 
+  mutate(CHR=gsub('chr','',CHR)) %>% 
+  filter(!grepl('PATCH|MHC|LRC|GL',CHR))
+
+grimm_data_collapse <- grimm_data %>% 
+  group_by(CHR, `Nuc-Pos`, `REF-Nuc`, `ALT-Nuc`) %>% 
+  summarise(Status = paste(paste0('Status=',paste(unique(Status), collapse='__'))),
+            Source = paste(paste0('Source=',paste(unique(Source), collapse='__')))) %>% 
+  mutate(INFO = paste(Status, Source, sep=';')) %>% 
+  filter(!grepl('__', Status)) %>%   # remove conflicting
+  ungroup()
 ```
-  
+
+Build vcf
+```{r}
+data_path <- '/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/data/grimm/'
+write('##fileformat=VCFv4.2', file=paste0(data_path,'grimm.vcf'))
+write('##source=Grimm', file=paste0(data_path,'grimm.vcf'), append = T)
+write('##INFO=<ID=Status,Number=1,Type=String,Description=\"Grimm et al pathogenic classification\">', file=paste0(data_path,'grimm.vcf'), append = T)
+write('##INFO=<ID=Source,Number=1,Type=String,Description=\"Grimm et al variants from five sources\">', file=paste0(data_path,'grimm.vcf'), append = T)
+write('##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">',file=paste0(data_path,'grimm.vcf'), append = T)
+write('#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tFAUX', file=paste0(data_path,'grimm.vcf'), append = T)
+write_tsv(grimm_data_collapse %>% filter(!is.na(CHR)) %>% mutate(EMPTY='.', EMPTY1='.', EMPTY2='.', GT='GT', HET='0/1') %>% select(CHR, `Nuc-Pos`, EMPTY, `REF-Nuc`, `ALT-Nuc`, EMPTY1, EMPTY2, INFO, GT, HET) %>% arrange(CHR, `Nuc-Pos`), path=paste0(data_path,'grimm.vcf'), append = T)
+system(command = paste0('bgzip -f ', file=paste0(data_path,'grimm.vcf')))
+system(command = paste0('tabix -p vcf ', file=paste0(data_path,'grimm.vcf.gz')))
+```
+
+
+# Next
+Annotate vcf with `sbatch ~/git/variant_prioritization/Snakemake.wrapper.sh ~/git/eye_var_Pathogenicity/config_variant_prioritization__grimm.yaml`
+
+# Pull variants with gemini
+`time gemini query --header -q "SELECT * from variants" grimm.PED_faux.gemini.db | bgzip > grimm.gemini.tsv.gz`
+
+Prep data
+```{r}
+library(data.table)
+grimm_raw <- fread('gzcat /Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/data/grimm/grimm.gemini.tsv.gz')
+all_processed <- grimm_raw %>% 
+  separate(gene_eyediseaseclass, c('RDGene','DiseaseClass'), sep='_') %>%  #split off RD disease type
+  select(-RDGene) %>% 
+  mutate(Status = factor(status,levels=c('Pathogenic','NotPathogenic')),
+         DiseaseClass = factor(DiseaseClass, levels=c('-1','Albinism','Albinism,Albinism','Developmental','RD','RD,Developmental','Stargardt,RD')),
+         pos_id=paste0(chrom, ':', end, '_', ref, '_', alt),
+         impact_severity = case_when(impact_severity == 'HIGH' ~ 3, # convert to integer 
+                                     impact_severity == 'MED' ~ 2, 
+                                     TRUE ~ 1),
+         genesplicer = case_when(genesplicer == "" ~ 'No',
+                                 grepl('^gain', genesplicer) ~ 'Gain',
+                                 grepl('^loss', genesplicer) ~ 'Loss',
+                                 grepl('^diff', genesplicer) ~ 'Diff',
+                                 TRUE ~ 'Else')) %>% 
+  mutate_at(vars(matches('ac_|an_|^n_')), funs(as.integer(.))) %>% # convert columns with ac_|whatever to integer (ac is allele count)
+  mutate_at(vars(matches('af_|dann|revel|mpc|gerp|polyphen_score|sift_score|fitcons_float|gerp_elements|^adj|_z$|^pli$|^pnull$|precessive|^phylop|linsight|_rankscore$|ccr_pct_v1|linsight')), funs(as.numeric(.))) %>%  # af is allele frequency
+  select(pos_id, Status, DiseaseClass, is_exonic, is_coding, is_lof, is_splicing, impact_severity, polyphen_score, sift_score, dann, gerp_elements, DiseaseClass, mpc, revel, max_aaf_all, gno_ac_afr, gno_ac_eas, gno_ac_all, gno_ac_popmax, ac_exac_sas, ac_exac_fin, aaf_1kg_all_float, aaf_esp_all, ac_exac_all, ac_exac_amr, ac_exac_oth, gno_af_all, gno_an_popmax, an_exac_all, af_exac_all, fitcons_float, linsight, lof_z:precessive, phylop_100way, grantham, cadd_phred, contains("_rankscore"), ccr_pct_v1, genesplicer, spliceregion) %>% 
+  filter(max_aaf_all < 0.01) %>% 
+  unique() # remove any common variants
+
+# fill missing with -1
+all_processed[is.na(all_processed)] <- -1
+
+
+grimm_ML_set <- all_processed 
+grimm_orig <- grimm_raw
+```
+
+# save data
+```{r}
+unifun <- list()
+unifun$unifun_orig  <- unifun_orig
+unifun$unifun_ML_set <- unifun_ML_set 
+
+output_file <- '/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/unifun_ML.Rdata'
+if(!file.exists(output_file)){
+  save(unifun, file = output_file)
+}
+```
