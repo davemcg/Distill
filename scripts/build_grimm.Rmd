@@ -105,12 +105,12 @@ grimm_orig <- grimm_raw
 
 # save data
 ```{r}
-unifun <- list()
-unifun$unifun_orig  <- unifun_orig
-unifun$unifun_ML_set <- unifun_ML_set 
+grimm <- list()
+grimm$grimm_orig  <- grimm_orig
+grimm$grimm_ML_set <- grimm_ML_set 
 
-output_file <- '/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/unifun_ML.Rdata'
+output_file <- '/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/grimm_ML.Rdata'
 if(!file.exists(output_file)){
-  save(unifun, file = output_file)
+  save(grimm, file = output_file)
 }
 ```
