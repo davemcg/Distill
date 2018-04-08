@@ -6,12 +6,12 @@ output: html_notebook
 From scripts/build_models.R run on biowulf2
 ```{r}
 load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/model_data.Rdata')
-load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/VPaC_RF__5mtry.Rdata')
+load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/VPaC_6mtry_RF.Rdata')
 load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/OVPaC_RF.Rdata')
 # ogvfb cohort
 load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/ogvfb_exome_cohort.Rdata')
-# unifun
-load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/unifun_ML.Rdata')
+# grimm
+load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/grimm_ML.Rdata')
 ```
 
 
@@ -19,7 +19,8 @@ load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/unif
 ```{r}
 library(tidyverse)
 library(caret)
-
+library(ModelMetrics)
+library(randomForest)
 # confusion matrix maker for built models
 cm_maker <- function(predictor = 'cadd_phred', data, cutoff=0.5, mode = 'prec_recall', model='no') {
   if (model=='yes'){
@@ -27,34 +28,24 @@ cm_maker <- function(predictor = 'cadd_phred', data, cutoff=0.5, mode = 'prec_re
     new_predictions <- predict(predictor, data, type='prob') %>% data.frame() %>% 
       mutate(Answers = data$Status, Prediction = case_when(Pathogenic > cutoff ~ 'Pathogenic', TRUE ~ 'NotPathogenic'))
     new_predictions <- new_predictions %>% mutate(preds = case_when(Prediction == 'Pathogenic' ~ 1,
-                                                TRUE ~ 0),
-                              actuals = case_when(Answers == 'Pathogenic' ~ 1,
-                                                  TRUE ~ 0))
-    out <- confusionMatrix(data = new_predictions$Prediction, reference = new_predictions$Answers, mode= mode)
-    print(mcc(new_predictions$preds, new_predictions$actuals))
+                                                                    TRUE ~ 0),
+                                                  actuals = case_when(Answers == 'Pathogenic' ~ 1,
+                                                                      TRUE ~ 0))
+    out <- caret::confusionMatrix(data = new_predictions$Prediction, reference = new_predictions$Answers, mode= mode)
+    print(mcc(new_predictions$preds, new_predictions$actuals, cutoff=cutoff))
   } else {
     print("Running in predictor is a precomputed column in data mode")
     new_predictions <- data 
     new_predictions$Prediction <- 'NotPathogenic'
     new_predictions[(new_predictions[,predictor] > cutoff), 'Prediction'] <- "Pathogenic"
     new_predictions <- new_predictions %>% mutate(preds = case_when(Prediction == 'Pathogenic' ~ 1,
-                                                TRUE ~ 0),
-                              actuals = case_when(Status == 'Pathogenic' ~ 1,
-                                                  TRUE ~ 0))
-    out <- confusionMatrix(data = new_predictions$Prediction, reference = new_predictions$Status, mode= mode)
-    print(mcc(new_predictions$preds, new_predictions$actuals))
+                                                                    TRUE ~ 0),
+                                                  actuals = case_when(Status == 'Pathogenic' ~ 1,
+                                                                      TRUE ~ 0))
+    out <- caret::confusionMatrix(data = new_predictions$Prediction, reference = new_predictions$Status, mode= mode)
+    print(mcc(new_predictions$preds, new_predictions$actuals, cutoff=cutoff))
   }
   out
-}
-
-
-# confusion matrix maker for precomputed scores like cadd, revel, etc
-cm_maker_values <- function(data, predictor='revel', cutoff=0.5, mode = 'prec_recall') {
-  new_predictions <- data 
-  new_predictions$Prediction <- 'NotPathogenic'
-  new_predictions[(new_predictions[,predictor] > cutoff), 'Prediction'] <- "Pathogenic"
-  out <- confusionMatrix(data = new_predictions$Prediction, reference = new_predictions$Status, mode= mode)
-  return(out)
 }
 
 
@@ -97,12 +88,20 @@ library(PRROC)
 library(cowplot)
 
 # precision recall AUC
-aucroc_maker <- function(model, data, cutoff=0.5) {
-  new_predictions <- predict(model, data, type = 'prob') %>% data.frame() %>% 
-    mutate(Answers = data$Status, Prediction = case_when(Pathogenic > cutoff ~ 'Pathogenic', TRUE ~ 'NotPathogenic'))
-  pr.curve(scores.class0 = new_predictions %>% filter(Answers=='Pathogenic') %>% pull(Pathogenic),
-           scores.class1 = new_predictions %>% filter(Answers=='NotPathogenic') %>% pull(Pathogenic),
-           curve = T)
+aucroc_maker <- function(predictor, data, cutoff=0.5) {
+  if (class(predictor)=='character'){
+      predictor = enquo(predictor)
+    pr.curve(scores.class0 = data %>% filter(Status=='Pathogenic') %>% pull(!!predictor),
+             scores.class1 = data %>% filter(Status=='NotPathogenic') %>% pull(!!predictor),
+             curve = T)
+  }
+  else {
+    new_predictions <- predict(predictor, data, type = 'prob') %>% data.frame() %>% 
+      mutate(Answers = data$Status, Prediction = case_when(Pathogenic > cutoff ~ 'Pathogenic', TRUE ~ 'NotPathogenic'))
+    pr.curve(scores.class0 = new_predictions %>% filter(Answers=='Pathogenic') %>% pull(Pathogenic),
+             scores.class1 = new_predictions %>% filter(Answers=='NotPathogenic') %>% pull(Pathogenic),
+             curve = T)
+  }
 }
 
 # ROC AUC
@@ -120,9 +119,9 @@ roc_maker <- function(model, data, cutoff=0.5) {
 model_names <- list(OVPaC=OVPaC,VPaC=VPaC)#best_models_noDC
 
 aucroc_data <- data.frame()
-for (i in names(model_names)){
+for (i in c(VPaC, 'revel', 'cadd_phred')){
   #print(model_run[[i]]$method)
-  aucroc <- aucroc_maker(model_names[[i]], model_data$ML_set__other_TT$test_set)
+  aucroc <- aucroc_maker(i, model_data$ML_set__other_TT$test_set)
   out <- aucroc$curve[,1:2] %>% data.frame()
   colnames(out) <- c('Recall','Precision')
   out$AUC <- aucroc$auc.integral
