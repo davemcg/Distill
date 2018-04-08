@@ -8,10 +8,10 @@ output: html_notebook
 library(data.table)
 library(tidyverse)
 library(here)
-data_path <- '/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/'
+data_path <- '/Volumes/data/clinvar/projects/nei/mcgaughey/eye_var_Pathogenicity/'
 
 #clinvar_single <- fread('gzcat ~/git/clinvar/output/b37/single/clinvar_alleles.single.b37.tsv.gz')
-clinvar_single <- fread(paste('gzcat', here('processed_data/clinvar_alleles.single.b37.tsv.gz')))
+clinvar_single <- fread(paste('gzcat', here('processed_data/clinvar/clinvar_alleles.single.b37.tsv.gz')))
 ```
 
 # ID RD specific pathogenic variants
@@ -24,14 +24,18 @@ path_eye <- clinvar_single %>%
   mutate(ID='.', QUAL='.', FILTER='.', INFO='STATUS=PATHOGENIC_EYE', FORMAT='GT', FAUX='0/1')
 dim(path_eye)
 ```
-# All pathogenic, marking ones with over 2 starts as high quality
+# All pathogenic, marking ones with over 1 stars as high quality
 ```{r}
+set.seed(234)
 path_all <- clinvar_single %>% 
   filter(pathogenic > 0 | likely_pathogenic > 0) %>% 
   filter(conflicted=='0', gold_stars > 0) %>% 
   mutate(ID='.', QUAL='.', FILTER='.', INFO='STATUS=PATHOGENIC_OTHER', FORMAT='GT', FAUX='0/1') %>% 
-  mutate(INFO = case_when(gold_stars > 2 ~ gsub('PATHOGENIC_OTHER','PATHOGENIC_OTHER_HC', INFO),
+  group_by(symbol) %>% do(head(., 100)) %>% ungroup() %>%  # do not allow more than 100 variants per gene
+  mutate(INFO = case_when(gold_stars > 1 ~ gsub('PATHOGENIC_OTHER','PATHOGENIC_OTHER_HC', INFO),
                           TRUE ~ INFO))
+path_all <- rbind(path_all, clinvar_single %>% filter(!molecular_consequence %in% path_all$molecular_consequence, pathogenic > 0 | likely_pathogenic > 0, conflicted=='0', gold_stars > 0) %>% mutate(ID='.', QUAL='.', FILTER='.', INFO='STATUS=PATHOGENIC_OTHER', FORMAT='GT', FAUX='0/1') )
+
 dim(path_all)
 
 ```
@@ -67,14 +71,14 @@ dim(out)
 
 # Write vcf
 ```{r}
-write('##fileformat=VCFv4.2', file=paste0(data_path,'data/clinvar_RD.vcf'))
-write('##source=ClinVar', file=paste0(data_path,'data/clinvar_RD.vcf'), append = T)
-write('##INFO=<ID=STATUS,Number=1,Type=String,Description=\"Non-conflicting RD pathogenic or benign in ClinVar\">', file=paste0(data_path,'data/clinvar_RD.vcf'), append = T)
-write('##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">',file=paste0(data_path,'data/clinvar_RD.vcf'), append = T)
-write('#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tFAUX', file=paste0(data_path,'data/clinvar_RD.vcf'), append = T)
-write_tsv(out %>% mutate(pos=as.integer(pos)) %>% select(chrom, pos, ID, ref, alt, QUAL, FILTER, INFO, FORMAT, FAUX) %>% arrange(chrom, pos), path=paste0(data_path,'data/clinvar_RD.vcf'), append = T)
-system(command = paste0('bgzip -f ', file=paste0(data_path,'data/clinvar_RD.vcf')))
-system(command = paste0('tabix -p vcf ', file=paste0(data_path,'data/clinvar_RD.vcf.gz')))
+write('##fileformat=VCFv4.2', file=paste0(data_path,'data/clinvar/clinvar_RD.vcf'))
+write('##source=ClinVar', file=paste0(data_path,'data/clinvar/clinvar_RD.vcf'), append = T)
+write('##INFO=<ID=STATUS,Number=1,Type=String,Description=\"Non-conflicting RD pathogenic or benign in ClinVar\">', file=paste0(data_path,'data/clinvar/clinvar_RD.vcf'), append = T)
+write('##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">',file=paste0(data_path,'data/clinvar/clinvar_RD.vcf'), append = T)
+write('#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tFAUX', file=paste0(data_path,'data/clinvar/clinvar_RD.vcf'), append = T)
+write_tsv(out %>% mutate(pos=as.integer(pos)) %>% select(chrom, pos, ID, ref, alt, QUAL, FILTER, INFO, FORMAT, FAUX) %>% arrange(chrom, pos), path=paste0(data_path,'data/clinvar/clinvar_RD.vcf'), append = T)
+system(command = paste0('bgzip -f ', file=paste0(data_path,'data/clinvar/clinvar_RD.vcf')))
+system(command = paste0('tabix -p vcf ', file=paste0(data_path,'data/clinvar/clinvar_RD.vcf.gz')))
 ```
 
 # Next
@@ -85,5 +89,5 @@ Annotate vcf with `sbatch ~/git/variant_prioritization/Snakemake.wrapper.sh ~/gi
 
 # Load in clinvar.gemini.tsv.gz
 ```{r}
-clinvar_gemini <- fread(paste0('gzcat ', paste0(data_path, 'data/clinvar.gemini.tsv.gz')))
+clinvar_gemini <- fread(paste0('gzcat ', paste0(data_path, 'data/clinvar/clinvar.gemini.tsv.gz')))
 ```
