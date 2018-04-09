@@ -63,8 +63,8 @@ all <- rbind(model_data$ML_set__general_TT$train_set %>% dplyr::select(one_of(us
              model_data$ML_set__general_TT$test_set %>% dplyr::select(one_of(useful_cols)) %>%mutate(DataSet = 'VPaC Test Set'),
              model_data$ML_set__eye_TT$train_set %>% dplyr::select(one_of(useful_cols)) %>%mutate(DataSet = 'OVPaC Train Set'),
              model_data$ML_set__eye_TT$test_set %>% dplyr::select(one_of(useful_cols)) %>%mutate(DataSet = 'OVPaC Test Set'),
-             model_data$ML_set__other_TT$train_set %>% dplyr::select(one_of(useful_cols)) %>%mutate(DataSet = 'Remainders'),
-             model_data$ML_set__other_TT$test %>% dplyr::select(one_of(useful_cols)) %>% mutate(DataSet = 'ClinVar nonHC Pathogenic and remaining gnomAD'),
+             model_data$ML_set__other_TT$train_set %>% dplyr::select(one_of(useful_cols)) %>%mutate(DataSet = 'VPaC ClinVar LC'),
+             model_data$ML_set__other_TT$test %>% dplyr::select(one_of(useful_cols)) %>% mutate(DataSet = 'VPaC ClinVar LC'),
              grimm$grimm_ML_set %>% 
                inner_join(., grimm$grimm_orig %>% mutate(pos_id=paste0(chrom, ':', end, '_', ref, '_', alt)) %>% 
                             dplyr::select(pos_id, source) %>% 
@@ -96,9 +96,9 @@ all$VPaC <-predict(VPaC, all, type='prob')[,1]
 ```
 
 # Correlation of predictors
-```{r, fig.width=6, fig.height=5}
+## VPaC
+```{r, fig.width=6, fig.height=4}
 library(superheat)
-library(randomForest)
 
 predictors <- c('is_lof','impact_severity','mis_z','ccr_pct_v1','cadd_phred','phylop_100way','n_mis','revel','fitcons_float','precessive','n_lof','m_cap_rankscore','dann','vest3_rankscore','n_syn','pnull','pli','lof_z','fathmm_mkl_coding_rankscore','an_exac_all','eigen_pc_raw_rankscore','gerp_elements','mutationassessor_score_rankscore','mpc','metasvm_rankscore','polyphen_score','metalr_rankscore','lrt_converted_rankscore','genocanyon_score_rankscore','mutationtaster_converted_rankscore','gno_an_popmax','grantham','max_aaf_all','ac_exac_all','fathmm_converted_rankscore','aaf_esp_all','linsight', 'sift_score','ac_exac_sas')
 
@@ -111,6 +111,19 @@ superheat(cor(all %>% filter(DataSet=='OVPaC Test Set') %>% select(one_of(predic
           left.label.text.alignment = 'right', 
           left.label.text.size = 4, 
           left.label.size = 0.5)
+```
+
+## Grimm
+```{r, fig.width=6, fig.height=4}
+superheat(cor(all %>% filter(grepl('Grimm', DataSet)) %>% select(one_of(predictors, 'OVPaC', 'VPaC'))), 
+          pretty.order.rows = T, 
+          pretty.order.cols = T, 
+          left.label = 'variable', 
+          force.left.label=T, 
+          bottom.label = 'none', 
+          left.label.text.alignment = 'right', 
+          left.label.text.size = 4, 
+          left.label.size = 0.4)
 ```
 
 # AUC-PR AUC-ROC Calculation Functions
@@ -185,15 +198,15 @@ for (i in c('OVPaC', 'VPaC', 'revel', 'cadd_phred', 'fitcons_float', 'metalr_ran
 ```
 ## Table Data
 ```{r}
-pr_data %>% dplyr::select(AUC, Model, DataSet) %>% filter(grepl('Grimm|ClinVar|Test|UniFun', DataSet)) %>% unique() %>% mutate(AUC=round(AUC,2)) %>% spread(Model, AUC)
+pr_data %>% dplyr::select(AUC, Model, DataSet) %>% filter(grepl('Grimm|ClinVar|Test|UniFun', DataSet)) %>% unique() %>% mutate(AUC=round(AUC,2)) %>% spread(Model, AUC) %>% DT::datatable()
 
-roc_data %>% dplyr::select(AUC, Model, DataSet) %>% filter(grepl('Grimm|ClinVar|Test|UniFun', DataSet)) %>% unique() %>% mutate(AUC=round(AUC,2)) %>% spread(Model, AUC)
+roc_data %>% dplyr::select(AUC, Model, DataSet) %>% filter(grepl('Grimm|ClinVar|Test|UniFun', DataSet)) %>% unique() %>% mutate(AUC=round(AUC,2)) %>% spread(Model, AUC) %>% DT::datatable()
 ```
 ## Dot plots of AUC
-```{r}
-pr_data %>% dplyr::select(AUC, Model, DataSet) %>% unique() %>% ggplot(aes(x=Model, y=AUC)) + geom_bar(stat = 'identity') + coord_cartesian(ylim=c(0,1)) + facet_wrap(~DataSet) + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + ggtitle('AUC PR')
+```{r, fig.height=4}
+pr_data %>% dplyr::select(AUC, Model, DataSet) %>% filter(grepl('Grimm|ClinVar|Test|UniFun', DataSet)) %>% unique() %>% ggplot(aes(x=Model, y=AUC)) + geom_point(stat = 'identity') + coord_cartesian(ylim=c(0,1)) + facet_wrap(~DataSet) + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + ggtitle('Precision Recall')
 
-roc_data %>% dplyr::select(AUC, Model, DataSet) %>% unique() %>% ggplot(aes(x=Model, y=AUC)) + geom_bar(stat = 'identity') + coord_cartesian(ylim=c(0,1)) + facet_wrap(~DataSet) + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + ggtitle('AUC ROC')
+roc_data %>% dplyr::select(AUC, Model, DataSet) %>% filter(grepl('Grimm|ClinVar|Test|UniFun', DataSet)) %>% unique()%>% ggplot(aes(x=Model, y=AUC)) + geom_point(stat = 'identity') + coord_cartesian(ylim=c(0,1)) + facet_wrap(~DataSet) + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + ggtitle('Receiver Operating Characteristic')
 ```
 ## AUC Plots
 ```{r}
