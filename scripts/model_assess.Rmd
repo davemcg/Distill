@@ -22,8 +22,8 @@ library(caret)
 library(ModelMetrics)
 library(randomForest)
 # confusion matrix maker for built models
-cm_maker <- function(predictor = 'cadd_phred', data, cutoff=0.5, mode = 'prec_recall', model='no') {
-  if (model=='yes'){
+cm_maker <- function(predictor = 'cadd_phred', data, cutoff=0.5, mode = 'prec_recall') {
+  if (class(predictor)!='character'){
     print("Running in predictor is a model mode")
     new_predictions <- predict(predictor, data, type='prob') %>% data.frame() %>% 
       mutate(Answers = data$Status, Prediction = case_when(Pathogenic > cutoff ~ 'Pathogenic', TRUE ~ 'NotPathogenic'))
@@ -49,16 +49,8 @@ cm_maker <- function(predictor = 'cadd_phred', data, cutoff=0.5, mode = 'prec_re
 }
 
 
-
-cm_maker(VPaC, model_data$ML_set__general_dummy_TT$test_set)
-#cm_maker(VPaC, model_data$ML_set__general_dummy_TT$train_set)
-
-cm_maker(OVPaC, model_data$ML_set__eye_TT$test_set)
-#cm_maker(OVPaC, model_data$ML_set__eye_TT$train_set)
-for (i in model_names){
-  print(i)
-  print(cm_maker(model_run[[i]], model_run$validate_set))
-}
+cm_maker('revel', grimm$grimm_ML_set, cutoff=0.5)
+cm_maker(VPaC, grimm$grimm_ML_set, cutoff=0.01)
 ```
 
 # Best predictors (correlation)
@@ -106,17 +98,22 @@ aucroc_maker <- function(predictor, data, cutoff=0.5) {
 
 # ROC AUC
 roc_maker <- function(model, data, cutoff=0.5) {
-  new_predictions <- predict(model, data, type = 'prob') %>%  data.frame() %>% 
-    mutate(Answers = data$Status, Prediction = case_when(Pathogenic > cutoff ~ 'Pathogenic', TRUE ~ 'NotPathogenic'))
-  roc.curve(scores.class0 = new_predictions %>% filter(Answers=='Pathogenic') %>% pull(Pathogenic),
-            scores.class1 = new_predictions %>% filter(Answers=='NotPathogenic') %>% pull(Pathogenic),
-            curve = T)
+  if (class(predictor)=='character'){
+      predictor = enquo(predictor)
+    roc.curve(scores.class0 = data %>% filter(Status=='Pathogenic') %>% pull(!!predictor),
+             scores.class1 = data %>% filter(Status=='NotPathogenic') %>% pull(!!predictor),
+             curve = T)
+  }
+  else {
+    new_predictions <- predict(predictor, data, type = 'prob') %>% data.frame() %>% 
+      mutate(Answers = data$Status, Prediction = case_when(Pathogenic > cutoff ~ 'Pathogenic', TRUE ~ 'NotPathogenic'))
+    roc.curve(scores.class0 = new_predictions %>% filter(Answers=='Pathogenic') %>% pull(Pathogenic),
+             scores.class1 = new_predictions %>% filter(Answers=='NotPathogenic') %>% pull(Pathogenic),
+             curve = T)
+  }
 }
 
-# best_models_noDC <- c('rfFit_noDC','avNNetFit_noDC','bglmFit_noDC')
-# best_models <- c('rfFit','avNNetFit','bglmFit')
-
-model_names <- list(OVPaC=OVPaC,VPaC=VPaC)#best_models_noDC
+eval <- c(VPaC, model_da)
 
 aucroc_data <- data.frame()
 for (i in c(VPaC, 'revel', 'cadd_phred')){
@@ -127,6 +124,7 @@ for (i in c(VPaC, 'revel', 'cadd_phred')){
   out$AUC <- aucroc$auc.integral
   #out$model <- i
   out$'Model (AUC)' <- paste0(i, ' (',round(aucroc$auc.integral,2),')' )
+  out$Dataset <- 'ML_set__other'
   aucroc_data <- rbind(aucroc_data, out)
 }
 
