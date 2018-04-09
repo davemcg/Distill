@@ -5,7 +5,23 @@ output: html_notebook
 
 The Evaluation of Tools Used to Predict the Impact ofMissense Variants Is Hindered by Two Types of Circularity
 http://structure.bmc.lu.se/VariBench/GrimmDatasets.php
-Five data-sets here - the manuscrdipt discusses the sources for each of these
+Five data-sets here - the manuscript discusses the sources for each of these
+
+
+HumVar	Mendelian disease variant identification	“All disease‐causing mutations from UniProtKB”	“Common human nsSNPs (MAF > 1%) without annotated involvement in disease…treated as nondamaging”a
+
+
+ExoVar	“Dataset composed of pathogenic nsSNVs and nearly nonpathogenic rare nsSNVs”	“5,340 alleles with known effects on the molecular function causing human Mendelian diseases from the UniProt database…positive control variants.” “Pathogenic nsSNVs”b	“4,752 rare (alternative/derived allele frequency <1%) nsSNVs with at least one homozygous genotype for the alternative/derived allele in the 1000 Genomes Project…negative control variants.” “Other rare variants”b
+
+
+VariBench	“Variation datasets affecting protein tolerance”	“The pathogenic dataset of 19,335 missense mutations obtained from the PhenCode database downloaded in June 2009), IDbases and from 18 individual LSDBs. For this dataset, the variations along with the variant position mappings to RefSeq protein (> = 99% match), RefSeq mRNA, and RefSeq genomic sequences are available for download.”c	“This is the neutral dataset or nonsynonymous coding SNP dataset comprising 21,170 human nonsynonymous coding SNPs with allele frequency 40.01 and chromosome sample count 449 from the dbSNP database build 131. This dataset was filtered for the disease‐associated SNPs. The variant position mapping for this dataset was extracted from dbSNP database.”c
+
+
+predictSNP	“Benchmark dataset used for the evaluation of…prediction tools and training of consensus classifier PredictSNP”	Disease‐causing and deleterious variants from SwissProt, HGMD, HumVar, Humsavar, dbSNP, PhenCode, IDbases, and 16 individual locus‐specific databases.	Neutral variants from SwissProt, HGMD, HumVar, Humsavar, dbSNP, PhenCode, IDbases, and 16 individual locus‐specific databases.
+
+
+SwissVar	“Comprehensive collection of single amino acid polymorphisms (SAPs) and diseases in the UniProtKB/Swiss‐Prot knowledgebase”	“A variant is classified as disease when it is found in patients and disease association is reported in literature. However, this classification is not a definitive assessment of pathogenicity”f	“A variant is classified as polymorphism if no disease association has been reported”f
+
 
 # On local computer
 ```{bash}
