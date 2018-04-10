@@ -119,7 +119,8 @@ superheat(cor(all %>% filter(grepl('Grimm', DataSet)) %>% select(one_of(predicto
           pretty.order.rows = T, 
           pretty.order.cols = T, 
           left.label = 'variable', 
-          force.left.label=T, 
+          force.left.label=T, row.dendrogram = T,
+            
           bottom.label = 'none', 
           left.label.text.alignment = 'right', 
           left.label.text.size = 4, 
@@ -230,47 +231,29 @@ roc_plot <- roc_data %>%   #filter(model %in% best_models_noDC) %>%
 cowplot::plot_grid(roc_plot, pr_plot, ncol = 2)
 ```
 
-Non ocular pathogenic
+# OGVFB Exomes
 ```{r}
-model_names <- c('rfFit_noDC', 'bglmFit_noDC', 'caddFit', 'dannFit', 'revelFit')
-aucroc_data <- data.frame()
-for (i in model_names){
-  print(model_run[[i]]$method)
-  aucroc <- aucroc_maker(model_run[[i]], model_run$ML_set_dummy__secondary)
-  out <- aucroc$curve[,1:2] %>% data.frame()
-  colnames(out) <- c('Recall','Precision')
-  out$AUC <- aucroc$auc.integral
-  out$model <- i
-  out$'Model (AUC)' <- paste0(i, ' (',round(aucroc$auc.integral,2),')' )
-  aucroc_data <- rbind(aucroc_data, out)
-}
+ogvfb$ogvfb_ML_set$VPaC <-predict(VPaC, ogvfb$ogvfb_ML_set, type='prob')[,1]
+ogvfb$ogvfb_ML_set$DiseaseClass <- factor(ogvfb$ogvfb_ML_set$DiseaseClass, levels=c('-1','Albinism','Albinism,Albinism','Developmental','RD','RD,Developmental','Stargardt,RD'))
+ogvfb$ogvfb_ML_set$OVPaC <-predict(OVPaC, ogvfb$ogvfb_ML_set, type='prob')[,1]
 
-# roc_data <- data.frame()
-# for (i in model_names){
-#   print(model_run_core[[i]]$method)
-#   roc <- roc_maker(model_run_core[[i]], model_run_core$ML_set_dummy__secondary)
-#   out <- roc$curve[,1:2] %>% data.frame()
-#   colnames(out) <- c('FPR','Sensitivity')
-#   out$model <- i
-#   out$AUC <- roc$auc
-#   out$'Model (AUC)' <- paste0(i, ' (',round(roc$auc, 2),')' )
-#   roc_data <- rbind(roc_data, out)
-# }
+ogvfb$ogvfb_ML_set %>% filter(OVPaC > 0.5) %>% 
+  left_join(., ogvfb$gemini_ogvfb_candidates %>%  
+              mutate(pos_id=paste0(chrom, ':', end, '_', ref, '_', alt), hgvsc=gsub('.*:','',hgvsc), hgvsp=gsub('.*:','',hgvsp)) %>% 
+              select(pos_id, contains('hgvs'), contains('family'), gene, impact_so, num_het, num_hom_alt)) %>% 
+  select(pos_id, gene, hgvsc, hgvsp, impact_so, num_het, num_hom_alt, ccr_pct_v1, cadd_phred, fitcons_float, revel, contains('family')) %>% 
+  mutate(family_genotypes = gsub(',','<br/>', family_genotypes), family_members = gsub(',','<br/>', family_members)) %>% 
+  DT::datatable(escape = FALSE)
 
-pr <- aucroc_data %>% 
-  #filter(model %in% best_models_noDC) %>% 
-  ggplot(aes(x=Recall, y=Precision, colour=`Model (AUC)`)) + geom_path() + theme_minimal() + ggtitle('Precision Recall Curve') + ggsci::scale_colour_aaas()
-# roc <- roc_data %>% 
-#   # filter(model %in% best_models_noDC) %>% 
-#   ggplot(aes(x=FPR, y=Sensitivity, colour=`Model (AUC)`)) + geom_path() + theme_minimal()  + ggtitle('ROC')+ ggsci::scale_colour_aaas()
 
-# pr <- aucroc_data %>% ggplot(aes(x=Recall, y=Precision)) + geom_path() + theme_minimal() + ggtitle('Precision Recall Curve')
-# roc <- roc_data %>% ggplot(aes(x=FPR, y=Sensitivity)) + geom_path() + theme_minimal()  + ggtitle('ROC')
-
-pr
+ogvfb$ogvfb_ML_set %>% filter(VPaC > 0.5) %>% 
+  left_join(., ogvfb$gemini_ogvfb_candidates %>%  
+              mutate(pos_id=paste0(chrom, ':', end, '_', ref, '_', alt), hgvsc=gsub('.*:','',hgvsc), hgvsp=gsub('.*:','',hgvsp)) %>% 
+              select(pos_id, contains('hgvs'), contains('family'), gene, impact_so, num_het, num_hom_alt)) %>% 
+  select(pos_id, gene, hgvsc, hgvsp, impact_so, num_het, num_hom_alt, ccr_pct_v1, cadd_phred, fitcons_float, revel, contains('family')) %>% 
+  mutate(family_genotypes = gsub(',','<br/>', family_genotypes), family_members = gsub(',','<br/>', family_members)) %>% 
+  DT::datatable(escape = FALSE)
 ```
-
-
 # Dive into fails
 First load metadata for UK10K and full dataset
 ```{r}
