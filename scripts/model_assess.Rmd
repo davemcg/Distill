@@ -120,7 +120,7 @@ superheat(cor(all %>% filter(grepl('Grimm', DataSet)) %>% select(one_of(predicto
           pretty.order.cols = T, 
           left.label = 'variable', 
           force.left.label=T, row.dendrogram = T,
-            
+          
           bottom.label = 'none', 
           left.label.text.alignment = 'right', 
           left.label.text.size = 4, 
@@ -210,7 +210,7 @@ pr_data %>% dplyr::select(AUC, Model, DataSet) %>% filter(grepl('Grimm|ClinVar|T
 roc_data %>% dplyr::select(AUC, Model, DataSet) %>% filter(grepl('Grimm|ClinVar|Test|UniFun', DataSet)) %>% unique()%>% ggplot(aes(x=Model, y=AUC)) + geom_point(stat = 'identity') + coord_cartesian(ylim=c(0,1)) + facet_wrap(~DataSet) + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + ggtitle('Receiver Operating Characteristic')
 ```
 ## AUC Plots
-```{r}
+```{r, fig.height=6}
 pr_plot <- pr_data %>% 
   #filter(model %in% best_models_noDC) %>% 
   ggplot(aes(x=Recall, y=Precision, colour=Model)) + 
@@ -237,22 +237,28 @@ ogvfb$ogvfb_ML_set$VPaC <-predict(VPaC, ogvfb$ogvfb_ML_set, type='prob')[,1]
 ogvfb$ogvfb_ML_set$DiseaseClass <- factor(ogvfb$ogvfb_ML_set$DiseaseClass, levels=c('-1','Albinism','Albinism,Albinism','Developmental','RD','RD,Developmental','Stargardt,RD'))
 ogvfb$ogvfb_ML_set$OVPaC <-predict(OVPaC, ogvfb$ogvfb_ML_set, type='prob')[,1]
 
-ogvfb$ogvfb_ML_set %>% filter(OVPaC > 0.5) %>% 
+ogvfb$ogvfb_ML_set %>% filter(OVPaC > 0.2) %>% 
   left_join(., ogvfb$gemini_ogvfb_candidates %>%  
               mutate(pos_id=paste0(chrom, ':', end, '_', ref, '_', alt), hgvsc=gsub('.*:','',hgvsc), hgvsp=gsub('.*:','',hgvsp)) %>% 
-              select(pos_id, contains('hgvs'), contains('family'), gene, impact_so, num_het, num_hom_alt)) %>% 
-  select(pos_id, gene, hgvsc, hgvsp, impact_so, num_het, num_hom_alt, ccr_pct_v1, cadd_phred, fitcons_float, revel, contains('family')) %>% 
+              select(pos_id, contains('hgvs'), contains('family'), gene, impact_so, num_het, num_hom_alt, filter, hgmd_overlap, clinvar_pathogenic, pubmed)) %>% 
+  filter(num_het < 4, num_hom_alt < 4, filter == 'None') %>% 
+  select(pos_id, gene, hgvsc, hgvsp, impact_so, hgmd_overlap, clinvar_pathogenic, pubmed, VPaC, OVPaC, ccr_pct_v1, gno_an_popmax, cadd_phred, fitcons_float, revel, family_id, family_members, family_genotypes) %>% 
   mutate(family_genotypes = gsub(',','<br/>', family_genotypes), family_members = gsub(',','<br/>', family_members)) %>% 
-  DT::datatable(escape = FALSE)
+  arrange(-OVPaC) %>% 
+  mutate_if(is.numeric, funs(round(.,2))) %>% 
+  DT::datatable(escape = FALSE, rownames = FALSE)
 
 
-ogvfb$ogvfb_ML_set %>% filter(VPaC > 0.5) %>% 
-  left_join(., ogvfb$gemini_ogvfb_candidates %>%  
+ogvfb$ogvfb_ML_set %>% filter(VPaC > 0.3) %>% 
+ left_join(., ogvfb$gemini_ogvfb_candidates %>%  
               mutate(pos_id=paste0(chrom, ':', end, '_', ref, '_', alt), hgvsc=gsub('.*:','',hgvsc), hgvsp=gsub('.*:','',hgvsp)) %>% 
-              select(pos_id, contains('hgvs'), contains('family'), gene, impact_so, num_het, num_hom_alt)) %>% 
-  select(pos_id, gene, hgvsc, hgvsp, impact_so, num_het, num_hom_alt, ccr_pct_v1, cadd_phred, fitcons_float, revel, contains('family')) %>% 
+              select(pos_id, contains('hgvs'), contains('family'), gene, impact_so, num_het, num_hom_alt, filter, hgmd_overlap, clinvar_pathogenic, pubmed)) %>% 
+  filter(num_het < 4, num_hom_alt < 4, filter == 'None') %>% 
+  select(pos_id, gene, hgvsc, hgvsp, impact_so, hgmd_overlap, clinvar_pathogenic, pubmed, VPaC, OVPaC, ccr_pct_v1, gno_an_popmax, cadd_phred, fitcons_float, revel, family_id, family_members, family_genotypes) %>% 
   mutate(family_genotypes = gsub(',','<br/>', family_genotypes), family_members = gsub(',','<br/>', family_members)) %>% 
-  DT::datatable(escape = FALSE)
+  arrange(-VPaC) %>% 
+  mutate_if(is.numeric, funs(round(.,2))) %>% 
+  DT::datatable(escape = FALSE, rownames = FALSE)
 ```
 # Dive into fails
 First load metadata for UK10K and full dataset
