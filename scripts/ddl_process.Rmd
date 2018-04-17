@@ -1,0 +1,57 @@
+---
+title: "DDL NISC Custom Panel 100"
+output: html_notebook
+---
+
+Make gemini db
+```{bash}
+cd /data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/data/ddl_nisc_100_panel
+~/git/variant_prioritization/Snakemake.wrapper.sh ~/git/eye_var_Pathogenicity/config_variant_prioritization__ddl.yaml
+```
+
+Pull variants out of db
+```{bash}
+module load gemini
+time gemini query --header -q "SELECT * from variants" DDL_NISC_targeted_panel.PED_ddl_nisc.gemini.db | bgzip > ddl_nisc.gemini.tsv.gz
+```
+
+Load answers from Rob / Bin
+```{r}
+library(tidyverse)
+panel <- readxl::read_excel('../data/Copy of eG patients NISC NGS tables&figure for final review 04122018.xlsx')
+panel %>% head()
+panel %>% filter(grepl('Path', `Variant Classification`, ignore.case = T)) %>% select(`Sample ID`, Gene, `Genomic location`, Transcript, `transcript change`, `Codon change`)
+path_cdot <- panel %>% filter(grepl('Path', `Variant Classification`, ignore.case = T)) %>% select(`Sample ID`, Gene, `Genomic location`, Transcript, `transcript change`, `Codon change`) %>% pull(`transcript change`)
+```
+
+Load gemini output and prep data
+```{r}
+library(data.table)
+ddl_raw <- fread('gzcat /Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/data/ddl_nisc_100_panel/ddl_nisc.gemini.tsv.gz')
+all_processed <- ddl_raw %>% 
+  separate(gene_eyediseaseclass, c('RDGene','DiseaseClass'), sep='_') %>%  #split off RD disease type
+  select(-RDGene) %>% 
+  mutate(Status = factor(status,levels=c('Pathogenic','NotPathogenic')),
+         DiseaseClass = factor(DiseaseClass, levels=c('-1','Albinism','Albinism,Albinism','Developmental','RD','RD,Developmental','Stargardt,RD')),
+         pos_id=paste0(chrom, ':', end, '_', ref, '_', alt),
+         impact_severity = case_when(impact_severity == 'HIGH' ~ 3, # convert to integer 
+                                     impact_severity == 'MED' ~ 2, 
+                                     TRUE ~ 1),
+         genesplicer = case_when(genesplicer == "" ~ 'No',
+                                 grepl('^gain', genesplicer) ~ 'Gain',
+                                 grepl('^loss', genesplicer) ~ 'Loss',
+                                 grepl('^diff', genesplicer) ~ 'Diff',
+                                 TRUE ~ 'Else')) %>% 
+  mutate_at(vars(matches('ac_|an_|^n_')), funs(as.integer(.))) %>% # convert columns with ac_|whatever to integer (ac is allele count)
+  mutate_at(vars(matches('af_|dann|revel|mpc|gerp|polyphen_score|sift_score|fitcons_float|gerp_elements|^adj|_z$|^pli$|^pnull$|precessive|^phylop|linsight|_rankscore$|ccr_pct_v1|linsight')), funs(as.numeric(.))) %>%  # af is allele frequency
+  select(pos_id, Status, DiseaseClass, is_exonic, is_coding, is_lof, is_splicing, impact_severity, polyphen_score, sift_score, dann, gerp_elements, DiseaseClass, mpc, revel, max_aaf_all, gno_ac_afr, gno_ac_eas, gno_ac_all, gno_ac_popmax, ac_exac_sas, ac_exac_fin, aaf_1kg_all_float, aaf_esp_all, ac_exac_all, ac_exac_amr, ac_exac_oth, gno_af_all, gno_an_popmax, an_exac_all, af_exac_all, fitcons_float, linsight, lof_z:precessive, phylop_100way, grantham, cadd_phred, contains("_rankscore"), ccr_pct_v1, genesplicer, spliceregion) %>% 
+  filter(max_aaf_all < 0.01) %>% 
+  unique() # remove any common variants
+
+# fill missing with -1
+all_processed[is.na(all_processed)] <- -1
+
+
+grimm_ML_set <- all_processed 
+grimm_orig <- grimm_raw
+```
