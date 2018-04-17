@@ -8,10 +8,10 @@ output: html_notebook
 library(data.table)
 library(tidyverse)
 library(here)
-data_path <- '/Volumes/data/clinvar/projects/nei/mcgaughey/eye_var_Pathogenicity/'
+data_path <- '/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/'
 
 #clinvar_single <- fread('gzcat ~/git/clinvar/output/b37/single/clinvar_alleles.single.b37.tsv.gz')
-clinvar_single <- fread(paste('gzcat', here('processed_data/clinvar/clinvar_alleles.single.b37.tsv.gz')))
+clinvar_single <- fread(paste0('gzcat ', data_path, '/data/clinvar/clinvar_alleles.single.b37.tsv.gz'))
 ```
 
 # ID RD specific pathogenic variants
