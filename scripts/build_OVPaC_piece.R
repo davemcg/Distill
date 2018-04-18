@@ -45,16 +45,38 @@ rand_num <- as.integer(paste(sample(0:9, 6, replace=F), collapse = ''))
 set.seed(rand_num)
 
 rfFit_OVPaC <- randomForest(Status ~ ., data=model_data$ML_set__eye_TT$train_set %>% select_(.dots=c('Status',most_imp_predictors)), 
-                            ntree=33,
-                            mtry=7,
+                            ntree=20,
+                            mtry=10,
                             importance = TRUE,
                             norm.votes = FALSE)
 
-rand_name = paste0('OVPaC__7mtry_v2', rand_num)
-assign(rand_name, rfFit_OVPaC)
+rand_name1 = paste0('OVPaC__10mtry_v2', rand_num)
+assign(rand_name1, rfFit_OVPaC)
+
+
+rfFit_OVPaC <- randomForest(Status ~ ., data=model_data$ML_set__eye_TT$train_set %>% select_(.dots=c('Status',most_imp_predictors)), 
+                            ntree=20,
+                            mtry=6,
+                            importance = TRUE,
+                            norm.votes = FALSE)
+
+rand_name2 = paste0('OVPaC__6mtry_v2', rand_num)
+assign(rand_name2, rfFit_OVPaC)
+
+
+rfFit_OVPaC <- randomForest(Status ~ ., data=model_data$ML_set__eye_TT$train_set %>% select_(.dots=c('Status',most_imp_predictors)), 
+                            ntree=20,
+                            mtry=3,
+                            importance = TRUE,
+                            norm.votes = FALSE)
+
+rand_name3 = paste0('OVPaC__3mtry_v2', rand_num)
+assign(rand_name3, rfFit_OVPaC)
 
 
 ##############################
 # SAVE MODEL
 ###############################
-save(list = rand_name, file=paste0('/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/OVPaC_pieces/', rand_name, '.Rdata'))
+save(list = rand_name, file=paste0('/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/OVPaC_pieces/', rand_name1, '.Rdata'))
+save(list = rand_name, file=paste0('/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/OVPaC_pieces/', rand_name2, '.Rdata'))
+save(list = rand_name, file=paste0('/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/OVPaC_pieces/', rand_name3, '.Rdata'))

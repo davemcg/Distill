@@ -34,16 +34,43 @@ rand_num <- as.integer(paste(sample(0:9, 6, replace=F), collapse = ''))
 set.seed(rand_num)
 model_data$ML_set__general_dummy_TT$train_set$Status <- factor(model_data$ML_set__general_dummy_TT$train_set$Status, levels=c('Pathogenic','NotPathogenic'))
 rfFit_VPaC <- randomForest(Status ~ ., data=model_data$ML_set__general_dummy_TT$train_set %>% select_(.dots=c('Status',most_imp_predictors_no_disease_class)), 
-                           ntree=33,
+                           ntree=20,
+                           mtry=10,
+                           importance = TRUE,
+                           norm.votes = FALSE)
+
+rand_name1 = paste0('VPaC__10mtry_v2', rand_num)
+assign(rand_name1, rfFit_VPaC)
+
+rand_num <- as.integer(paste(sample(0:9, 6, replace=F), collapse = ''))
+set.seed(rand_num)
+model_data$ML_set__general_dummy_TT$train_set$Status <- factor(model_data$ML_set__general_dummy_TT$train_set$Status, levels=c('Pathogenic','NotPathogenic'))
+rfFit_VPaC <- randomForest(Status ~ ., data=model_data$ML_set__general_dummy_TT$train_set %>% select_(.dots=c('Status',most_imp_predictors_no_disease_class)), 
+                           ntree=20,
                            mtry=6,
                            importance = TRUE,
                            norm.votes = FALSE)
 
-rand_name = paste0('VPaC__6mtry_v2', rand_num)
-assign(rand_name, rfFit_VPaC)
+rand_name2 = paste0('VPaC__6mtry_v2', rand_num)
+assign(rand_name2, rfFit_VPaC)
+
+rand_num <- as.integer(paste(sample(0:9, 6, replace=F), collapse = ''))
+set.seed(rand_num)
+model_data$ML_set__general_dummy_TT$train_set$Status <- factor(model_data$ML_set__general_dummy_TT$train_set$Status, levels=c('Pathogenic','NotPathogenic'))
+rfFit_VPaC <- randomForest(Status ~ ., data=model_data$ML_set__general_dummy_TT$train_set %>% select_(.dots=c('Status',most_imp_predictors_no_disease_class)), 
+                           ntree=20,
+                           mtry=3,
+                           importance = TRUE,
+                           norm.votes = FALSE)
+
+rand_name3 = paste0('VPaC__3mtry_v2', rand_num)
+assign(rand_name3, rfFit_VPaC)
+
 
 
 ##############################
 # SAVE MODEL
 ###############################
-save(list=rand_name, file=paste0('/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/VPaC_pieces/', rand_name, '.Rdata'))
+save(list=rand_name, file=paste0('/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/VPaC_pieces/', rand_name1, '.Rdata'))
+save(list=rand_name, file=paste0('/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/VPaC_pieces/', rand_name2, '.Rdata'))
+save(list=rand_name, file=paste0('/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/VPaC_pieces/', rand_name3, '.Rdata'))
