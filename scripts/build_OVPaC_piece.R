@@ -46,11 +46,11 @@ set.seed(rand_num)
 
 rfFit_OVPaC <- randomForest(Status ~ ., data=model_data$ML_set__eye_TT$train_set %>% select_(.dots=c('Status',most_imp_predictors)), 
                             ntree=33,
-                            mtry=22,
+                            mtry=7,
                             importance = TRUE,
                             norm.votes = FALSE)
 
-rand_name = paste0('OVPaC__', rand_num)
+rand_name = paste0('OVPaC__7mtry_v2', rand_num)
 assign(rand_name, rfFit_OVPaC)
 
 
