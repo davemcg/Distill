@@ -21,6 +21,7 @@ path_eye <- clinvar_single %>%
   filter(conflicted=='0', gold_stars > 0) %>% 
   filter(grepl('stargardt|retina|leber|usher|cone-rod|rod-cone|macula|retinitis|eye|cornea', all_traits, ignore.case=T) | 
            grepl('stargardt|retina|leber|usher|cone-rod|rod-cone|macula|retinitis|eye|cornea', xrefs, ignore.case=T)) %>% 
+  filter(!grepl('cardio|cancer|carci|lynch', ignore.case = T, all_traits)) %>% 
   mutate(ID='.', QUAL='.', FILTER='.', INFO='STATUS=PATHOGENIC_EYE', FORMAT='GT', FAUX='0/1')
 dim(path_eye)
 ```
@@ -30,6 +31,7 @@ set.seed(234)
 path_all <- clinvar_single %>% 
   filter(pathogenic > 0 | likely_pathogenic > 0) %>% 
   filter(conflicted=='0', gold_stars > 0) %>% 
+  filter(!grepl('cardio|cancer|carci|lynch', ignore.case = T, all_traits)) %>% 
   mutate(ID='.', QUAL='.', FILTER='.', INFO='STATUS=PATHOGENIC_OTHER', FORMAT='GT', FAUX='0/1') %>% 
   group_by(symbol) %>% do(head(., 100)) %>% ungroup() %>%  # do not allow more than 100 variants per gene
   mutate(INFO = case_when(gold_stars > 1 ~ gsub('PATHOGENIC_OTHER','PATHOGENIC_OTHER_HC', INFO),
@@ -45,6 +47,7 @@ dim(path_all)
 benign_eye <-  clinvar_single %>% 
   filter(benign > 0) %>% 
   filter(conflicted=='0') %>% 
+  filter(!grepl('cardio|cancer|carci|lynch', ignore.case = T, all_traits)) %>% 
   filter(grepl('stargardt|retina|leber|usher|cone-rod|rod-cone|macula|retinitis|eye|cornea', all_traits, ignore.case=T) | 
            grepl('stargardt|retina|leber|usher|cone-rod|rod-cone|macula|retinitis|eye|cornea', xrefs, ignore.case=T)) %>% 
   mutate(ID='.', QUAL='.', FILTER='.', INFO='STATUS=BENIGN_EYE', FORMAT='GT', FAUX='0/1')
@@ -57,6 +60,7 @@ dim(benign_eye)
 # All benign
 ```{r}
 benign_all <- clinvar_single %>% 
+  filter(!grepl('cardio|cancer|carci|lynch', ignore.case = T, all_traits)) %>% 
   filter(benign > 0, !variation_id %in% c(benign_eye$variation_id)) %>% 
   filter(conflicted=='0') %>% 
   mutate(ID='.', QUAL='.', FILTER='.', INFO='STATUS=BENIGN', FORMAT='GT', FAUX='0/1')
