@@ -1,0 +1,22 @@
+---
+title: "Model Assesement"
+output: 
+  html_notebook:
+    theme: flatly
+    toc: True
+    float: True
+---
+
+# UK10K solved samples
+
+1. How often is CADD/Revel/etc the first (or top 5, 10)
+
+```{r}
+load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/uk10k_gemini_rare_variants.Rdata')
+
+uk_long <-uk10k_gemini_rare_variants %>% unnest(Samples, .id='Sample')
+
+uk_long %>% group_by(Sample1) %>% mutate(revel=as.numeric(revel)) %>% select(Sample1, Status, chrom, end, ref, alt, impact_so, revel) %>% top_n(1, wt = revel) %>% filter(Status=='Pathogenic') %>% dim()
+```
+
+2. How often is VPaC in the top n? (Just the test set)
