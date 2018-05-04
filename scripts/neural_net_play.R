@@ -5,6 +5,9 @@ most_imp_predictors_no_disease_class <- c('is_lof','impact_severity','mis_z','cc
 library(caret)
 library(ModelMetrics)
 library(randomForest)
+library(tidyverse)
+library(keras)
+library(tensorflow)
 # confusion matrix maker for built models
 cm_maker <- function(predictor = 'cadd_phred', data, cutoff=0.5, mode = 'prec_recall') {
   if (class(predictor)!='character'){
@@ -74,9 +77,9 @@ f1 <- function(y_true, y_pred){
   f1
 }
 ###############
-
-
-
+# multiperceptron
+# doesn't work too well
+###############
 
 library(tidyverse)
 # keras tensorflow deep learning
@@ -84,8 +87,8 @@ library(keras)
 
 
 set.seed(89345)
-train_sub <- model_data$ML_set__eye_dummy_TT$train_set %>% group_by(Status) %>% group_by(Status) %>% sample_n(887) %>% ungroup() %>% select_(.dots=most_imp_predictors_no_disease_class, 'Status')
-test_sub <- model_data$ML_set__eye_dummy_TT$test_set %>% select_(.dots=most_imp_predictors_no_disease_class,'Status')
+train_sub <- model_data$ML_set__general_dummy_TT$train_set %>% group_by(Status) %>% group_by(Status) %>% sample_n(887) %>% ungroup() %>% select_(.dots=most_imp_predictors_no_disease_class, 'Status')
+test_sub <- model_data$ML_set__general_dummy_TT$test_set %>% select_(.dots=most_imp_predictors_no_disease_class,'Status')
 status_train <- train_sub$Status
 status_train01 <- case_when(status_train == 'Pathogenic' ~ 1,
                             TRUE ~ 0)
@@ -125,16 +128,16 @@ history <- model %>% fit(train_data, status_train01, epochs = 25, batch_size=50,
 validation_score <- model %>% evaluate(test_data, status_test01)
 test_score <- model %>% predict(test_data)
 test_score[is.na(test_score)] <- 0
-model_data$ML_set__eye_dummy_TT$test_set$keras <- test_score[,1]
-cm_maker('keras', model_data$ML_set__eye_dummy_TT$test_set, cutoff=0.999)
+model_data$ML_set__general_dummy_TT$test_set$keras <- test_score[,1]
+cm_maker('keras', model_data$ML_set__general_dummy_TT$test_set, cutoff=0.999)
 
 ###############
 # SMOTE 
 ###############
 library(DMwR)
 set.seed(89345)
-train_sub <- model_data$ML_set__eye_dummy_TT$train_set %>% select_(.dots=most_imp_predictors_no_disease_class, 'Status')
-test_sub <- model_data$ML_set__eye_dummy_TT$test_set %>% select_(.dots=most_imp_predictors_no_disease_class,'Status')
+train_sub <- model_data$ML_set__general_dummy_TT$train_set %>% select_(.dots=most_imp_predictors_no_disease_class, 'Status')
+test_sub <- model_data$ML_set__general_dummy_TT$test_set %>% select_(.dots=most_imp_predictors_no_disease_class,'Status')
 
 train_sub <- SMOTE(Status ~ ., as.data.frame(train_sub))
 status_train <- train_sub$Status
@@ -170,16 +173,19 @@ history <- model %>% fit(train_data, status_train01, epochs = 25, batch_size=50,
 validation_score <- model %>% evaluate(test_data, status_test01)
 test_score <- model %>% predict(test_data)
 test_score[is.na(test_score)] <- 0
-model_data$ML_set__eye_dummy_TT$test_set$keras <- test_score[,1]
-cm_maker('keras', model_data$ML_set__eye_dummy_TT$test_set, cutoff=0.9)
+model_data$ML_set__general_dummy_TT$test_set$keras <- test_score[,1]
+cm_maker('keras', model_data$ML_set__general_dummy_TT$test_set, cutoff=0.9)
 
 
 ###############
-# rnn
+# rnn deep
+# upsample path
+# gives highest f1 score (~0.41 for test data)
+# doesn't merge too well when ensembling with VPaC RF model
 ###############
 set.seed(89345)
-train_sub <- model_data$ML_set__eye_dummy_TT$train_set  %>% select_(.dots=most_imp_predictors_no_disease_class, 'Status') 
-test_sub <- model_data$ML_set__eye_dummy_TT$test_set %>% select_(.dots=most_imp_predictors_no_disease_class,'Status')
+train_sub <- model_data$ML_set__general_dummy_TT$train_set  %>% select_(.dots=most_imp_predictors_no_disease_class, 'Status') 
+test_sub <- model_data$ML_set__general_dummy_TT$test_set %>% select_(.dots=most_imp_predictors_no_disease_class,'Status')
 
 train_sub <- upSample(as.data.frame(train_sub), train_sub$Status)
 status_train <- train_sub$Class
@@ -204,7 +210,177 @@ dim(test_data) <- c(nrow(test_data),1,39)
 
 model <- keras_model_sequential() %>% 
   layer_lstm(196, recurrent_dropout=0.2, input_shape=c(1, 39), return_sequences = T) %>%
-  layer_dropout(0.6) %>%
+  layer_dropout(0.4) %>%
+  layer_lstm(196, recurrent_dropout=0.2, input_shape=c(1, 39), return_sequences = T) %>%
+  layer_dropout(0.3) %>%
+  layer_lstm(196, recurrent_dropout=0.2, input_shape=c(1, 39), return_sequences = T) %>%
+  layer_dropout(0.2) %>%
+  layer_lstm(196, recurrent_dropout=0.2, input_shape=c(1, 39)) %>%
+  layer_dropout(0.1) %>%
+  layer_dense(units=1, activation='sigmoid')
+
+
+
+model %>% compile(
+  optimizer = 'rmsprop',
+  loss = 'binary_crossentropy',
+  metric = c('accuracy')
+)
+
+history <- model %>% fit(train_data, status_train01, epochs = 10, batch_size=5000)
+
+#validation_score <- model %>% evaluate(test_data, status_test01)
+test_score <- model %>% predict(test_data)
+test_score[is.na(test_score)] <- 0
+model_data$ML_set__general_dummy_TT$test_set$keras <- test_score[,1]
+cm_maker('keras', model_data$ML_set__general_dummy_TT$test_set, cutoff=0.99)
+
+####
+# save
+####
+DeepRNN  <- model
+save(DeepRNN, file = '/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/DeepRNN_model.Rdata')
+
+
+###############
+# rnn smote 1
+# adds new minor class (path) and trim down major class
+# currently this is hte model that works the best when ensembl-ing with RF-based VPaC
+###############
+library(DMwR)
+set.seed(89345)
+train_sub <- model_data$ML_set__general_dummy_TT$train_set %>% select_(.dots=most_imp_predictors_no_disease_class, 'Status')
+test_sub <- model_data$ML_set__general_dummy_TT$test_set %>% select_(.dots=most_imp_predictors_no_disease_class,'Status')
+
+train_sub <- SMOTE(Status ~ ., as.data.frame(train_sub))
+status_train <- train_sub$Status
+status_train01 <- case_when(status_train == 'Pathogenic' ~ 1,
+                            TRUE ~ 0)
+status_test <- test_sub$Status
+status_test01 <- case_when(status_test == 'Pathogenic' ~ 1,
+                           TRUE ~ 0)
+train_sub <- train_sub %>% select(-Status)
+test_sub <- test_sub %>% select(-Status)
+mean <- apply(train_sub %>% select_(.dots = most_imp_predictors_no_disease_class), 2, mean)
+std <- apply(train_sub %>% select_(.dots = most_imp_predictors_no_disease_class), 2, sd)
+train_data <- scale(train_sub, center=mean, scale=std)
+test_data <- scale(test_sub, center=mean,scale=std)
+
+# reshape
+dim(train_data) <- c(nrow(train_data),1,39)
+dim(test_data) <- c(nrow(test_data),1,39)
+
+model <- keras_model_sequential() %>% 
+  layer_lstm(48, recurrent_dropout=0.2, input_shape=c(1, 39), return_sequences = T) %>%
+  layer_dropout(0.2) %>%
+  layer_lstm(48, recurrent_dropout=0.2, input_shape=c(1, 39), return_sequences = T) %>%
+  layer_dropout(0.2) %>%
+  layer_lstm(48, recurrent_dropout=0.2, input_shape=c(1, 39), return_sequences = T) %>%
+  layer_dropout(0.2) %>%
+  layer_lstm(48, recurrent_dropout=0.2, input_shape=c(1, 39), return_sequences = T) %>%
+  layer_dropout(0.2) %>%
+  layer_lstm(48, recurrent_dropout=0.2, input_shape=c(1, 39), return_sequences = T) %>%
+  layer_dropout(0.2) %>%
+  layer_lstm(48, recurrent_dropout=0.2, input_shape=c(1, 39), return_sequences = T) %>%
+  layer_dropout(0.2) %>%
+  layer_lstm(48, recurrent_dropout=0.2, input_shape=c(1, 39), return_sequences = T) %>%
+  layer_dropout(0.2) %>%
+  layer_lstm(48, recurrent_dropout=0.2, input_shape=c(1, 39)) %>%
+  layer_dropout(0.1) %>%
+  layer_dense(units=1, activation='sigmoid')
+
+
+
+model %>% compile(
+  optimizer = optimizer_adam(),
+  loss = 'binary_crossentropy',
+  metric = c('accuracy')
+)
+
+history <- model %>% fit(train_data, status_train01, epochs = 10, batch_size=50)
+
+#validation_score <- model %>% evaluate(test_data, status_test01)
+test_score <- model %>% predict(test_data)
+test_score[is.na(test_score)] <- 0
+model_data$ML_set__general_dummy_TT$test_set$keras <- test_score[,1]
+cm_maker('keras', model_data$ML_set__general_dummy_TT$test_set, cutoff=0.99)
+
+
+
+###############
+# rnn smote 2
+# adds new minor class (path) and trim down major class
+# screwing with dim and depth
+###############
+
+
+model <- keras_model_sequential() %>% 
+  layer_lstm(96, recurrent_dropout=0.2, input_shape=c(1, 39), return_sequences = T) %>%
+  layer_dropout(0.2) %>%
+  layer_lstm(96, recurrent_dropout=0.2, input_shape=c(1, 39), return_sequences = T) %>%
+  layer_dropout(0.2) %>%
+  layer_lstm(96, recurrent_dropout=0.2, input_shape=c(1, 39), return_sequences = T) %>%
+  layer_dropout(0.2) %>%
+  layer_lstm(96, recurrent_dropout=0.2, input_shape=c(1, 39)) %>%
+  layer_dropout(0.1) %>%
+  layer_dense(units=1, activation='sigmoid')
+
+
+
+model %>% compile(
+  optimizer = optimizer_adam( lr= 0.01),
+  loss = 'binary_crossentropy',
+  metric = c('accuracy')
+)
+
+history <- model %>% fit(train_data, status_train01, epochs = 10, batch_size=50)
+
+#validation_score <- model %>% evaluate(test_data, status_test01)
+test_score <- model %>% predict(test_data)
+test_score[is.na(test_score)] <- 0
+model_data$ML_set__general_dummy_TT$test_set$keras <- test_score[,1]
+cm_maker('keras', model_data$ML_set__general_dummy_TT$test_set, cutoff=0.99)
+
+
+
+
+
+###############################
+# pull grimm path
+# rnn smote
+###############################
+
+more <- all %>% filter(grepl('grimm',DataSet, ignore.case = T)) 
+set.seed(1783) 
+half_more <- more %>% group_by(Status) %>% sample_frac(0.5)
+
+
+###############
+library(DMwR)
+set.seed(89345)
+train_sub <- model_data$ML_set__general_dummy_TT$train_set %>% select_(.dots=most_imp_predictors_no_disease_class, 'Status')
+train_sub <- bind_rows(train_sub, half_more %>% select_(.dots=most_imp_predictors_no_disease_class, 'Status'))
+test_sub <- model_data$ML_set__general_dummy_TT$test_set %>% select_(.dots=most_imp_predictors_no_disease_class,'Status')
+
+train_sub <- SMOTE(Status ~ ., as.data.frame(train_sub))
+status_train <- train_sub$Status
+status_train01 <- case_when(status_train == 'Pathogenic' ~ 1,
+                            TRUE ~ 0)
+status_test <- test_sub$Status
+status_test01 <- case_when(status_test == 'Pathogenic' ~ 1,
+                           TRUE ~ 0)
+train_sub <- train_sub %>% select(-Status)
+test_sub <- test_sub %>% select(-Status)
+mean <- apply(train_sub %>% select_(.dots = most_imp_predictors_no_disease_class), 2, mean)
+std <- apply(train_sub %>% select_(.dots = most_imp_predictors_no_disease_class), 2, sd)
+train_data <- scale(train_sub, center=mean, scale=std)
+test_data <- scale(test_sub, center=mean,scale=std)
+
+# reshape
+dim(train_data) <- c(nrow(train_data),1,39)
+dim(test_data) <- c(nrow(test_data),1,39)
+
+model <- keras_model_sequential() %>% 
   layer_lstm(196, recurrent_dropout=0.2, input_shape=c(1, 39), return_sequences = T) %>%
   layer_dropout(0.5) %>%
   layer_lstm(196, recurrent_dropout=0.2, input_shape=c(1, 39), return_sequences = T) %>%
@@ -230,5 +406,8 @@ history <- model %>% fit(train_data, status_train01, epochs = 10, batch_size=500
 #validation_score <- model %>% evaluate(test_data, status_test01)
 test_score <- model %>% predict(test_data)
 test_score[is.na(test_score)] <- 0
-model_data$ML_set__eye_dummy_TT$test_set$keras <- test_score[,1]
-cm_maker('keras', model_data$ML_set__eye_dummy_TT$test_set, cutoff=0.99)
+model_data$ML_set__general_dummy_TT$test_set$keras <- test_score[,1]
+cm_maker('keras', model_data$ML_set__general_dummy_TT$test_set, cutoff=0.99)
+
+
+
