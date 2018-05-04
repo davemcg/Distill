@@ -43,6 +43,7 @@ all_processed <- uk10k_gemini_rare_variants %>%
   mutate_at(vars(matches('af_|dann|revel|mpc|gerp|polyphen_score|sift_score|fitcons_float|gerp_elements|^adj|_z$|^pli$|^pnull$|precessive|^phylop|linsight|_rankscore$|ccr_pct_v1|linsight')), funs(as.numeric(.))) %>%  # af is allele frequency
   select(pos_id, Status, Complicated_Status, is_exonic, is_coding, is_lof, is_splicing, impact_severity, polyphen_score, sift_score, dann, gerp_elements, DiseaseClass, mpc, revel, max_aaf_all, gno_ac_afr, gno_ac_eas, gno_ac_all, gno_ac_popmax, ac_exac_sas, ac_exac_fin, aaf_1kg_all_float, aaf_esp_all, ac_exac_all, ac_exac_amr, ac_exac_oth, gno_af_all, gno_an_popmax, an_exac_all, af_exac_all, fitcons_float, linsight, lof_z:precessive, phylop_100way, grantham, cadd_phred, contains("_rankscore"), ccr_pct_v1, genesplicer, spliceregion) %>% 
   filter(max_aaf_all < 0.01) %>% 
+  
   unique() # remove any common variants
 
 # fill missing with -1
@@ -273,9 +274,8 @@ ML_set__other_dummy$Status <- factor(ML_set__other_dummy$Status, levels = c('Pat
 
 ##################################
 # train, validate, and test sets
-# half to train
-# 1/4 to validate
-# 1/4 to test (only use when I think I'm done building models)
+# 70% to train
+# 30% to test 
 ##################################
 
 train_test_maker <- function(df){
