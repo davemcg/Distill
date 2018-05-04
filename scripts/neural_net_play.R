@@ -245,7 +245,7 @@ save(DeepRNN, file = '/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity
 ###############
 # rnn smote 1
 # adds new minor class (path) and trim down major class
-# currently this is hte model that works the best when ensembl-ing with RF-based VPaC
+# currently this is the model that works the best when ensembl-ing with RF-based VPaC
 ###############
 library(DMwR)
 set.seed(89345)
