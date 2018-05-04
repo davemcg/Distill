@@ -21,7 +21,9 @@ library(tidyverse)
 panel <- readxl::read_excel('../data/Copy of eG patients NISC NGS tables&figure for final review 04122018.xlsx')
 panel %>% head()
 panel %>% filter(grepl('Path', `Variant Classification`, ignore.case = T)) %>% select(`Sample ID`, Gene, `Genomic location`, Transcript, `transcript change`, `Codon change`)
-path_cdot <- panel %>% filter(grepl('Path', `Variant Classification`, ignore.case = T)) %>% select(`Sample ID`, Gene, `Genomic location`, Transcript, `transcript change`, `Codon change`) %>% pull(`transcript change`)
+panel %>% filter(grepl('Path', `Variant Classification`, ignore.case = T)) %>% select(Transcript, `transcript change`)
+path_cdot <- panel %>% filter(grepl('Path', `Variant Classification`, ignore.case = T)) %>% select(Gene, `transcript change`, `Genomic location`) %>% mutate(geneDot = paste0(Gene, ':', `transcript change`))
+path_cdot <- path_cdot %>% rowwise() %>% mutate(pos = str_split(`Genomic location`, '\\.')[[1]][2]) %>% mutate(pos = str_split(pos, '[A-Za-z]')[[1]][1]) %>% mutate(pos=str_split(pos, '_')[[1]][1]) %>% ungroup()
 ```
 
 Load gemini output and prep data
@@ -31,8 +33,10 @@ ddl_raw <- fread('gzcat /Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenici
 all_processed <- ddl_raw %>% 
   separate(gene_eyediseaseclass, c('RDGene','DiseaseClass'), sep='_') %>%  #split off RD disease type
   select(-RDGene) %>% 
-  mutate(Status = factor(status,levels=c('Pathogenic','NotPathogenic')),
-         DiseaseClass = factor(DiseaseClass, levels=c('-1','Albinism','Albinism,Albinism','Developmental','RD','RD,Developmental','Stargardt,RD')),
+  rowwise() %>% 
+  mutate(geneDot = paste0(gene, ':', str_split(hgvsc, ':')[[1]][2])) %>% 
+  ungroup() %>% 
+  mutate(DiseaseClass = factor(DiseaseClass, levels=c('-1','Albinism','Albinism,Albinism','Developmental','RD','RD,Developmental','Stargardt,RD')),
          pos_id=paste0(chrom, ':', end, '_', ref, '_', alt),
          impact_severity = case_when(impact_severity == 'HIGH' ~ 3, # convert to integer 
                                      impact_severity == 'MED' ~ 2, 
@@ -44,14 +48,19 @@ all_processed <- ddl_raw %>%
                                  TRUE ~ 'Else')) %>% 
   mutate_at(vars(matches('ac_|an_|^n_')), funs(as.integer(.))) %>% # convert columns with ac_|whatever to integer (ac is allele count)
   mutate_at(vars(matches('af_|dann|revel|mpc|gerp|polyphen_score|sift_score|fitcons_float|gerp_elements|^adj|_z$|^pli$|^pnull$|precessive|^phylop|linsight|_rankscore$|ccr_pct_v1|linsight')), funs(as.numeric(.))) %>%  # af is allele frequency
-  select(pos_id, Status, DiseaseClass, is_exonic, is_coding, is_lof, is_splicing, impact_severity, polyphen_score, sift_score, dann, gerp_elements, DiseaseClass, mpc, revel, max_aaf_all, gno_ac_afr, gno_ac_eas, gno_ac_all, gno_ac_popmax, ac_exac_sas, ac_exac_fin, aaf_1kg_all_float, aaf_esp_all, ac_exac_all, ac_exac_amr, ac_exac_oth, gno_af_all, gno_an_popmax, an_exac_all, af_exac_all, fitcons_float, linsight, lof_z:precessive, phylop_100way, grantham, cadd_phred, contains("_rankscore"), ccr_pct_v1, genesplicer, spliceregion) %>% 
+  select(pos_id, geneDot, end, DiseaseClass, is_exonic, is_coding, is_lof, is_splicing, impact_severity, polyphen_score, sift_score, dann, gerp_elements, DiseaseClass, mpc, revel, max_aaf_all, gno_ac_afr, gno_ac_eas, gno_ac_all, gno_ac_popmax, ac_exac_sas, ac_exac_fin, aaf_1kg_all_float, aaf_esp_all, ac_exac_all, ac_exac_amr, ac_exac_oth, gno_af_all, gno_an_popmax, an_exac_all, af_exac_all, fitcons_float, linsight, lof_z:precessive, phylop_100way, grantham, cadd_phred, contains("_rankscore"), ccr_pct_v1, genesplicer, spliceregion) %>% 
   filter(max_aaf_all < 0.01) %>% 
   unique() # remove any common variants
 
+
+all_processed <- all_processed %>% mutate(is_lof = as.numeric(as.character(is_lof)), 
+                                          Status = case_when(geneDot %in% path_cdot$geneDot ~ 'Pathogenic',
+                                                             end %in% path_cdot$pos ~ 'Pathogenic',
+                         TRUE ~ 'NotPathogenic')) %>% dplyr::select(-geneDot, -end)
 # fill missing with -1
 all_processed[is.na(all_processed)] <- -1
 
 
-grimm_ML_set <- all_processed 
-grimm_orig <- grimm_raw
+ddl_ML_set <- all_processed 
+save(ddl_ML_set, file = '/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/ddl_nisc_panel_variants.Rdata')
 ```
