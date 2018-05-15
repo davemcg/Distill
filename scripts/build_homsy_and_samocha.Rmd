@@ -1,0 +1,127 @@
+---
+title: "Homsy and Samocha from pathoscore"
+output: html_notebook
+---
+
+Data pulled from [pathoscore](https://github.com/quinlan-lab/pathoscore)
+
+Run this bash script to download, annotate, and create gemini db on biowulf2
+```{bash, eval=F}
+cd /data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/data/homsy 
+bash make.sh
+bash /home/mcgaugheyd/git/eye_var_Pathogenicity/scripts/create_prepped_vcf.sh homsy.benign.vcf homsy.benign.vcf.gz
+bash /home/mcgaugheyd/git/eye_var_Pathogenicity/scripts/create_prepped_vcf.sh homsy.pathogenic.vcf homsy.pathogenic.vcf.gz
+bash ~/git/variant_prioritization/Snakemake.wrapper.sh ~/git/eye_var_Pathogenicity/config_variant_prioritization__homsyD.yaml
+bash ~/git/variant_prioritization/Snakemake.wrapper.sh ~/git/eye_var_Pathogenicity/config_variant_prioritization__homsyB.yaml
+module load gemini
+gemini query --header -q "SELECT * from variants" homsy.pathogenic.PED_faux.gemini.db | bgzip > homsy_pathogenic.gemini.tsv.gz
+gemini query --header -q "SELECT * from variants" homsy.benign.PED_faux.gemini.db | bgzip > homsy_benign.gemini.tsv.gz
+
+cd /data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/data/samocha 
+bash make.sh
+bash /home/mcgaugheyd/git/eye_var_Pathogenicity/scripts/create_prepped_vcf.sh samocha.benign.vcf samocha.benign.vcf.gz
+bash /home/mcgaugheyd/git/eye_var_Pathogenicity/scripts/create_prepped_vcf.sh samocha.pathogenic.vcf samocha.pathogenic.vcf.gz
+bash ~/git/variant_prioritization/Snakemake.wrapper.sh ~/git/eye_var_Pathogenicity/config_variant_prioritization__samochaD.yaml
+bash ~/git/variant_prioritization/Snakemake.wrapper.sh ~/git/eye_var_Pathogenicity/config_variant_prioritization__samochaB.yaml
+module load gemini
+gemini query --header -q "SELECT * from variants" samocha.pathogenic.PED_faux.gemini.db | bgzip > samocha_pathogenic.gemini.tsv.gz
+gemini query --header -q "SELECT * from variants" samocha.benign.PED_faux.gemini.db | bgzip > samocha_benign.gemini.tsv.gz
+```
+
+
+# Load data, homsy
+```{r}
+library(data.table)
+library(tidyverse)
+homsy_d <- fread('gzcat /Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/data/homsy/homsy_pathogenic.gemini.tsv.gz') %>% mutate(Status='Pathogenic')
+homsy_b <- fread('gzcat /Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/data/homsy/homsy_benign.gemini.tsv.gz') %>% mutate(Status='NotPathogenic')
+
+homsy <- rbind(homsy_b, homsy_d) %>% mutate(Status=factor(Status, levels=c('Pathogenic','NotPathogenic')))
+```
+
+# Prep data and save data, homsy
+```{r}
+all_processed <- homsy %>% 
+  separate(gene_eyediseaseclass, c('RDGene','DiseaseClass'), sep='_') %>%  #split off RD disease type
+  select(-RDGene) %>% 
+  mutate(Status = factor(Status,levels=c('Pathogenic','NotPathogenic')),
+         DiseaseClass = factor(DiseaseClass, levels=c('-1','Albinism','Albinism,Albinism','Developmental','RD','RD,Developmental','Stargardt,RD')),
+         pos_id=paste0(chrom, ':', end, '_', ref, '_', alt),
+         impact_severity = case_when(impact_severity == 'HIGH' ~ 3, # convert to integer 
+                                     impact_severity == 'MED' ~ 2, 
+                                     TRUE ~ 1),
+         genesplicer = case_when(genesplicer == "" ~ 'No',
+                                 grepl('^gain', genesplicer) ~ 'Gain',
+                                 grepl('^loss', genesplicer) ~ 'Loss',
+                                 grepl('^diff', genesplicer) ~ 'Diff',
+                                 TRUE ~ 'Else')) %>% 
+  mutate_at(vars(matches('ac_|an_|^n_')), funs(as.integer(.))) %>% # convert columns with ac_|whatever to integer (ac is allele count)
+  mutate_at(vars(matches('af_|dann|revel|mpc|gerp|polyphen_score|sift_score|fitcons_float|gerp_elements|^adj|_z$|^pli$|^pnull$|precessive|^phylop|linsight|_rankscore$|ccr_pct_v1|linsight')), funs(as.numeric(.))) %>%  # af is allele frequency
+  select(pos_id, Status, DiseaseClass, is_exonic, is_coding, is_lof, is_splicing, impact_severity, polyphen_score, sift_score, dann, gerp_elements, DiseaseClass, mpc, revel, max_aaf_all, gno_ac_afr, gno_ac_eas, gno_ac_all, gno_ac_popmax, ac_exac_sas, ac_exac_fin, aaf_1kg_all_float, aaf_esp_all, ac_exac_all, ac_exac_amr, ac_exac_oth, gno_af_all, gno_an_popmax, an_exac_all, af_exac_all, fitcons_float, linsight, lof_z:precessive, phylop_100way, grantham, cadd_phred, contains("_rankscore"), ccr_pct_v1, genesplicer, spliceregion) %>% 
+  filter(max_aaf_all < 0.01) %>% 
+  unique() # remove any common variants
+
+# fill missing with -1
+all_processed[is.na(all_processed)] <- -1
+
+
+homsy_ML_set <- all_processed 
+homsy_orig <- homsy
+
+homsy <- list()
+homsy$homsy_orig  <- homsy_orig
+homsy$homsy_ML_set <- homsy_ML_set 
+
+output_file <- '/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/homsy_ML.Rdata'
+if(!file.exists(output_file)){
+  save(homsy, file = output_file)
+}
+```
+
+# Load data, samocha
+```{r}
+
+samocha_d <- fread('gzcat /Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/data/samocha/samocha_pathogenic.gemini.tsv.gz') %>% mutate(Status='Pathogenic')
+samocha_b <- fread('gzcat /Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/data/samocha/samocha_benign.gemini.tsv.gz') %>% mutate(Status='NotPathogenic')
+
+samocha <- rbind(samocha_b, samocha_d) %>% mutate(Status=factor(Status, levels=c('Pathogenic','NotPathogenic')))
+```
+
+# Prep data and save data, samocha
+```{r}
+all_processed <- samocha %>% 
+  separate(gene_eyediseaseclass, c('RDGene','DiseaseClass'), sep='_') %>%  #split off RD disease type
+  select(-RDGene) %>% 
+  mutate(Status = factor(Status,levels=c('Pathogenic','NotPathogenic')),
+         DiseaseClass = factor(DiseaseClass, levels=c('-1','Albinism','Albinism,Albinism','Developmental','RD','RD,Developmental','Stargardt,RD')),
+         pos_id=paste0(chrom, ':', end, '_', ref, '_', alt),
+         impact_severity = case_when(impact_severity == 'HIGH' ~ 3, # convert to integer 
+                                     impact_severity == 'MED' ~ 2, 
+                                     TRUE ~ 1),
+         genesplicer = case_when(genesplicer == "" ~ 'No',
+                                 grepl('^gain', genesplicer) ~ 'Gain',
+                                 grepl('^loss', genesplicer) ~ 'Loss',
+                                 grepl('^diff', genesplicer) ~ 'Diff',
+                                 TRUE ~ 'Else')) %>% 
+  mutate_at(vars(matches('ac_|an_|^n_')), funs(as.integer(.))) %>% # convert columns with ac_|whatever to integer (ac is allele count)
+  mutate_at(vars(matches('af_|dann|revel|mpc|gerp|polyphen_score|sift_score|fitcons_float|gerp_elements|^adj|_z$|^pli$|^pnull$|precessive|^phylop|linsight|_rankscore$|ccr_pct_v1|linsight')), funs(as.numeric(.))) %>%  # af is allele frequency
+  select(pos_id, Status, DiseaseClass, is_exonic, is_coding, is_lof, is_splicing, impact_severity, polyphen_score, sift_score, dann, gerp_elements, DiseaseClass, mpc, revel, max_aaf_all, gno_ac_afr, gno_ac_eas, gno_ac_all, gno_ac_popmax, ac_exac_sas, ac_exac_fin, aaf_1kg_all_float, aaf_esp_all, ac_exac_all, ac_exac_amr, ac_exac_oth, gno_af_all, gno_an_popmax, an_exac_all, af_exac_all, fitcons_float, linsight, lof_z:precessive, phylop_100way, grantham, cadd_phred, contains("_rankscore"), ccr_pct_v1, genesplicer, spliceregion) %>% 
+  filter(max_aaf_all < 0.01) %>% 
+  unique() # remove any common variants
+
+# fill missing with -1
+all_processed[is.na(all_processed)] <- -1
+
+
+samocha_ML_set <- all_processed 
+samocha_orig <- samocha
+
+samocha <- list()
+samocha$samocha_orig  <- samocha_orig
+samocha$samocha_ML_set <- samocha_ML_set 
+
+output_file <- '/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/samocha_ML.Rdata'
+if(!file.exists(output_file)){
+  save(samocha, file = output_file)
+}
+```
