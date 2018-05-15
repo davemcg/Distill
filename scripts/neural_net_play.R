@@ -36,46 +36,47 @@ cm_maker <- function(predictor = 'cadd_phred', data, cutoff=0.5, mode = 'prec_re
 }
 
 ##################
-#custom  metric
-sensitivity <- function(y_true, y_pred){
-  true_positives = k_sum(k_round(k_clip(y_true * y_pred, 0, 1)))
-  possible_positives = k_sum(k_round(k_clip(y_true, 0, 1)))
-  true_positives / (possible_positives + k_epsilon())
-}
-
-specificity <- function(y_true, y_pred){
-  true_negatives = k_sum(k_round(k_clip((1-y_true) * (1-y_pred), 0, 1)))
-  possible_negatives = k_sum(k_round(k_clip(1-y_true, 0, 1)))
-  true_negatives / (possible_negatives + k_epsilon())
-}
-
-precision <- function(y_true, y_pred){
-  true_positives = k_sum(k_round(k_clip(y_true * y_pred, 0, 1)))
-  predicted_positives = k_sum(k_round(k_clip(y_pred, 0, 1)))
-  precision = true_positives / (predicted_positives + k_epsilon())
-  precision
-}
-
-recall <- function(y_true, y_pred){
-  true_positives = k_sum(k_round(k_clip(y_true * y_pred, 0, 1)))
-  possible_positives = k_sum(k_round(k_clip(y_true, 0, 1)))
-  recall = true_positives / (possible_positives + k_epsilon())
-  recall
-}
-
-
-f1 <- function(y_true, y_pred){
-  true_positives = k_sum(k_round(k_clip(y_true * y_pred, 0, 1)))
-  predicted_positives = k_sum(k_round(k_clip(y_pred, 0, 1)))
-  precision = true_positives / (predicted_positives + k_epsilon())
-  
-  true_positives = k_sum(k_round(k_clip(y_true * y_pred, 0, 1)))
-  possible_positives = k_sum(k_round(k_clip(y_true, 0, 1)))
-  recall = true_positives / (possible_positives + k_epsilon())
-  
-  f1 = 2 * ((precision * recall)/(precision + recall))
-  f1
-}
+#custom  metrics
+# which don't seem to be useful
+# sensitivity <- function(y_true, y_pred){
+#   true_positives = k_sum(k_round(k_clip(y_true * y_pred, 0, 1)))
+#   possible_positives = k_sum(k_round(k_clip(y_true, 0, 1)))
+#   true_positives / (possible_positives + k_epsilon())
+# }
+# 
+# specificity <- function(y_true, y_pred){
+#   true_negatives = k_sum(k_round(k_clip((1-y_true) * (1-y_pred), 0, 1)))
+#   possible_negatives = k_sum(k_round(k_clip(1-y_true, 0, 1)))
+#   true_negatives / (possible_negatives + k_epsilon())
+# }
+# 
+# precision <- function(y_true, y_pred){
+#   true_positives = k_sum(k_round(k_clip(y_true * y_pred, 0, 1)))
+#   predicted_positives = k_sum(k_round(k_clip(y_pred, 0, 1)))
+#   precision = true_positives / (predicted_positives + k_epsilon())
+#   precision
+# }
+# 
+# recall <- function(y_true, y_pred){
+#   true_positives = k_sum(k_round(k_clip(y_true * y_pred, 0, 1)))
+#   possible_positives = k_sum(k_round(k_clip(y_true, 0, 1)))
+#   recall = true_positives / (possible_positives + k_epsilon())
+#   recall
+# }
+# 
+# 
+# f1 <- function(y_true, y_pred){
+#   true_positives = k_sum(k_round(k_clip(y_true * y_pred, 0, 1)))
+#   predicted_positives = k_sum(k_round(k_clip(y_pred, 0, 1)))
+#   precision = true_positives / (predicted_positives + k_epsilon())
+# 
+#   true_positives = k_sum(k_round(k_clip(y_true * y_pred, 0, 1)))
+#   possible_positives = k_sum(k_round(k_clip(y_true, 0, 1)))
+#   recall = true_positives / (possible_positives + k_epsilon())
+# 
+#   f1 = 2 * ((precision * recall)/(precision + recall))
+#   f1
+# }
 ###############
 # multiperceptron
 # doesn't work too well
@@ -178,6 +179,7 @@ cm_maker('keras', model_data$ML_set__general_dummy_TT$test_set, cutoff=0.9)
 
 
 ###############
+# CURRENT BEST
 # rnn deep
 # upsample path
 # gives highest f1 score (~0.41 for test data)
