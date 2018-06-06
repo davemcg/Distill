@@ -18,4 +18,8 @@ for line in fileinput.input():
 	else:
 		line = line.split()
 		line = line[:-1]
+		if line[0] == 'chrM':
+			line[0] = 'MT'
+		if line[0][0:3] == 'chr':
+			line[0] = line[0][3:]
 		print('\t'.join(line) + '\t.\tGT:GQ:DP\t0/1:100:100')
