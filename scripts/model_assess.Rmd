@@ -166,6 +166,13 @@ fitControl_min <- trainControl(
 DeepVPaC <- caret::train(Status ~ ., data=test_all %>% select_(.dots=c('Status','VPaC','DeepRNN')), 
                          method = "glm", metric='F', trControl=fitControl_min)
 all$DeepVPaC <- sqrt(predict(DeepVPaC, all, type='prob')[,1])
+
+
+```
+# Save pre-computed data 
+```{r}
+save(all, file = '/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/all_data.2018_05_15.Rdata')
+load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/all_data.2018_05_15.Rdata')
 ```
 
 # Correlation of predictors
@@ -312,7 +319,7 @@ roc_data %>% dplyr::select(AUC, Model, DataSet) %>% filter(grepl('Grimm|ClinVar|
 ```{r, fig.height=6, fig.width=6}
 pr_plot <- pr_data %>% 
   filter(grepl('Grimm|ClinVar|Test|UniFun|DDL|Sam|Hom', DataSet)) %>% 
-  filter(model != 'VPaC') %>% 
+  filter(Model != 'VPaC') %>% 
   #filter(model %in% best_models_noDC) %>% 
   ggplot(aes(x=Recall, y=Precision, colour=Model)) + 
   facet_wrap(~DataSet, ncol=1) +
@@ -321,7 +328,7 @@ pr_plot <- pr_data %>%
   ggtitle('Precision Recall Curve') 
 roc_plot <- roc_data %>%   #filter(model %in% best_models_noDC) %>% 
   filter(grepl('Grimm|ClinVar|Test|UniFun|DDL|Sam|Hom', DataSet)) %>% 
-  filter(model != 'VPaC') %>% 
+  filter(Model != 'VPaC') %>% 
   ggplot(aes(x=FPR, y=Sensitivity, colour=Model)) + 
   facet_wrap(~DataSet, ncol=1) +
   geom_step() + 
