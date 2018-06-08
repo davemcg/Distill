@@ -393,28 +393,31 @@ ogvfb$ogvfb_ML_set %>% filter(VPaC > 0.1) %>%
 # NISC 100
 How do we do?
 ```{r}
-nisc100 <- read_tsv('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/data/ddl_nisc_100_panel/ddl_nisc.gemini.tsv.gz')
+nisc100 <- fread('gzcat /Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/data/ddl_nisc_100_panel/ddl_nisc.gemini.tsv.gz')
 nisc100 %>% mutate(pos_id = paste0(chrom,':',end, '_', ref, '_', alt)) %>% filter(pos_id %in% (all %>% filter(DataSet == 'DDL NISC RD Cohort', Status == 'Pathogenic', DeepVPaC < 0.25) %>% pull(pos_id)))
 ```
 Not too good. 
 
 How about if we added a touch of info - ClinVar, Impact
 ```{r}
-left_join(nisc100 %>% mutate(pos_id = paste0(chrom,':',end, '_', ref, '_', alt)), 
-          all %>% select(pos_id, Status, DeepVPaC)) %>% filter(DeepVPaC > 0.5 | grepl('path', clin_sig) | impact_severity=='HIGH') %>% filter(!grepl('benign', clin_sig), aaf < 0.01) %>% 
-  select(Status, pos_id, gene, type, num_het, num_hom_alt, aaf, impact_so, DeepVPaC)
+left_join(all %>% filter(DataSet=='DDL NISC RD Cohort') %>% select(pos_id, Status, DeepVPaC),
+            nisc100 %>% mutate(pos_id = paste0(chrom,':',end, '_', ref, '_', alt))) %>% 
+  filter(DeepVPaC > 0.5 | grepl('path', clin_sig) | impact_severity=='HIGH') %>% 
+  filter(aaf < 0.1 | gno_af_popmax < 0.01) %>% 
+  select(Status, pos_id, hgvsc, gene, type, num_het, num_hom_alt, aaf,aaf_1kg_all_float, impact_so, DeepVPaC, clin_sig) %>% pull(Status) %>% table()
 
-left_join(nisc100 %>% mutate(pos_id = paste0(chrom,':',end, '_', ref, '_', alt)), 
-          all %>% select(pos_id, Status, DeepVPaC)) %>% filter(DeepVPaC > 0.5 | grepl('path', clin_sig) | impact_severity=='HIGH') %>% filter(!grepl('benign', clin_sig), aaf < 0.01) %>% 
-  select(Status, pos_id, gene, type, num_het, num_hom_alt, aaf, impact_so, DeepVPaC) %>% select(Status, pos_id) %>% unique() %>% pull(Status) %>% table()
+grabbed <- 
+  left_join(all %>% filter(DataSet=='DDL NISC RD Cohort') %>% select(pos_id, Status, DeepVPaC),
+            nisc100 %>% mutate(pos_id = paste0(chrom,':',end, '_', ref, '_', alt))) %>% 
+  filter(DeepVPaC > 0.5 | grepl('path', clin_sig) | impact_severity=='HIGH') %>% 
+  filter(aaf < 0.1 | gno_af_popmax < 0.01) %>% 
+  select(Status, pos_id, hgvsc, gene, type, num_het, num_hom_alt, aaf,aaf_1kg_all_float, impact_so, DeepVPaC, clin_sig) %>% pull(pos_id)
 
-grabbed <- left_join(nisc100 %>% mutate(pos_id = paste0(chrom,':',end, '_', ref, '_', alt)), 
-                     all %>% select(pos_id, Status, DeepVPaC)) %>% filter(DeepVPaC > 0.5 | grepl('path', clin_sig) | impact_severity=='HIGH') %>% filter(!grepl('benign', clin_sig), aaf < 0.01) %>% 
-    select(Status, pos_id, gene, type, num_het, num_hom_alt, aaf, impact_so, DeepVPaC) %>% pull(pos_id)
 
-left_join(nisc100 %>% mutate(pos_id = paste0(chrom,':',end, '_', ref, '_', alt)), 
-          all %>% select(pos_id, Status, DeepVPaC))  %>% 
-  filter(Status=='Pathogenic') %>% filter(!pos_id %in% grabbed) %>% 
-  select(Status, pos_id, hgvsc, gene, type, num_het, num_hom_alt, aaf,aaf_1kg_all_float, impact_so, DeepVPaC, clin_sig) %>% unique() %>% DT::datatable()
+
+left_join(all %>% filter(DataSet=='DDL NISC RD Cohort') %>% select(pos_id, Status, DeepVPaC),
+          nisc100 %>% mutate(pos_id = paste0(chrom,':',end, '_', ref, '_', alt))) %>% 
+  filter(Status == 'Pathogenic', !pos_id %in% grabbed) %>% 
+  select(Status, pos_id, hgvsc, gene, type, num_het, num_hom_alt, aaf,aaf_1kg_all_float, impact_so, DeepVPaC, clin_sig)
 
 ```
