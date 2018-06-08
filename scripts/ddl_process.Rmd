@@ -18,11 +18,12 @@ time gemini query --header -q "SELECT * from variants" DDL_NISC_targeted_panel.P
 Load answers from Rob / Bin
 ```{r}
 library(tidyverse)
-panel <- readxl::read_excel('../data/Copy of eG patients NISC NGS tables&figure for final review 04122018.xlsx')
+panel <- readxl::read_excel('../data/NISC100_Variant_Interpretation_June01_2018.xlsx')
 panel %>% head()
-panel %>% filter(grepl('Path', `Variant Classification`, ignore.case = T)) %>% select(`Sample ID`, Gene, `Genomic location`, Transcript, `transcript change`, `Codon change`)
-panel %>% filter(grepl('Path', `Variant Classification`, ignore.case = T)) %>% select(Transcript, `transcript change`)
-path_cdot <- panel %>% filter(grepl('Path', `Variant Classification`, ignore.case = T)) %>% select(Gene, `transcript change`, `Genomic location`) %>% mutate(geneDot = paste0(Gene, ':', `transcript change`))
+
+
+path_cdot <- panel %>% filter(grepl('Path', `Interpretation Summary`, ignore.case = T)) %>% select(`#Chr`, End, Ref, Alt, avsnp147) %>% mutate(pos_id=paste0(`#Chr`, ':', End, '_', Ref, '_', Alt))
+
 path_cdot <- path_cdot %>% rowwise() %>% mutate(pos = str_split(`Genomic location`, '\\.')[[1]][2]) %>% mutate(pos = str_split(pos, '[A-Za-z]')[[1]][1]) %>% mutate(pos=str_split(pos, '_')[[1]][1]) %>% ungroup()
 ```
 
@@ -54,8 +55,7 @@ all_processed <- ddl_raw %>%
 
 
 all_processed <- all_processed %>% mutate(is_lof = as.numeric(as.character(is_lof)), 
-                                          Status = case_when(geneDot %in% path_cdot$geneDot ~ 'Pathogenic',
-                                                             end %in% path_cdot$pos ~ 'Pathogenic',
+                                          Status = case_when(pos_id %in% path_cdot$pos_id | end %in% path_cdot$End  ~ 'Pathogenic',
                          TRUE ~ 'NotPathogenic')) %>% dplyr::select(-geneDot, -end)
 # fill missing with -1
 all_processed[is.na(all_processed)] <- -1
