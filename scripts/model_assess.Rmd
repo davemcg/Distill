@@ -171,8 +171,8 @@ all$DeepVPaC <- sqrt(predict(DeepVPaC, all, type='prob')[,1])
 ```
 # Save pre-computed data 
 ```{r}
-save(all, file = '/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/all_data.2018_05_15.Rdata')
-load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/all_data.2018_05_15.Rdata')
+save(all, file = '/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/all_data.2018_06_08.Rdata')
+load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/all_data.2018_06_08.Rdata')
 ```
 
 # Correlation of predictors
