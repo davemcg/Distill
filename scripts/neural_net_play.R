@@ -179,7 +179,6 @@ cm_maker('keras', model_data$ML_set__general_dummy_TT$test_set, cutoff=0.9)
 
 
 ###############
-# CURRENT BEST
 # rnn deep
 # upsample path
 # gives highest f1 score (~0.41 for test data)
