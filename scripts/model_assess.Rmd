@@ -50,7 +50,7 @@ cm_maker <- function(predictor = 'cadd_phred', data, cutoff=0.5, mode = 'prec_re
                                                                     TRUE ~ 0),
                                                   actuals = case_when(Answers == 'Pathogenic' ~ 1,
                                                                       TRUE ~ 0))
-    out <- caret::confusionMatrix(data = new_predictions$Prediction, reference = new_predictions$Answers, mode= mode)
+    out <- caret::confusionMatrix(data = as.factor(new_predictions$Prediction), reference = as.factor(new_predictions$Answers), mode= mode)
     out$MCC <- mcc(new_predictions$preds, new_predictions$actuals, cutoff=cutoff)
   } else {
     print("Running in predictor is a precomputed column in data mode")
