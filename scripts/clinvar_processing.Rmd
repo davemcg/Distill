@@ -89,7 +89,7 @@ system(command = paste0('tabix -p vcf ', file=paste0(data_path,'data/clinvar/cli
 Annotate vcf with `sbatch ~/git/variant_prioritization/Snakemake.wrapper.sh ~/git/eye_var_Pathogenicity/config_variant_prioritization__clinvar.yaml`
 
 # Pull variants with gemini
-`time gemini query --header -q "SELECT * from variants WHERE (aaf_esp_all < 0.01 AND aaf_1kg_all_float < 0.01 AND af_exac_all < 0.01  AND (is_coding=1 OR is_splicing=1)) OR impact_severity='HIGH' OR clinvar_sig LIKE '%patho%'" clinvar_RD.PED_faux.gemini.db | bgzip > clinvar.gemini.tsv.gz`
+`time gemini query --header -q "SELECT * from variants WHERE (aaf_esp_all < 0.01 AND aaf_1kg_all < 0.01 AND af_exac_all < 0.01  AND (is_coding=1 OR is_splicing=1)) OR impact_severity='HIGH' OR clinvar_sig LIKE '%patho%'" clinvar_RD.PED_faux.gemini.db | bgzip > clinvar.gemini.tsv.gz`
 
 # Load in clinvar.gemini.tsv.gz
 ```{r}
