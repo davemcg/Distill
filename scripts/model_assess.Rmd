@@ -31,6 +31,12 @@ load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/Deep
 load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/samocha_ML.Rdata')
 # homsy
 load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/homsy_ML.Rdata')
+
+# all raw
+######
+# only load if you need it, it's HUGE
+######
+load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/data/master/raw_data.Rdata')
 ```
 
 
@@ -130,7 +136,7 @@ all <- rbind(model_data$ML_set__general_TT$train_set %>% dplyr::select(one_of(us
 #######
 # sqrt scaling of my scores to better normalize
 ######
-#all$OVPaC <- sqrt(predict(OVPaC_6mtry, all, type='prob')[,1])
+all$OVPaC <- sqrt(predict(OVPaC_6mtry, all, type='prob')[,1])
 #all$OVPaC_10mtry <-predict(OVPaC_10mtry, all, type='prob')[,1]
 all$VPaC <- sqrt(predict(VPaC_6mtry, all, type='prob')[,1])
 #all$VPaC_10mtry <-predict(VPaC_10mtry, all, type='prob')[,1]
@@ -167,12 +173,14 @@ DeepVPaC <- caret::train(Status ~ ., data=test_all %>% select_(.dots=c('Status',
                          method = "glm", metric='F', trControl=fitControl_min)
 all$DeepVPaC <- sqrt(predict(DeepVPaC, all, type='prob')[,1])
 
+# add some annoation data to all from the raw_data
+all <- left_join(all, raw_data %>% select(pos_id, type, impact_so, is_splicing, is_coding) %>% unique())
 
 ```
 # Save pre-computed data 
 ```{r}
-save(all, file = '/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/all_data.2018_06_08.Rdata')
-load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/all_data.2018_06_08.Rdata')
+save(all, file = '/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/all_data.2018_06_13.Rdata')
+load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/all_data.2018_06_13.Rdata')
 ```
 
 # Correlation of predictors
