@@ -1,0 +1,191 @@
+---
+title: "Data Summary"
+output: 
+  html_notebook:
+    theme: flatly
+    toc: True
+---
+
+```{r}
+library(tidyverse)
+load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/data/master/raw_data.Rdata')
+load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/all_data.2018_06_08.Rdata')
+```
+
+# DataSets
+```{r}
+raw_data$DataSet %>% table() %>% data.frame() %>% pull(1) %>% as.character() %>% str_split(.,'_') %>% lapply(., `[[`, 1) %>% unlist() %>% unique() %>% writeLines()
+```
+
+# ML set vs Validate set
+```{r}
+ML <- c('clinvar','UK10K','gnomad')
+val <- c('ddl','grimm','homsy','samocha','unifun')
+
+```
+
+# ML
+## Basic Stats
+### Counts across type and status
+```{r}
+joined <- raw_data %>% filter(grepl(paste(ML,collapse='|'), DataSet)) %>%  
+  left_join(., all %>% select(DataSet, Status, pos_id) %>% filter(DataSet == 'VPaC Test Set' | DataSet == 'VPaC Train Set'), by='pos_id') %>% 
+  select(DataSet = DataSet.x, pos_id, type, impact_so, is_coding, is_splicing, Status) %>% 
+  filter(!is.na(Status)) %>% 
+  unique()  
+joined$DataSet <- gsub('gnomad_rare_benign_ish','gnomad',joined$DataSet)
+
+joined %>% 
+  select(DataSet, type, pos_id, Status) %>% unique() %>% 
+  group_by(DataSet, type, Status) %>% 
+  summarise(Count=n()) %>% 
+  mutate(Count=prettyNum(Count, big.mark=",")) %>% 
+  DT::datatable(rownames = F)
+
+joined %>% 
+  select(DataSet, type, pos_id, Status) %>% unique() %>% 
+  group_by(DataSet, type, Status) %>% 
+  summarise(Count=n()) %>% 
+  filter(!(DataSet=='gnomad' & Status=='Pathogenic')) %>% 
+  ggplot(aes(x=type,y=log2(Count), fill=Status, label=prettyNum(Count, big.mark=","))) + 
+  geom_bar(stat='identity', position = 'dodge') + 
+  facet_wrap(~DataSet) + 
+  theme_minimal() + 
+  ggsci::scale_fill_aaas() + coord_cartesian(ylim=c(0,23)) +
+  geom_text(stat='identity', vjust=-1, position=position_dodge(width=1))
+```
+
+### Splicing
+```{r}
+joined %>% 
+  select(DataSet, is_splicing, Status, pos_id) %>% unique() %>% 
+  group_by(DataSet, is_splicing, Status) %>% 
+  summarise(Count=n()) %>% 
+  mutate(Count=prettyNum(Count, big.mark=",")) %>% 
+  filter(!(grepl('gnomad', DataSet) & Status == 'Pathogenic')) %>%
+  select(DataSet, Type = is_splicing, Status, Count) %>%
+  ungroup() %>% 
+  mutate(Type = case_when(Type==0 ~ 'Coding',
+                          TRUE ~ 'Splicing')) %>% 
+  DT::datatable(rownames = F)
+
+
+joined %>% 
+  select(DataSet, is_splicing, Status, pos_id) %>% unique() %>% 
+  group_by(DataSet, is_splicing, Status) %>% 
+  summarise(Count=n()) %>% 
+  select(DataSet, Type = is_splicing, Status, Count) %>%
+  ungroup() %>% 
+  mutate(Type = case_when(Type==0 ~ 'Coding',
+                          TRUE ~ 'Splicing')) %>% 
+   filter(!(DataSet=='gnomad' & Status=='Pathogenic')) %>% 
+  ggplot(aes(x=Type,y=log2(Count), fill=Status, label=prettyNum(Count, big.mark=","))) +
+  geom_bar(stat='identity', position = 'dodge') + 
+  facet_wrap(~DataSet) + 
+  theme_minimal() + 
+  ggsci::scale_fill_aaas() + coord_cartesian(ylim=c(0,23)) +
+  geom_text(stat='identity', vjust=-1, position=position_dodge(width=1))
+```
+
+# Validate
+Since the `all` data set has the properly labeled DataSets, we'll use that as the ref and use the `raw_data` for the variant info
+## Basic Stats
+### Counts across type and status
+```{r}
+joinedV <- all %>% filter(grepl('Grimm|Homsy|Samocha|DDL|Uni', DataSet)) %>% 
+  select(DataSet, pos_id, Status) %>% 
+  left_join(., raw_data %>% select(pos_id, type, impact_so, is_coding, is_splicing)) %>% 
+  filter(!is.na(type))
+
+joinedV %>% 
+  select(DataSet, type, pos_id, Status) %>% unique() %>% 
+  group_by(DataSet, type, Status) %>% 
+  summarise(Count=n()) %>% 
+  mutate(Count=prettyNum(Count, big.mark=",")) %>% 
+  DT::datatable(rownames = F)
+
+joinedV %>% 
+  select(DataSet, type, pos_id, Status) %>% unique() %>% 
+  group_by(DataSet, type, Status) %>% 
+  summarise(Count=n()) %>% 
+  ggplot(aes(x=type,y=log2(Count), fill=Status, label=prettyNum(Count, big.mark=","))) +
+  geom_bar(stat='identity', position = 'dodge') + 
+  facet_wrap(~DataSet) + 
+  theme_minimal() + 
+  ggsci::scale_fill_aaas() + coord_cartesian(ylim=c(0,19)) +
+  geom_text(stat='identity', vjust=-1, position=position_dodge(width=1))
+```
+
+### Splicing
+```{r}
+joinedV %>% 
+  select(DataSet, is_splicing, Status, pos_id) %>% unique() %>% 
+  group_by(DataSet, is_splicing, Status) %>% 
+  summarise(Count=n()) %>% 
+  mutate(Count=prettyNum(Count, big.mark=",")) %>% 
+  filter(!(grepl('gnomad', DataSet) & Status == 'Pathogenic')) %>%
+  select(DataSet, Type = is_splicing, Status, Count) %>%
+  ungroup() %>% 
+  mutate(Type = case_when(Type==0 ~ 'Coding',
+                          TRUE ~ 'Splicing')) %>% 
+  DT::datatable(rownames = F)
+
+joinedV %>% 
+  select(DataSet, is_splicing, Status, pos_id) %>% unique() %>% 
+  group_by(DataSet, is_splicing, Status) %>% 
+  summarise(Count=n()) %>% 
+  select(DataSet, Type = is_splicing, Status, Count) %>%
+  ungroup() %>% 
+  mutate(Type = case_when(Type==0 ~ 'Coding',
+                          TRUE ~ 'Splicing')) %>% 
+  ggplot(aes(x=Type,y=log2(Count), fill=Status,label=prettyNum(Count, big.mark=","))) +
+  geom_bar(stat='identity', position = 'dodge') + 
+  facet_wrap(~DataSet) + 
+  theme_minimal() + 
+  ggsci::scale_fill_aaas() + coord_cartesian(ylim=c(0,19)) +
+  geom_text(stat='identity', vjust=-1, position=position_dodge(width=1))
+```
+
+# Train Set
+```{r}
+joinedT <- all %>% filter(DataSet == 'VPaC Test Set') %>%
+  select(pos_id, Status) %>%
+  left_join(., raw_data %>% select(pos_id, type, impact_so, is_coding, is_splicing)) %>%
+  filter(!is.na(type))
+
+# never? finishes?!
+# joinedT <- all %>% filter(DataSet == 'VPaC Test Set') %>% 
+#   select(pos_id, Status) %>% 
+#   left_join(., raw_data %>% select(pos_id, type, impact_so, is_coding, is_splicing)) %>% 
+#   mutate(DataSet = case_when(
+#     pos_id %in% raw_data %>% filter(DataSet== 'UK10K') %>% pull(pos_id) ~ 'UK10K',
+#     pos_id %in% raw_data %>% filter(DataSet== 'clinvar') %>% pull(pos_id) ~ 'ClinVar',
+#     TRUE ~ 'gnomad')) %>% 
+#   filter(!is.na(type))
+
+joinedT %>% 
+  select(type, pos_id, Status) %>% unique() %>% 
+  group_by(type, Status) %>% 
+  summarise(Count=n()) %>% 
+  ggplot(aes(x=type,y=log2(Count), fill=Status, label=prettyNum(Count, big.mark=","))) +
+  geom_bar(stat='identity', position = 'dodge') + 
+  theme_minimal() + 
+  ggsci::scale_fill_aaas() + coord_cartesian(ylim=c(0,19)) +
+  geom_text(stat='identity', vjust=-1, position=position_dodge(width=1))
+```
+
+```{r}
+joinedT %>% 
+  select(is_splicing, Status, pos_id) %>% unique() %>% 
+  group_by(is_splicing, Status) %>% 
+  summarise(Count=n()) %>% 
+  select(Type = is_splicing, Status, Count) %>%
+  ungroup() %>% 
+  mutate(Type = case_when(Type==0 ~ 'Coding',
+                          TRUE ~ 'Splicing')) %>% 
+  ggplot(aes(x=Type,y=log2(Count), fill=Status,label=prettyNum(Count, big.mark=","))) +
+  geom_bar(stat='identity', position = 'dodge') + 
+  theme_minimal() + 
+  ggsci::scale_fill_aaas() + coord_cartesian(ylim=c(0,19)) +
+  geom_text(stat='identity', vjust=-1, position=position_dodge(width=1))
+```
