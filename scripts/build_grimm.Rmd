@@ -20,7 +20,7 @@ VariBench	“Variation datasets affecting protein tolerance”	“The pathogenic
 predictSNP	“Benchmark dataset used for the evaluation of…prediction tools and training of consensus classifier PredictSNP”	Disease‐causing and deleterious variants from SwissProt, HGMD, HumVar, Humsavar, dbSNP, PhenCode, IDbases, and 16 individual locus‐specific databases.	Neutral variants from SwissProt, HGMD, HumVar, Humsavar, dbSNP, PhenCode, IDbases, and 16 individual locus‐specific databases.
 
 
-SwissVar	“Comprehensive collection of single amino acid polymorphisms (SAPs) and diseases in the UniProtKB/Swiss‐Prot knowledgebase”	“A variant is classified as disease when it is found in patients and disease association is reported in literature. However, this classification is not a definitive assessment of pathogenicity”f	“A variant is classified as polymorphism if no disease association has been reported”f
+SwissVar	“Comprehensive collection of single amino acid polymorphisms (SAPs) and diseases in the UniProtKB/Swiss‐Prot knowledgebase”	“A variant is classified as disease when it is found in patients and disease association is reported in literature. However, this classification is not a definitive assessment of pathogenicity”f	“A variant is classified as polymorphism if no disease association has been reported”
 
 
 # On local computer
