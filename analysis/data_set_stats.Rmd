@@ -29,7 +29,7 @@ val <- c('ddl','grimm','homsy','samocha','unifun')
 ### Counts across type and status
 ```{r}
 joined <- raw_data %>% filter(grepl(paste(ML,collapse='|'), DataSet)) %>%  
-  left_join(., all %>% select(DataSet, Status, pos_id) %>% filter(DataSet == 'VPaC Test Set' | DataSet == 'VPaC Train Set'), by='pos_id') %>% 
+  left_join(., all %>% filter(DataSet == 'VPaC Test Set' | DataSet == 'VPaC Train Set'), by='pos_id') %>% 
   select(DataSet = DataSet.x, pos_id, type, impact_so, is_coding, is_splicing, Status) %>% 
   filter(!is.na(Status)) %>% 
   unique()  
@@ -46,7 +46,6 @@ joined %>%
   select(DataSet, type, pos_id, Status) %>% unique() %>% 
   group_by(DataSet, type, Status) %>% 
   summarise(Count=n()) %>% 
-  filter(!(DataSet=='gnomad' & Status=='Pathogenic')) %>% 
   ggplot(aes(x=type,y=log2(Count), fill=Status, label=prettyNum(Count, big.mark=","))) + 
   geom_bar(stat='identity', position = 'dodge') + 
   facet_wrap(~DataSet) + 
@@ -78,7 +77,6 @@ joined %>%
   ungroup() %>% 
   mutate(Type = case_when(Type==0 ~ 'Coding',
                           TRUE ~ 'Splicing')) %>% 
-   filter(!(DataSet=='gnomad' & Status=='Pathogenic')) %>% 
   ggplot(aes(x=Type,y=log2(Count), fill=Status, label=prettyNum(Count, big.mark=","))) +
   geom_bar(stat='identity', position = 'dodge') + 
   facet_wrap(~DataSet) + 
@@ -148,44 +146,41 @@ joinedV %>%
 
 # Train Set
 ```{r}
-joinedT <- all %>% filter(DataSet == 'VPaC Test Set') %>%
-  select(pos_id, Status) %>%
-  left_join(., raw_data %>% select(pos_id, type, impact_so, is_coding, is_splicing)) %>%
+joinedT <- all %>% filter(DataSet == 'VPaC Test Set') %>% 
+  select(pos_id, Status) %>% 
+  left_join(., raw_data %>% select(pos_id, type, impact_so, is_coding, is_splicing)) %>% 
+  mutate(DataSet = case_when(
+    pos_id %in% raw_data %>% filter(DataSet== 'UK10K') %>% pull(pos_id) ~ 'UK10K',
+    pos_id %in% raw_data %>% filter(DataSet== 'clinvar') %>% pull(pos_id) ~ 'ClinVar',
+    TRUE ~ 'gnomad')) %>% 
   filter(!is.na(type))
-
-# never? finishes?!
-# joinedT <- all %>% filter(DataSet == 'VPaC Test Set') %>% 
-#   select(pos_id, Status) %>% 
-#   left_join(., raw_data %>% select(pos_id, type, impact_so, is_coding, is_splicing)) %>% 
-#   mutate(DataSet = case_when(
-#     pos_id %in% raw_data %>% filter(DataSet== 'UK10K') %>% pull(pos_id) ~ 'UK10K',
-#     pos_id %in% raw_data %>% filter(DataSet== 'clinvar') %>% pull(pos_id) ~ 'ClinVar',
-#     TRUE ~ 'gnomad')) %>% 
-#   filter(!is.na(type))
-
+    
 joinedT %>% 
-  select(type, pos_id, Status) %>% unique() %>% 
-  group_by(type, Status) %>% 
+  select(DataSet, type, pos_id, Status) %>% unique() %>% 
+  group_by(DataSet, type, Status) %>% 
   summarise(Count=n()) %>% 
   ggplot(aes(x=type,y=log2(Count), fill=Status, label=prettyNum(Count, big.mark=","))) +
   geom_bar(stat='identity', position = 'dodge') + 
+  facet_wrap(~DataSet) + 
   theme_minimal() + 
   ggsci::scale_fill_aaas() + coord_cartesian(ylim=c(0,19)) +
   geom_text(stat='identity', vjust=-1, position=position_dodge(width=1))
-```
-
-```{r}
-joinedT %>% 
-  select(is_splicing, Status, pos_id) %>% unique() %>% 
-  group_by(is_splicing, Status) %>% 
-  summarise(Count=n()) %>% 
-  select(Type = is_splicing, Status, Count) %>%
-  ungroup() %>% 
-  mutate(Type = case_when(Type==0 ~ 'Coding',
-                          TRUE ~ 'Splicing')) %>% 
-  ggplot(aes(x=Type,y=log2(Count), fill=Status,label=prettyNum(Count, big.mark=","))) +
-  geom_bar(stat='identity', position = 'dodge') + 
-  theme_minimal() + 
-  ggsci::scale_fill_aaas() + coord_cartesian(ylim=c(0,19)) +
-  geom_text(stat='identity', vjust=-1, position=position_dodge(width=1))
-```
+    ```
+    
+    ```{r}
+    joinedT %>% 
+      select(DataSet, is_splicing, Status, pos_id) %>% unique() %>% 
+      group_by(DataSet, is_splicing, Status) %>% 
+      summarise(Count=n()) %>% 
+      select(DataSet, Type = is_splicing, Status, Count) %>%
+      ungroup() %>% 
+      mutate(Type = case_when(Type==0 ~ 'Coding',
+                              TRUE ~ 'Splicing')) %>% 
+      ggplot(aes(x=Type,y=log2(Count), fill=Status,label=prettyNum(Count, big.mark=","))) +
+      geom_bar(stat='identity', position = 'dodge') + 
+      facet_wrap(~DataSet) + 
+      theme_minimal() + 
+      ggsci::scale_fill_aaas() + coord_cartesian(ylim=c(0,19)) +
+      geom_text(stat='identity', vjust=-1, position=position_dodge(width=1))
+    ```
+    
