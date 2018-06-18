@@ -20,7 +20,78 @@ library(caret)
 # or rather unique(ish) predictors kept
 # reflected in the `select` commands below
 ###############################
+predictors <- c('pos_id', 
+                'Status', 
+                'Complicated_Status', 
+                'is_exonic', 
+                'is_coding', 
+                'is_lof', 
+                'is_splicing', 
+                'impact_severity', 
+                'polyphen_score', 
+                'sift_score', 
+                'dann', 
+                'gerp_elements', 
+                'DiseaseClass', 
+                'mpc', 
+                'revel', 
+                'max_aaf_all',
+                'gno_ac_afr', 
+                'gno_ac_eas', 
+                'gno_ac_all', 
+                'gno_ac_popmax',
+                'ac_exac_sas', 
+                'ac_exac_fin',
+                'aaf_1kg_all',
+                'aaf_esp_all', 
+                'ac_exac_all', 
+                'ac_exac_amr', 
+                'ac_exac_oth', 
+                'gno_af_all', 
+                'gno_an_popmax', 
+                'an_exac_all', 
+                'af_exac_all', 
+                'fitcons', 
+                'linsight', 
+                'lof_z:precessive', 
+                'phylop_100way',
+                'syn_z',
+                'grantham', 
+                'cadd_phred', 
+                'ccr_pct_v1', 
+                'genesplicer', 
+                'spliceregion',
+                'eigen_pc_raw_rankscore',
+                'fathmm_converted_rankscore',
+                'genocanyon_score_rankscore',
+                'lrt_converted_rankscore',
+                'm_cap_rankscore',
+                'metalr_rankscore',
+                'metasvm_rankscore',
+                'mutationassessor_score_rankscore',
+                'mutationtaster_converted_rankscore',
+                'provean_converted_rankscore',
+                'vest3_rankscore',
+                'fathmm_mkl_coding_rankscore',
+                'epilogos_bivflnk',
+                'epilogos_enh',
+                'epilogos_enhbiv',
+                'epilogos_enhg',
+                'epilogos_het',
+                'epilogos_quies',
+                'epilogos_reprpc',
+                'epilogos_reprpcwk',
+                'epilogos_tss',
+                'epilogos_tssaflnk',
+                'epilogos_tssbiv',
+                'epilogos_tx',
+                'epilogos_txflnk',
+                'epilogos_txwk',
+                'epilogos_znf',
+                'segway_mean_score',
+                'segway_sum_score')
 
+for_numeric <- 'ac_|an_|^n_|af_|dann|revel|mpc|gerp|polyphen_score|sift_score|fitcons|gerp_elements|^adj|_z$|^pli$|^pnull$|precessive|^phylop|linsight|_rankscore$|ccr_pct_v1|linsight|epilogos|segway'
 ###############################
 # UK10K processing
 ###############################
@@ -41,50 +112,8 @@ all_processed <- uk10k_gemini_rare_variants %>%
                                  grepl('^diff', genesplicer) ~ 'Diff',
                                  TRUE ~ 'Else')) %>% 
   mutate(Status = factor(Status, levels=c('Pathogenic','NotPathogenic'))) %>% 
-  mutate_at(vars(matches('ac_|an_|^n_')), funs(as.integer(.))) %>% # convert columns with ac_|whatever to integer (ac is allele count)
-  mutate_at(vars(matches('af_|dann|revel|mpc|gerp|polyphen_score|sift_score|fitcons|gerp_elements|^adj|_z$|^pli$|^pnull$|precessive|^phylop|linsight|_rankscore$|ccr_pct_v1|linsight')), funs(as.numeric(.))) %>%  # af is allele frequency
-  select(pos_id, 
-         Status, 
-         Complicated_Status, 
-         is_exonic, 
-         is_coding, 
-         is_lof, 
-         is_splicing, 
-         impact_severity, 
-         polyphen_score, 
-         sift_score, 
-         dann, 
-         gerp_elements, 
-         DiseaseClass, 
-         mpc, 
-         revel, 
-         max_aaf_all,
-         gno_ac_afr, 
-         gno_ac_eas, 
-         gno_ac_all, 
-         gno_ac_popmax,
-         ac_exac_sas, 
-         ac_exac_fin,
-         aaf_1kg_all,
-         aaf_esp_all, 
-         ac_exac_all, 
-         ac_exac_amr, 
-         ac_exac_oth, 
-         gno_af_all, 
-         gno_an_popmax, 
-         an_exac_all, 
-         af_exac_all, 
-         fitcons, 
-         linsight, 
-         lof_z:precessive, 
-         phylop_100way,
-         syn_z,
-         grantham, 
-         cadd_phred, 
-         contains("_rankscore"), 
-         ccr_pct_v1, 
-         genesplicer, 
-         spliceregion) %>% 
+  mutate_at(vars(matches(for_numeric)), funs(as.numeric(.))) %>%  # convert columns with ac_|whatever to integer (ac is allele count), etc. af is allele frequency
+  select(one_of(predictors)) %>% 
   filter(max_aaf_all < 0.01) %>% 
   unique() # remove any common variants
 
@@ -136,46 +165,8 @@ clinvar_processed <- clinvar %>%
                                  TRUE ~ 'Else')) %>% 
   mutate_at(vars(matches('ac_|an_|^n_')), funs(as.integer(.))) %>% # convert columns with ac_|whatever to integer (ac is allele count)
   mutate_at(vars(matches('af_|dann|revel|mpc|gerp|polyphen_score|sift_score|fitcons|gerp_elements|^adj|_z$|^pli$|^pnull$|precessive|^phylop_100|linsight|_rankscore$|ccr_pct_v1')), funs(as.numeric(.))) %>%  # af is allele frequency
-  select(pos_id,
-         Status,
-         is_exonic,
-         is_coding,
-         is_lof,
-         is_splicing,
-         impact_severity,
-         polyphen_score,
-         sift_score,
-         dann,
-         gerp_elements,
-         DiseaseClass,
-         mpc,
-         revel,
-         max_aaf_all,
-         gno_ac_afr,
-         gno_ac_eas,
-         gno_ac_all,
-         gno_ac_popmax,
-         ac_exac_sas,
-         ac_exac_fin,
-         aaf_1kg_all,
-         aaf_esp_all,
-         ac_exac_all,
-         ac_exac_amr,
-         ac_exac_oth,
-         gno_af_all,
-         gno_an_popmax,
-         an_exac_all,
-         af_exac_all,
-         fitcons,
-         linsight,
-         lof_z:precessive,
-         phylop_100way,
-         grantham,
-         cadd_phred,
-         contains("_rankscore"),
-         ccr_pct_v1,
-         genesplicer,
-         spliceregion) %>% 
+  selectmutate_at(vars(matches(for_numeric)), funs(as.numeric(.))) %>%  # convert columns with ac_|whatever to integer (ac is allele count), etc. af is allele frequency
+  select(one_of(predictors)) %>%  
   filter(max_aaf_all < 0.01) # remove any common variants
 
 # fill missing with -1
@@ -211,6 +202,7 @@ print('ClinVar Loaded')
 gnomad <- fread(paste0('gzcat ', gnomad_file))
 ## Prep data for modeling
 gnomad_processed <- gnomad %>% 
+  filter(gene %in% (clinvar %>% filter(status=='PATHOGENIC_EYE' | status == 'PATHOGENIC_OTHER_HC') %>% pull(gene) %>% unique())) %>% # only have gnomad matched for path variants in clinvar genes
   separate(gene_eyediseaseclass, c('RDGene','DiseaseClass'), sep='_') %>%  #split off RD disease type
   select(-RDGene) %>% 
   mutate(pos_id=paste0(chrom, ':', end, '_', ref, '_', alt),
@@ -225,10 +217,10 @@ gnomad_processed <- gnomad %>%
                                  TRUE ~ 'Else')) %>% 
   mutate(Status = factor(Status, levels=c('Pathogenic','NotPathogenic'))) %>% 
   filter(hgmd_overlap=='None' & clinvar_pathogenic == 'None') %>% # remove possible pathogenic by checking against hgmd or clinvar presence
-  mutate_at(vars(matches('ac_|an_|^n_')), funs(as.integer(.))) %>% # convert columns with ac_|whatever to integer (ac is allele count)
-  mutate_at(vars(matches('af_|dann|revel|mpc|gerp|polyphen_score|sift_score|fitcons|gerp_elements|^adj|_z$|^pli$|^pnull$|precessive|^phylop_100|linsight|_rankscore$|ccr_pct_v1')), funs(as.numeric(.))) %>%  # af is allele frequency
-  select(pos_id, Status, is_exonic, is_coding, is_lof, is_splicing, impact_severity, polyphen_score, sift_score, dann, gerp_elements, DiseaseClass, mpc, revel, max_aaf_all, gno_ac_afr, gno_ac_eas, gno_ac_all, gno_ac_popmax, ac_exac_sas, ac_exac_fin, aaf_1kg_all, aaf_esp_all, ac_exac_all, ac_exac_amr, ac_exac_oth, gno_af_all, gno_an_popmax, an_exac_all, af_exac_all, fitcons, linsight, lof_z:precessive, phylop_100way, grantham, cadd_phred, contains("_rankscore"), ccr_pct_v1, genesplicer, spliceregion) %>% 
-  filter(max_aaf_all < 0.01) # remove any common variants
+  mutate_at(vars(matches(for_numeric)), funs(as.numeric(.))) %>%  # convert columns with ac_|whatever to integer (ac is allele count), etc. af is allele frequency
+  select(one_of(predictors)) %>% 
+  filter(max_aaf_all < 0.01) # remove any common variants 
+
 
 # fill missing with -1
 gnomad_processed[is.na(gnomad_processed)] <- -1
@@ -237,10 +229,12 @@ pos_id__source <- rbind(pos_id__source,
                         gnomad_processed %>% select(pos_id, Status) %>% mutate(Source='gnomAD')) %>% 
   unique()
 
-# no more than 250X gnomad benign relative to the number of clinvar pathogenic variants 
+# no more than 100X gnomad benign relative to the number of clinvar pathogenic variants 
 set.seed(13457)
-gnomad_processed_sub <- gnomad_processed %>% sample_n((ML_set__clinvar %>% filter(Status=='Pathogenic') %>% nrow()) * 250)
-gnomad_processed_sub_nonEye <- gnomad_processed %>% filter(!pos_id %in% gnomad_processed_sub$pos_id) %>% sample_n((ML_set__clinvar__otherPath_HC %>% filter(Status=='Pathogenic') %>% nrow()) * 250)
+gnomad_processed_sub <- gnomad_processed %>% sample_n((ML_set__clinvar %>% filter(Status=='Pathogenic') %>% nrow()) * 100)
+gnomad_processed_sub_nonEye <- gnomad_processed %>% 
+  filter(!pos_id %in% gnomad_processed_sub$pos_id) #%>% 
+  #sample_n((ML_set__clinvar__otherPath_HC %>% filter(Status=='Pathogenic') %>% nrow()) * 100)
 # the remainder gnomad variants
 gnomad_processed_other <- gnomad_processed %>% filter(!pos_id %in% c(gnomad_processed_sub$pos_id,gnomad_processed_sub_nonEye$pos_id)) # not used for model building, for potential validation purposes
 
@@ -248,76 +242,76 @@ gnomad_processed_other <- gnomad_processed %>% filter(!pos_id %in% c(gnomad_proc
 #gnomad_processed_other$Source <- 'gnomAD'
 print('gnomAD Loaded')
 
-################################################
-# Build ClinVar spread data
-################################################
-spread <- fread(paste0('gzcat ', spread_file))
-
-## Prep data for modeling
-spread_processed <- spread %>% 
-  #filter(status!='PATHOGENIC_OTHER') %>% # drop non eye pathogenic variants for the model learning 
-  #separate(gene_eyediseaseclass, c('RDGene','DiseaseClass'), sep='_') %>%  #split off RD disease type
-  #select(-RDGene) %>% 
-  mutate(pos_id=paste0(chrom, ':', end, '_', ref, '_', alt),
-         impact_severity = case_when(impact_severity == 'HIGH' ~ 3, # convert to integer 
-                                     impact_severity == 'MED' ~ 2, 
-                                     TRUE ~ 1),
-         Status = factor('SPREAD'),
-         genesplicer = case_when(genesplicer == "" ~ 'No',
-                                 grepl('^gain', genesplicer) ~ 'Gain',
-                                 grepl('^loss', genesplicer) ~ 'Loss',
-                                 grepl('^diff', genesplicer) ~ 'Diff',
-                                 TRUE ~ 'Else')) %>% 
-  mutate_at(vars(matches('ac_|an_|^n_')), funs(as.integer(.))) %>% # convert columns with ac_|whatever to integer (ac is allele count)
-  mutate_at(vars(matches('af_|dann|revel|mpc|gerp|polyphen_score|sift_score|fitcons|gerp_elements|^adj|_z$|^pli$|^pnull$|precessive|^phylop_100|linsight|_rankscore$|ccr_pct_v1|epilogos|segway')), funs(as.numeric(.))) %>%  # af is allele frequency
-  select(pos_id,
-         Status,
-         is_exonic,
-         is_coding,
-         is_lof,
-         is_splicing,
-         impact_severity,
-         polyphen_score,
-         sift_score,
-         dann,
-         gerp_elements,
-         mpc,
-         revel,
-         max_aaf_all,
-         gno_ac_afr,
-         gno_ac_eas,
-         gno_ac_all,
-         gno_ac_popmax,
-         ac_exac_sas,
-         ac_exac_fin,
-         aaf_1kg_all,
-         aaf_esp_all,
-         ac_exac_all,
-         ac_exac_amr,
-         ac_exac_oth,
-         gno_af_all,
-         gno_an_popmax,
-         an_exac_all,
-         af_exac_all,
-         fitcons,
-         linsight,
-         lof_z:precessive,
-         phylop_100way,
-         grantham,
-         cadd_phred,
-         contains("_rankscore"),
-         contains("segway"),
-         contains("epilogos"),
-         ccr_pct_v1,
-         genesplicer,
-         spliceregion)
-
-# fill missing with -1
-spread_processed[is.na(spread_processed)] <- -1
-
-ML_set__spread <- spread_processed 
-
-print('ClinVar Spread Loaded')
+# ################################################
+# # Build ClinVar spread data
+# ################################################
+# spread <- fread(paste0('gzcat ', spread_file))
+# 
+# ## Prep data for modeling
+# spread_processed <- spread %>% 
+#   #filter(status!='PATHOGENIC_OTHER') %>% # drop non eye pathogenic variants for the model learning 
+#   #separate(gene_eyediseaseclass, c('RDGene','DiseaseClass'), sep='_') %>%  #split off RD disease type
+#   #select(-RDGene) %>% 
+#   mutate(pos_id=paste0(chrom, ':', end, '_', ref, '_', alt),
+#          impact_severity = case_when(impact_severity == 'HIGH' ~ 3, # convert to integer 
+#                                      impact_severity == 'MED' ~ 2, 
+#                                      TRUE ~ 1),
+#          Status = factor('SPREAD'),
+#          genesplicer = case_when(genesplicer == "" ~ 'No',
+#                                  grepl('^gain', genesplicer) ~ 'Gain',
+#                                  grepl('^loss', genesplicer) ~ 'Loss',
+#                                  grepl('^diff', genesplicer) ~ 'Diff',
+#                                  TRUE ~ 'Else')) %>% 
+#   mutate_at(vars(matches('ac_|an_|^n_')), funs(as.integer(.))) %>% # convert columns with ac_|whatever to integer (ac is allele count)
+#   mutate_at(vars(matches('af_|dann|revel|mpc|gerp|polyphen_score|sift_score|fitcons|gerp_elements|^adj|_z$|^pli$|^pnull$|precessive|^phylop_100|linsight|_rankscore$|ccr_pct_v1|epilogos|segway')), funs(as.numeric(.))) %>%  # af is allele frequency
+#   select(pos_id,
+#          Status,
+#          is_exonic,
+#          is_coding,
+#          is_lof,
+#          is_splicing,
+#          impact_severity,
+#          polyphen_score,
+#          sift_score,
+#          dann,
+#          gerp_elements,
+#          mpc,
+#          revel,
+#          max_aaf_all,
+#          gno_ac_afr,
+#          gno_ac_eas,
+#          gno_ac_all,
+#          gno_ac_popmax,
+#          ac_exac_sas,
+#          ac_exac_fin,
+#          aaf_1kg_all,
+#          aaf_esp_all,
+#          ac_exac_all,
+#          ac_exac_amr,
+#          ac_exac_oth,
+#          gno_af_all,
+#          gno_an_popmax,
+#          an_exac_all,
+#          af_exac_all,
+#          fitcons,
+#          linsight,
+#          lof_z:precessive,
+#          phylop_100way,
+#          grantham,
+#          cadd_phred,
+#          contains("_rankscore"),
+#          contains("segway"),
+#          contains("epilogos"),
+#          ccr_pct_v1,
+#          genesplicer,
+#          spliceregion)
+# 
+# # fill missing with -1
+# spread_processed[is.na(spread_processed)] <- -1
+# 
+# ML_set__spread <- spread_processed 
+# 
+# print('ClinVar Spread Loaded')
 
 ################################################
 # Combine UK10K and ClinVar and gnomAD data
