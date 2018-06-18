@@ -5,7 +5,7 @@
 # biowulf paths
 uk10k_data <- '/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/uk10k_gemini_rare_variants.Rdata'
 clinvar_file <- '/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/data/clinvar/clinvar.gemini.tsv.gz'
-gnomad_file <- '/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/data/gnomad_rare_benign_ish/gnomad.gemini.tsv.gz'
+gnomad_file <- '/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/data/gnomad_rare_benign_ish/gnomad_rare_benign_ish.gemini.tsv.gz'
 # contains variants adjacent to existing variants in clinvar
 spread_file <- '/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/data/clinvar/spread/clinvar.gemini.tsv.gz'
 
@@ -86,7 +86,6 @@ all_processed <- uk10k_gemini_rare_variants %>%
          genesplicer, 
          spliceregion) %>% 
   filter(max_aaf_all < 0.01) %>% 
-  
   unique() # remove any common variants
 
 # fill missing with -1
@@ -112,7 +111,7 @@ all_NOT_PATH__CUT <- all_set__uk10k %>% filter(Status=='NotPathogenic') #%>% sam
 ML_set__UK10K <- rbind(all_PATH, all_NOT_PATH__CUT)
 print('UK10K Loaded')
 ###########################################
-# ClinVar  Processing
+# ClinVar Processing
 ###########################################
 #clinvar <- fread('gzcat ~/git/eye_var_Pathogenicity/processed_data/clinvar.gemini.tsv.gz')
 clinvar <- fread(paste0('gzcat ', clinvar_file))
