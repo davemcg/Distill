@@ -5,11 +5,19 @@ output:
     theme: flatly
     toc: True
 ---
-Title: Sieve, a random forest and deep neural network based ensembl learner, provides class leading DNA variant pathogenicity prediction
+Title: Distill, a random forest and deep neural network based ensembl learner, provides class leading DNA variant pathogenicity prediction
 
 Background: Identification of pathogenic variant(s) from human exome or genome sequencing (WGS) is a crucial, difficult, and, with the dramatic reduction in sequencing costs, an increasingly common task. Even after filtering for rare coding and splicing variants, hundreds of variants remain for most patients. As functional studies are often not feasible, trimming the hundreds of variants to a short list uses a combination of *in silico* predictions, knowledge of likely deleterious genes for the condition, along with huge variety of scoring metrics. Popular metrics include conservation and predicted functionality-based scores like GERP, SIFT, GERP, and CADD. To better guide variant analysis, we use a novel and broad dataset of rare and richly annotated variants to train a rare mendelian disease DNA variant pathogenicity modeler. 
 
 Methods and findings: We curated a machine learning input dataset including high quality ClinVar pathogenic/benign dataset, 425 solved retinal degeneration WGS, and rare variants from gnomAD. The hundreds of thousands of variants were richly annotated with the latest variant metrics like constrained coding regions (ccr), ENCODE epigenetic data, GTEx gene expression data, other pathogenicity metrics (e.g. REVEL, FATHMM, MetaSVM), and hundreds of others. While this is superficially similar to how REVEL, a recently published DNA pathogenicity ensembl model, was constructed, we use a broad set of rare benign variants and a richer set of annotations. Our rich dataset, when used with a random forest model to predict DNA variant pathogenicity, highlights ccr, the ExAC missense and loss of function Z, PhyloP, CADD, and gnomAD population metrics as the most crucial scores. We then trained a deep LSTM neural network model and merged it with the random forest model to create an ensembl learner, Sieve, with class leading pathogenicity prediction.
+
+
+
+
+
+Identification of pathogenic variant(s) from human exome or genome sequencing (WGS) is a crucial, difficult, and, with the dramatic reduction in sequencing costs, an increasingly common task. Even after filtering for rare coding and splicing variants, numerous prioritized variants remain for most patients. Current prioritization strategies use a combination of *in silico* predictions, knowledge of likely deleterious genes for the condition, along with huge variety of scoring metrics. Popular metrics include conservation and predicted functionality-based scores like GERP, SIFT, GERP, CADD, and REVEL. To better guide variant analysis, we use a novel and broad dataset of rare and richly annotated variants to train a rare mendelian disease DNA variant pathogenicity modeler.
+ 
+We curated a machine learning input dataset including high quality ClinVar pathogenic/benign dataset, 425 solved retinal degeneration WGS, and rare variants from gnomAD. The hundreds of thousands of variants were richly annotated with hundreds of variant metrics including constrained coding regions (ccr), ENCODE epigenetic data, GTEx gene expression data, other pathogenicity metrics (e.g. REVEL, FATHMM, MetaSVM). The advantage of this strategy is the use of a broad curated set of rare benign variants and a richer set of annotations. Our dataset, when used with a random forest model to predict DNA variant pathogenicity, highlights ccr, the ExAC missense and loss of function Z-scores, PhyloP, CADD, and gnomAD population metrics as the most crucial scores. We then trained a deep LSTM neural network model and merged it with the random forest model to create an ensembl learner, Sieve, with class leading pathogenicity prediction.
 
 
  
