@@ -163,9 +163,7 @@ clinvar_processed <- clinvar %>%
                                  grepl('^loss', genesplicer) ~ 'Loss',
                                  grepl('^diff', genesplicer) ~ 'Diff',
                                  TRUE ~ 'Else')) %>% 
-  mutate_at(vars(matches('ac_|an_|^n_')), funs(as.integer(.))) %>% # convert columns with ac_|whatever to integer (ac is allele count)
-  mutate_at(vars(matches('af_|dann|revel|mpc|gerp|polyphen_score|sift_score|fitcons|gerp_elements|^adj|_z$|^pli$|^pnull$|precessive|^phylop_100|linsight|_rankscore$|ccr_pct_v1')), funs(as.numeric(.))) %>%  # af is allele frequency
-  selectmutate_at(vars(matches(for_numeric)), funs(as.numeric(.))) %>%  # convert columns with ac_|whatever to integer (ac is allele count), etc. af is allele frequency
+  mutate_at(vars(matches(for_numeric)), funs(as.numeric(.))) %>%  # convert columns with ac_|whatever to integer (ac is allele count), etc. af is allele frequency
   select(one_of(predictors)) %>%  
   filter(max_aaf_all < 0.01) # remove any common variants
 
@@ -448,30 +446,30 @@ ML_set__eye_TT <- train_test_maker(ML_set__eye)
 ML_set__general_TT <- train_test_maker(ML_set__general)
 ML_set__other_TT <- train_test_maker(ML_set__other)
 
-##################################
-# ClinVar Spread
-# train, validate, and test sets
-# 70% to train
-# 30% to test 
-##################################
-train_test_maker_SPREAD <- function(df){
-  set.seed(115470)
-  train_set <- df %>% 
-    group_by(Status) %>% 
-    sample_frac(0.7) %>% ungroup() 
-  
-  test_set <- df %>% 
-    filter(!pos_id %in% c(train_set$pos_id))
-  
-  out <- list()
-  out$train_set <- train_set
-  out$test_set <- test_set
-  out
-}
-
-
-clinvar_spread <- train_test_maker_SPREAD(ML_set__clinvar)
-clinvar_spread$spread <- ML_set__spread
+# ##################################
+# # ClinVar Spread
+# # train, validate, and test sets
+# # 70% to train
+# # 30% to test 
+# ##################################
+# train_test_maker_SPREAD <- function(df){
+#   set.seed(115470)
+#   train_set <- df %>% 
+#     group_by(Status) %>% 
+#     sample_frac(0.7) %>% ungroup() 
+#   
+#   test_set <- df %>% 
+#     filter(!pos_id %in% c(train_set$pos_id))
+#   
+#   out <- list()
+#   out$train_set <- train_set
+#   out$test_set <- test_set
+#   out
+# }
+# 
+# 
+# clinvar_spread <- train_test_maker_SPREAD(ML_set__clinvar)
+# clinvar_spread$spread <- ML_set__spread
 
 ###########################################
 # SAVE DATA
@@ -488,4 +486,4 @@ model_data$pos_id__source <- pos_id__source
 model_data$sessionInfo <- sessionInfo()
 save(model_data, file='/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/model_data.Rdata')
 
-save(clinvar_spread, file='/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/model_spread.Rdata')
+#save(clinvar_spread, file='/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/model_spread.Rdata')
