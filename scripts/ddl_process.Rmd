@@ -24,7 +24,7 @@ panel %>% head()
 
 path_cdot <- panel %>% filter(grepl('Path', `Interpretation Summary`, ignore.case = T)) %>% select(`#Chr`, End, Ref, Alt, avsnp147) %>% mutate(pos_id=paste0(`#Chr`, ':', End, '_', Ref, '_', Alt))
 
-path_cdot <- path_cdot %>% rowwise() %>% mutate(pos = str_split(`Genomic location`, '\\.')[[1]][2]) %>% mutate(pos = str_split(pos, '[A-Za-z]')[[1]][1]) %>% mutate(pos=str_split(pos, '_')[[1]][1]) %>% ungroup()
+#path_cdot <- path_cdot %>% rowwise() %>% mutate(pos = str_split(`Genomic location`, '\\.')[[1]][2]) %>% mutate(pos = str_split(pos, '[A-Za-z]')[[1]][1]) %>% mutate(pos=str_split(pos, '_')[[1]][1]) %>% ungroup()
 ```
 
 Load gemini output and prep data
