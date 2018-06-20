@@ -8,29 +8,30 @@ output:
 # Load processed data and models
 From scripts/build_models.R run on biowulf2
 ```{r}
-load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/model_data.Rdata')
+load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/model_data_2018_06_19.Rdata.Rdata')
 
 load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/OVPaC_3mtry.Rdata')
 load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/OVPaC_6mtry.Rdata')
 load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/OVPaC_10mtry.Rdata')
 
-load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/VPaC_3mtry.Rdata')
+#load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/VPaC_3mtry.Rdata')
 load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/VPaC_6mtry.Rdata')
-load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/VPaC_10mtry.Rdata')
-# ogvfb cohort
-load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/ogvfb_exome_cohort.Rdata')
-# grimm
-load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/grimm_ML.Rdata')
-# unifun
-load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/unifun_ML.Rdata')
-# ddl nisc panel
-load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/ddl_nisc_panel_variants.Rdata')
-#VPaC_deeprnn
-load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/DeepRNN_model.Rdata')
-# samocha
-load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/samocha_ML.Rdata')
-# homsy
-load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/homsy_ML.Rdata')
+#load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/VPaC_10mtry.Rdata')
+load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/VPaC_15mtry.Rdata')
+# # ogvfb cohort
+# load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/ogvfb_exome_cohort.Rdata')
+# # grimm
+# load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/grimm_ML.Rdata')
+# # unifun
+# load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/unifun_ML.Rdata')
+# # ddl nisc panel
+# load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/ddl_nisc_panel_variants.Rdata')
+# #VPaC_deeprnn
+# load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/DeepRNN_model.Rdata')
+# # samocha
+# load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/samocha_ML.Rdata')
+# # homsy
+# load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/homsy_ML.Rdata')
 
 # all raw
 ######
@@ -75,7 +76,8 @@ cm_maker <- function(predictor = 'cadd_phred', data, cutoff=0.5, mode = 'prec_re
 
 
 cm_maker('revel', grimm$grimm_ML_set, cutoff=0.5)
-cm_maker(VPaC_6mtry, grimm$grimm_ML_set, cutoff=0.01)
+cm_maker(VPaC_15mtry, grimm$grimm_ML_set, cutoff=0.01)
+cm_maker(VPaC_15mtry, raw_data %>% filter(DataSet=='grimm'), cutoff=0.01)
 #cm_maker(model, grimm$grimm_ML_set, cutoff=0.01)
 ```
 
@@ -95,50 +97,42 @@ cm_maker(VPaC_10mtry, model_data$ML_set__general_dummy_TT$test_set, cutoff=0.4)
 
 # Merge all datasets and calculated OVPaC and VPaC scores
 ```{r}
-useful_cols <- c('pos_id', 'Status', 'DiseaseClass', 'is_lof','impact_severity','mis_z','ccr_pct_v1','cadd_phred','phylop_100way','n_mis','revel','fitcons_float','precessive','n_lof','m_cap_rankscore','dann','vest3_rankscore','n_syn','pnull','pli','lof_z','fathmm_mkl_coding_rankscore','an_exac_all','eigen_pc_raw_rankscore','gerp_elements','mutationassessor_score_rankscore','mpc','metasvm_rankscore','polyphen_score','metalr_rankscore','lrt_converted_rankscore','genocanyon_score_rankscore','mutationtaster_converted_rankscore','gno_an_popmax','grantham','max_aaf_all','ac_exac_all','fathmm_converted_rankscore','aaf_esp_all','linsight', 'sift_score','ac_exac_sas')
 
-all <- rbind(model_data$ML_set__general_TT$train_set %>% dplyr::select(one_of(useful_cols)) %>% mutate(DataSet = 'VPaC Train Set'), 
-             model_data$ML_set__general_TT$test_set %>% dplyr::select(one_of(useful_cols)) %>% mutate(DataSet = 'VPaC Test Set'),
-             model_data$ML_set__eye_TT$train_set %>% dplyr::select(one_of(useful_cols)) %>% mutate(DataSet = 'OVPaC Train Set'),
-             model_data$ML_set__eye_TT$test_set %>% dplyr::select(one_of(useful_cols)) %>% mutate(DataSet = 'OVPaC Test Set'),
-             model_data$ML_set__other_TT$train_set %>% dplyr::select(one_of(useful_cols)) %>% mutate(DataSet = 'VPaC ClinVar LC'),
-             model_data$ML_set__other_TT$test %>% dplyr::select(one_of(useful_cols)) %>% mutate(DataSet = 'VPaC ClinVar LC'),
-             ddl_ML_set %>% dplyr::select(one_of(useful_cols)) %>% mutate(DataSet = 'DDL NISC RD Cohort'),
-             grimm$grimm_ML_set %>% 
-               inner_join(., grimm$grimm_orig %>% mutate(pos_id=paste0(chrom, ':', end, '_', ref, '_', alt)) %>% 
-                            dplyr::select(pos_id, source) %>% 
-                            filter(grepl('humvar', source))) %>% 
-               dplyr::select(one_of(useful_cols)) %>% mutate(DataSet = 'Grimm HumVar'),
-             grimm$grimm_ML_set %>% 
-               inner_join(., grimm$grimm_orig %>% mutate(pos_id=paste0(chrom, ':', end, '_', ref, '_', alt)) %>% 
-                            dplyr::select(pos_id, source) %>% 
-                            filter(grepl('exovar', source))) %>% 
-               dplyr::select(one_of(useful_cols)) %>% mutate(DataSet = 'Grimm ExoVar'),
-             grimm$grimm_ML_set %>% 
-               inner_join(., grimm$grimm_orig %>% mutate(pos_id=paste0(chrom, ':', end, '_', ref, '_', alt)) %>% 
-                            dplyr::select(pos_id, source) %>% 
-                            filter(grepl('predictS', source))) %>% 
-               dplyr::select(one_of(useful_cols)) %>% mutate(DataSet = 'Grimm PredictSNP'),
-             grimm$grimm_ML_set %>% 
-               inner_join(., grimm$grimm_orig %>% mutate(pos_id=paste0(chrom, ':', end, '_', ref, '_', alt)) %>% 
-                            dplyr::select(pos_id, source) %>% 
-                            filter(grepl('swissv', source))) %>% 
-               dplyr::select(one_of(useful_cols)) %>% mutate(DataSet = 'Grimm SwissVar'),
-             grimm$grimm_ML_set %>% 
-               inner_join(., grimm$grimm_orig %>% mutate(pos_id=paste0(chrom, ':', end, '_', ref, '_', alt)) %>% 
-                            dplyr::select(pos_id, source) %>% 
-                            filter(grepl('varibench', source))) %>% 
-               dplyr::select(one_of(useful_cols)) %>% mutate(DataSet = 'Grimm VariBench'),
-             unifun$unifun_ML_set %>% dplyr::select(one_of(useful_cols)) %>% mutate(DataSet = 'UniFun'),
-             homsy$homsy_ML_set %>%  dplyr::select(one_of(useful_cols)) %>% mutate(DataSet = 'Homsy'),
-             samocha$samocha_ML_set %>%  dplyr::select(one_of(useful_cols)) %>% mutate(DataSet = 'Samocha'))
+############ 
+###  DDL ###
+############
+panel <- readxl::read_excel('../data/NISC100_Variant_Interpretation_June01_2018.xlsx')
+ddl_path_cdot <- panel %>% filter(grepl('Path', `Interpretation Summary`, ignore.case = T)) %>% select(`#Chr`, End, Ref, Alt, avsnp147) %>% mutate(pos_id=paste0(`#Chr`, ':', End, '_', Ref, '_', Alt))
+
+
+allX <- raw_data %>% mutate(DataSet = case_when(pos_id %in% model_data$ML_set__general_TT$train_set$pos_id ~ 'VPaC Train Set',
+                                         pos_id %in% model_data$ML_set__general_TT$test_set$pos_id ~ 'VPaC Test Set',
+                                         pos_id %in% model_data$ML_set__other_TT$train_set$pos_id ~ 'VPaC ClinVar LC',
+                                         pos_id %in% model_data$ML_set__other_TT$test_set$pos_id ~ 'VPaC ClinVar LC',
+                                         DataSet == 'ddl_nisc_100_panel' ~ 'DDL NISC RD Cohort',
+                                         pos_id %in% (raw_data %>% filter(DataSet == 'grimm', source == 'humvar') %>% pull(pos_id)) ~ 'Grimm HumVar',
+                                         pos_id %in% (raw_data %>% filter(DataSet == 'grimm', source == 'exovar') %>% pull(pos_id)) ~ 'Grimm ExoVar',
+                                         pos_id %in% (raw_data %>% filter(DataSet == 'grimm', source == 'exovar__humvar') %>% pull(pos_id)) ~ 'Grimm ExoVar/HumVar',
+                                         pos_id %in% (raw_data %>% filter(DataSet == 'grimm', source == 'predictSNP') %>% pull(pos_id)) ~ 'Grimm PredictSNP',
+                                         pos_id %in% (raw_data %>% filter(DataSet == 'grimm', source == 'swissvar') %>% pull(pos_id)) ~ 'Grimm SwissVar',
+                                         pos_id %in% (raw_data %>% filter(DataSet == 'grimm', source == 'varibench') %>% pull(pos_id)) ~ 'Grimm VariBench',
+                                         pos_id %in% (raw_data %>% filter(grepl('homsy', DataSet)) %>% pull(pos_id)) ~ 'Homsy',
+                                         pos_id %in% (raw_data %>% filter(grepl('unifun', DataSet)) %>% pull(pos_id)) ~ 'UniFun',
+                                         pos_id %in% (raw_data %>% filter(grepl('samocha', DataSet)) %>% pull(pos_id)) ~ 'Samocha'
+                                         ),
+                    Status = case_when(grepl('pathogenic', DataSet, ignore.case = T) | grepl('pathogenic', status, ignore.case = T) ~ 'Pathogenic',
+                                       (DataSet == 'DDL NISC RD Cohort' & pos_id %in% path_cdot$pos_id) | 
+                                         (DataSet == 'DDL NISC RD Cohort' & end %in% path_cdot$End)  ~ 'Pathogenic',
+                                       TRUE ~ 'NotPathogenic')) 
+allX$fitcons_float <- allX$fitcons
+
 
 #######
 # sqrt scaling of my scores to better normalize
 ######
-all$OVPaC <- sqrt(predict(OVPaC_6mtry, all, type='prob')[,1])
+#all$OVPaC <- sqrt(predict(OVPaC_6mtry, all, type='prob')[,1])
 #all$OVPaC_10mtry <-predict(OVPaC_10mtry, all, type='prob')[,1]
-all$VPaC <- sqrt(predict(VPaC_6mtry, all, type='prob')[,1])
+allX$VPaC <- sqrt(predict(VPaC_6mtry, allX, type='prob')[,1])
 #all$VPaC_10mtry <-predict(VPaC_10mtry, all, type='prob')[,1]
 
 ##############################
@@ -403,7 +397,7 @@ How do we do?
 ```{r}
 nisc100 <- fread('gzcat /Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/data/ddl_nisc_100_panel/ddl_nisc.gemini.tsv.gz')
 left_join(all %>% filter(DataSet=='DDL NISC RD Cohort') %>% select(pos_id, Status, DeepVPaC),
-            nisc100 %>% mutate(pos_id = paste0(chrom,':',end, '_', ref, '_', alt))) %>% 
+          nisc100 %>% mutate(pos_id = paste0(chrom,':',end, '_', ref, '_', alt))) %>% 
   filter(DeepVPaC > 0.5) %>% 
   select(Status, pos_id, hgvsc, gene, type, num_het, num_hom_alt, aaf,aaf_1kg_all_float, impact_so, DeepVPaC, clin_sig) %>% pull(Status) %>% table()
 
@@ -413,7 +407,7 @@ Not great
 How about if we added a touch of info - ClinVar, Impact
 ```{r}
 left_join(all %>% filter(DataSet=='DDL NISC RD Cohort') %>% select(pos_id, Status, DeepVPaC),
-            nisc100 %>% mutate(pos_id = paste0(chrom,':',end, '_', ref, '_', alt))) %>% 
+          nisc100 %>% mutate(pos_id = paste0(chrom,':',end, '_', ref, '_', alt))) %>% 
   filter(DeepVPaC > 0.5 | grepl('path', clin_sig) | impact_severity == 'HIGH') %>% 
   filter(aaf < 0.15 | gno_af_popmax < 0.01) %>% 
   select(Status, pos_id, hgvsc, gene, type, num_het, num_hom_alt, aaf,aaf_1kg_all_float, impact_so, DeepVPaC, clin_sig) %>% pull(Status) %>% table()
@@ -439,14 +433,14 @@ left_join(all %>% filter(DataSet=='DDL NISC RD Cohort') %>% select(pos_id, Statu
 High ranking Deep VPaC that are Not Pathogenic in NISC 100
 ```{r}
 left_join(all %>% filter(DataSet=='DDL NISC RD Cohort') %>% select(pos_id, Status, DeepVPaC),
-            nisc100 %>% mutate(pos_id = paste0(chrom,':',end, '_', ref, '_', alt))) %>% 
+          nisc100 %>% mutate(pos_id = paste0(chrom,':',end, '_', ref, '_', alt))) %>% 
   filter(DeepVPaC > 0.9) %>% 
   filter(Status == 'NotPathogenic') %>% 
   select(Status, pos_id, hgvsc, gene, type, num_het, num_hom_alt, aaf,aaf_1kg_all_float, impact_so, DeepVPaC, clin_sig) %>% 
   DT::datatable()
 
 left_join(all %>% filter(DataSet=='DDL NISC RD Cohort') %>% select(pos_id, Status, DeepVPaC),
-            nisc100 %>% mutate(pos_id = paste0(chrom,':',end, '_', ref, '_', alt))) %>% 
+          nisc100 %>% mutate(pos_id = paste0(chrom,':',end, '_', ref, '_', alt))) %>% 
   filter(DeepVPaC > 0.9) %>% 
   filter(Status == 'NotPathogenic') %>% 
   select(hgvsc, gene, type, aaf_1kg_all_float, impact_so, DeepVPaC, clin_sig) %>% 
