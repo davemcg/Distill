@@ -29,8 +29,8 @@ model_merger <- function(pattern='VPaC__6mtry_v2*', mtry=6, pac = 'VPaC_pieces',
 # v
 
 #VPaC
-model_merger(pattern='VPaC__9mtry_v4_*', mtry=9, pac='VPaC_pieces', type='VPaC')
-model_merger(pattern='VPaC__12mtry_v4_*', mtry=12, pac='VPaC_pieces', type='VPaC')
-model_merger(pattern='VPaC__15mtry_v4_*', mtry=15, pac='VPaC_pieces', type='VPaC')
+model_merger(pattern='VPaC__9mtry_v5_*', mtry=9, pac='VPaC_pieces', type='VPaC')
+model_merger(pattern='VPaC__12mtry_v5_*', mtry=12, pac='VPaC_pieces', type='VPaC')
+model_merger(pattern='VPaC__15mtry_v5_*', mtry=15, pac='VPaC_pieces', type='VPaC')
 
 
