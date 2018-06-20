@@ -1,6 +1,137 @@
-load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/model_data.Rdata')
-most_imp_predictors_no_disease_class <- c('is_lof','impact_severity','mis_z','ccr_pct_v1','cadd_phred','phylop_100way','n_mis','revel','fitcons_float','precessive','n_lof','m_cap_rankscore','dann','vest3_rankscore','n_syn','pnull','pli','lof_z','fathmm_mkl_coding_rankscore','an_exac_all','eigen_pc_raw_rankscore','gerp_elements','mutationassessor_score_rankscore','mpc','metasvm_rankscore','polyphen_score','metalr_rankscore','lrt_converted_rankscore','genocanyon_score_rankscore','mutationtaster_converted_rankscore','gno_an_popmax','grantham','max_aaf_all','ac_exac_all','fathmm_converted_rankscore','aaf_esp_all','sift_score','ac_exac_sas','linsight')
+load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/model_data_2018_06_19.Rdata')
+most_imp_predictors_no_disease_class <- c('is_lof','impact_severity','mis_z','ccr_pct_v1','cadd_phred','phylop_100way','n_mis','revel','fitcons','precessive','n_lof','m_cap_rankscore','dann','vest3_rankscore','n_syn','pnull','pli','lof_z','fathmm_mkl_coding_rankscore','an_exac_all','eigen_pc_raw_rankscore','gerp_elements','mutationassessor_score_rankscore','mpc','metasvm_rankscore','polyphen_score','metalr_rankscore','lrt_converted_rankscore','genocanyon_score_rankscore','mutationtaster_converted_rankscore','gno_an_popmax','grantham','max_aaf_all','ac_exac_all','fathmm_converted_rankscore','aaf_esp_all','sift_score','ac_exac_sas','linsight',                          
+                                          # 'exon',
+                                           'aa_length',
+                                           'cpg_island',
+                                          'epilogos_bivflnk',
+                                          'epilogos_enh',
+                                          'epilogos_enhbiv',
+                                          'epilogos_enhg',
+                                          'epilogos_het',
+                                          'epilogos_quies',
+                                          'epilogos_reprpc',
+                                          'epilogos_reprpcwk',
+                                          'epilogos_tss',
+                                          'epilogos_tssaflnk',
+                                          'epilogos_tssbiv',
+                                          'epilogos_tx',
+                                          'epilogos_txflnk',
+                                          'epilogos_txwk',
+                                          'epilogos_znf'
+                                          )
 
+most_imp_predictors_no_disease_class <- c('ccr_pct_v1',
+                                          'cadd_raw',
+                                          'vest3_rankscore',
+                                          'cadd_phred',
+                                          'mis_z',
+                                          'pli',
+                                          'lof_z',
+                                          'phylop_100way',
+                                          'revel',
+                                          'hapmap2',
+                                          'hapmap1',
+                                          'n_mis',
+                                          'epilogos_quies',
+                                          'n_lof',
+                                          'precessive',
+                                          'pnull',
+                                          'adj_exp_lof',
+                                          'adj_exp_syn',
+                                          'dann',
+                                          'adj_exp_mis',
+                                          'syn_z',
+                                          'n_syn',
+                                          'epilogos_txwk',
+                                          'fitcons',
+                                          'm_cap_score',
+                                          'm_cap_rankscore',
+                                          'eigen_phred',
+                                          'eigen_raw',
+                                          'epilogos_tx',
+                                          'is_lof',
+                                          'eigen_pc_raw_rankscore',
+                                          'epilogos_reprpcwk',
+                                          'fathmm_mkl_coding_rankscore',
+                                          'metalr_score',
+                                          'fathmm_mkl_coding_score',
+                                          'metalr_rankscore',
+                                          'impact_severity',
+                                          'metasvm_rankscore',
+                                          'metasvm_score',
+                                          'epilogos_enh',
+                                          'genocanyon_score',
+                                          'fathmm_converted_rankscore',
+                                          'mpc',
+                                          'epilogos_enhg',
+                                          'af_exac_all',
+                                          'epilogos_reprpc',
+                                          'max_aaf_all',
+                                          'mutationassessor_score',
+                                          'gerp',
+                                          'polyphen_score',
+                                          'gerp_elements',
+                                          'mutationassessor_score_rankscore',
+                                          'stam_mean',
+                                          'an_exac_all',
+                                          'af_exac_nfe',
+                                          'provean_converted_rankscore',
+                                          'an_exac_nfe',
+                                          'lrt_score',
+                                          'lrt_omega',
+                                          'grantham',
+                                          'lrt_converted_rankscore',
+                                          'genocanyon_score_rankscore',
+                                          'an_exac_afr',
+                                          'an_exac_amr',
+                                          'an_exac_sas',
+                                          'epilogos_het',
+                                          'ac_exac_all',
+                                          'linsight',
+                                          'gno_an_popmax',
+                                          'exac_num_het',
+                                          'an_exac_eas',
+                                          'gno_an_all',
+                                          'ac_exac_nfe',
+                                          'mutationtaster_converted_rankscore',
+                                          'an_exac_oth',
+                                          'an_exac_fin',
+                                          'gno_an_nfe',
+                                          'gno_af_all',
+                                          'gno_an_afr',
+                                          'epilogos_tssaflnk',
+                                          'gno_af_popmax',
+                                          'epilogos_znf',
+                                          'segway_sum_score',
+                                          'aaf_esp_ea',
+                                          'epilogos_txflnk',
+                                          'provean_score',
+                                          'segway_mean_score',
+                                          'epilogos_tss',
+                                          'aaf_esp_all',
+                                          'af_exac_amr',
+                                          'gno_af_nfe',
+                                          'epilogos_enhbiv',
+                                          'af_exac_sas',
+                                          'sift_score',
+                                          'fathmm_score',
+                                          'ac_exac_amr',
+                                          'aaf_esp_aa',
+                                          'gno_ac_all',
+                                          'gno_af_afr',
+                                          'ac_exac_sas',
+                                          'af_exac_eas',
+                                          'gno_an_fin',
+                                          'af_exac_afr',
+                                          'gno_an_eas',
+                                          'gno_an_oth',
+                                          'gno_ac_nfe',
+                                          'gno_ac_popmax',
+                                          'ac_exac_eas',
+                                          'ac_exac_afr',
+                                          'epilogos_tssbiv',
+                                          'gno_ac_afr',
+                                          'vest3_score')
 
 library(caret)
 library(ModelMetrics)
@@ -18,7 +149,7 @@ cm_maker <- function(predictor = 'cadd_phred', data, cutoff=0.5, mode = 'prec_re
                                                                     TRUE ~ 0),
                                                   actuals = case_when(Answers == 'Pathogenic' ~ 1,
                                                                       TRUE ~ 0))
-    out <- caret::confusionMatrix(data = new_predictions$Prediction, reference = new_predictions$Answers, mode= mode)
+    out <- caret::confusionMatrix(data = as.factor(new_predictions$Prediction), reference = as.factor(new_predictions$Answers), mode= mode)
     out$MCC <- mcc(new_predictions$preds, new_predictions$actuals, cutoff=cutoff)
   } else {
     print("Running in predictor is a precomputed column in data mode")
@@ -29,7 +160,7 @@ cm_maker <- function(predictor = 'cadd_phred', data, cutoff=0.5, mode = 'prec_re
                                                                     TRUE ~ 0),
                                                   actuals = case_when(Status == 'Pathogenic' ~ 1,
                                                                       TRUE ~ 0))
-    out <- caret::confusionMatrix(data = new_predictions$Prediction, reference = new_predictions$Status, mode= mode)
+    out <- caret::confusionMatrix(data = as.factor(new_predictions$Prediction), reference = as.factor(new_predictions$Status), mode= mode)
     out$MCC <- mcc(new_predictions$preds, new_predictions$actuals, cutoff=cutoff)
   }
   out
@@ -105,15 +236,15 @@ test_data <- scale(test_sub, center=mean,scale=std)
 
 
 model <- keras_model_sequential() %>% 
-  layer_dense(units = 164, activation = 'relu', input_shape=c(39)) %>% 
+  layer_dense(units = 12*length(most_imp_predictors_no_disease_class), activation = 'relu', input_shape=c(length(most_imp_predictors_no_disease_class))) %>% 
   layer_dropout(rate = 0.5) %>% 
-  layer_dense(units = 164, activation = 'relu') %>% 
+  layer_dense(units = 12*length(most_imp_predictors_no_disease_class), activation = 'relu') %>% 
   layer_dropout(rate = 0.5) %>% 
-  layer_dense(units = 164, activation = 'relu') %>% 
+  layer_dense(units = 12*length(most_imp_predictors_no_disease_class), activation = 'relu') %>% 
   layer_dropout(rate = 0.5) %>% 
-  layer_dense(units = 164, activation = 'relu') %>% 
+  layer_dense(units = 12*length(most_imp_predictors_no_disease_class), activation = 'relu') %>% 
   layer_dropout(rate = 0.5) %>% 
-  layer_dense(units = 164, activation = 'relu') %>% 
+  layer_dense(units = 12*length(most_imp_predictors_no_disease_class), activation = 'relu') %>% 
   layer_dropout(rate = 0.5) %>% 
   layer_dense(units=1, activation='sigmoid')  
 
@@ -156,9 +287,9 @@ test_data <- scale(test_sub, center=mean,scale=std)
 
 
 model <- keras_model_sequential() %>% 
-  layer_dense(units = 164, activation = 'relu', input_shape=c(39)) %>% 
+  layer_dense(units = 400, activation = 'relu', input_shape=c(length(most_imp_predictors_no_disease_class))) %>% 
   layer_dropout(rate = 0.5) %>% 
-  layer_dense(units = 164, activation = 'relu') %>% 
+  layer_dense(units = 400, activation = 'relu') %>% 
   layer_dropout(rate = 0.5) %>% 
   layer_dense(units=1, activation='sigmoid')  
 
@@ -203,20 +334,20 @@ train_data <- scale(train_sub, center=mean, scale=std)
 test_data <- scale(test_sub, center=mean,scale=std)
 
 # reshape
-dim(train_data) <- c(nrow(train_data),1,39)
-dim(test_data) <- c(nrow(test_data),1,39)
+dim(train_data) <- c(nrow(train_data),1,length(most_imp_predictors_no_disease_class))
+dim(test_data) <- c(nrow(test_data),1,length(most_imp_predictors_no_disease_class))
 
 
 
 
 model <- keras_model_sequential() %>% 
-  layer_lstm(196, recurrent_dropout=0.2, input_shape=c(1, 39), return_sequences = T) %>%
+  layer_lstm(196, recurrent_dropout=0.2, input_shape=c(1, length(most_imp_predictors_no_disease_class)), return_sequences = T) %>%
   layer_dropout(0.4) %>%
-  layer_lstm(196, recurrent_dropout=0.2, input_shape=c(1, 39), return_sequences = T) %>%
+  layer_lstm(196, recurrent_dropout=0.2, input_shape=c(1, length(most_imp_predictors_no_disease_class)), return_sequences = T) %>%
   layer_dropout(0.3) %>%
-  layer_lstm(196, recurrent_dropout=0.2, input_shape=c(1, 39), return_sequences = T) %>%
+  layer_lstm(196, recurrent_dropout=0.2, input_shape=c(1, length(most_imp_predictors_no_disease_class)), return_sequences = T) %>%
   layer_dropout(0.2) %>%
-  layer_lstm(196, recurrent_dropout=0.2, input_shape=c(1, 39)) %>%
+  layer_lstm(196, recurrent_dropout=0.2, input_shape=c(1, length(most_imp_predictors_no_disease_class))) %>%
   layer_dropout(0.1) %>%
   layer_dense(units=1, activation='sigmoid')
 
@@ -250,43 +381,43 @@ save(DeepRNN, file = '/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity
 ###############
 library(DMwR)
 set.seed(89345)
-train_sub <- model_data$ML_set__general_dummy_TT$train_set %>% select_(.dots=most_imp_predictors_no_disease_class, 'Status')
-test_sub <- model_data$ML_set__general_dummy_TT$test_set %>% select_(.dots=most_imp_predictors_no_disease_class,'Status')
-
+train_sub <- model_data$ML_set__general_dummy_TT$train_set %>% select(one_of(most_imp_predictors_no_disease_class), 'Status')
+test_sub <- model_data$ML_set__general_dummy_TT$test_set %>% select(one_of(most_imp_predictors_no_disease_class),'Status')
+                      
 train_sub <- SMOTE(Status ~ ., as.data.frame(train_sub))
 status_train <- train_sub$Status
 status_train01 <- case_when(status_train == 'Pathogenic' ~ 1,
-                            TRUE ~ 0)
+                                                  TRUE ~ 0)
 status_test <- test_sub$Status
 status_test01 <- case_when(status_test == 'Pathogenic' ~ 1,
-                           TRUE ~ 0)
+                                                 TRUE ~ 0)
 train_sub <- train_sub %>% select(-Status)
 test_sub <- test_sub %>% select(-Status)
 mean <- apply(train_sub %>% select_(.dots = most_imp_predictors_no_disease_class), 2, mean)
 std <- apply(train_sub %>% select_(.dots = most_imp_predictors_no_disease_class), 2, sd)
 train_data <- scale(train_sub, center=mean, scale=std)
 test_data <- scale(test_sub, center=mean,scale=std)
-
+                      
 # reshape
-dim(train_data) <- c(nrow(train_data),1,39)
-dim(test_data) <- c(nrow(test_data),1,39)
-
+dim(train_data) <- c(nrow(train_data),1,length(most_imp_predictors_no_disease_class))
+dim(test_data) <- c(nrow(test_data),1,length(most_imp_predictors_no_disease_class))
+                      
 model <- keras_model_sequential() %>% 
-  layer_lstm(48, recurrent_dropout=0.2, input_shape=c(1, 39), return_sequences = T) %>%
+  layer_lstm(1*length(most_imp_predictors_no_disease_class), recurrent_dropout=0.2, input_shape=c(1, length(most_imp_predictors_no_disease_class)), return_sequences = T) %>%
   layer_dropout(0.2) %>%
-  layer_lstm(48, recurrent_dropout=0.2, input_shape=c(1, 39), return_sequences = T) %>%
+  layer_lstm(1*length(most_imp_predictors_no_disease_class), recurrent_dropout=0.2, input_shape=c(1, length(most_imp_predictors_no_disease_class)), return_sequences = T) %>%
   layer_dropout(0.2) %>%
-  layer_lstm(48, recurrent_dropout=0.2, input_shape=c(1, 39), return_sequences = T) %>%
+  layer_lstm(1*length(most_imp_predictors_no_disease_class), recurrent_dropout=0.2, input_shape=c(1, length(most_imp_predictors_no_disease_class)), return_sequences = T) %>%
   layer_dropout(0.2) %>%
-  layer_lstm(48, recurrent_dropout=0.2, input_shape=c(1, 39), return_sequences = T) %>%
+  layer_lstm(1*length(most_imp_predictors_no_disease_class), recurrent_dropout=0.2, input_shape=c(1, length(most_imp_predictors_no_disease_class)), return_sequences = T) %>%
   layer_dropout(0.2) %>%
-  layer_lstm(48, recurrent_dropout=0.2, input_shape=c(1, 39), return_sequences = T) %>%
+  layer_lstm(1*length(most_imp_predictors_no_disease_class), recurrent_dropout=0.2, input_shape=c(1, length(most_imp_predictors_no_disease_class)), return_sequences = T) %>%
   layer_dropout(0.2) %>%
-  layer_lstm(48, recurrent_dropout=0.2, input_shape=c(1, 39), return_sequences = T) %>%
+  layer_lstm(1*length(most_imp_predictors_no_disease_class), recurrent_dropout=0.2, input_shape=c(1, length(most_imp_predictors_no_disease_class)), return_sequences = T) %>%
   layer_dropout(0.2) %>%
-  layer_lstm(48, recurrent_dropout=0.2, input_shape=c(1, 39), return_sequences = T) %>%
+  layer_lstm(1*length(most_imp_predictors_no_disease_class), recurrent_dropout=0.2, input_shape=c(1, length(most_imp_predictors_no_disease_class)), return_sequences = T) %>%
   layer_dropout(0.2) %>%
-  layer_lstm(48, recurrent_dropout=0.2, input_shape=c(1, 39)) %>%
+  layer_lstm(1*length(most_imp_predictors_no_disease_class), recurrent_dropout=0.2, input_shape=c(1, length(most_imp_predictors_no_disease_class))) %>%
   layer_dropout(0.1) %>%
   layer_dense(units=1, activation='sigmoid')
 
@@ -304,7 +435,7 @@ history <- model %>% fit(train_data, status_train01, epochs = 10, batch_size=50)
 test_score <- model %>% predict(test_data)
 test_score[is.na(test_score)] <- 0
 model_data$ML_set__general_dummy_TT$test_set$keras <- test_score[,1]
-cm_maker('keras', model_data$ML_set__general_dummy_TT$test_set, cutoff=0.99)
+cm_maker('keras', model_data$ML_set__general_dummy_TT$test_set, cutoff=0.95)
 
 
 
@@ -316,13 +447,13 @@ cm_maker('keras', model_data$ML_set__general_dummy_TT$test_set, cutoff=0.99)
 
 
 model <- keras_model_sequential() %>% 
-  layer_lstm(96, recurrent_dropout=0.2, input_shape=c(1, 39), return_sequences = T) %>%
+  layer_lstm(96, recurrent_dropout=0.2, input_shape=c(1, length(most_imp_predictors_no_disease_class)), return_sequences = T) %>%
   layer_dropout(0.2) %>%
-  layer_lstm(96, recurrent_dropout=0.2, input_shape=c(1, 39), return_sequences = T) %>%
+  layer_lstm(96, recurrent_dropout=0.2, input_shape=c(1, length(most_imp_predictors_no_disease_class)), return_sequences = T) %>%
   layer_dropout(0.2) %>%
-  layer_lstm(96, recurrent_dropout=0.2, input_shape=c(1, 39), return_sequences = T) %>%
+  layer_lstm(96, recurrent_dropout=0.2, input_shape=c(1, length(most_imp_predictors_no_disease_class)), return_sequences = T) %>%
   layer_dropout(0.2) %>%
-  layer_lstm(96, recurrent_dropout=0.2, input_shape=c(1, 39)) %>%
+  layer_lstm(96, recurrent_dropout=0.2, input_shape=c(1, length(most_imp_predictors_no_disease_class))) %>%
   layer_dropout(0.1) %>%
   layer_dense(units=1, activation='sigmoid')
 
@@ -378,19 +509,19 @@ train_data <- scale(train_sub, center=mean, scale=std)
 test_data <- scale(test_sub, center=mean,scale=std)
 
 # reshape
-dim(train_data) <- c(nrow(train_data),1,39)
-dim(test_data) <- c(nrow(test_data),1,39)
+dim(train_data) <- c(nrow(train_data),1,length(most_imp_predictors_no_disease_class))
+dim(test_data) <- c(nrow(test_data),1,length(most_imp_predictors_no_disease_class))
 
 model <- keras_model_sequential() %>% 
-  layer_lstm(196, recurrent_dropout=0.2, input_shape=c(1, 39), return_sequences = T) %>%
+  layer_lstm(196, recurrent_dropout=0.2, input_shape=c(1, length(most_imp_predictors_no_disease_class)), return_sequences = T) %>%
   layer_dropout(0.5) %>%
-  layer_lstm(196, recurrent_dropout=0.2, input_shape=c(1, 39), return_sequences = T) %>%
+  layer_lstm(196, recurrent_dropout=0.2, input_shape=c(1, length(most_imp_predictors_no_disease_class)), return_sequences = T) %>%
   layer_dropout(0.4) %>%
-  layer_lstm(196, recurrent_dropout=0.2, input_shape=c(1, 39), return_sequences = T) %>%
+  layer_lstm(196, recurrent_dropout=0.2, input_shape=c(1, length(most_imp_predictors_no_disease_class)), return_sequences = T) %>%
   layer_dropout(0.3) %>%
-  layer_lstm(196, recurrent_dropout=0.2, input_shape=c(1, 39), return_sequences = T) %>%
+  layer_lstm(196, recurrent_dropout=0.2, input_shape=c(1, length(most_imp_predictors_no_disease_class)), return_sequences = T) %>%
   layer_dropout(0.2) %>%
-  layer_lstm(196, recurrent_dropout=0.2, input_shape=c(1, 39)) %>%
+  layer_lstm(196, recurrent_dropout=0.2, input_shape=c(1, length(most_imp_predictors_no_disease_class))) %>%
   layer_dropout(0.1) %>%
   layer_dense(units=1, activation='sigmoid')
 
