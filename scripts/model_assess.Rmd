@@ -280,7 +280,7 @@ allX <- raw_data %>% mutate(DataSet = case_when(pos_id %in% model_data$ML_set__g
   mutate_at(vars(one_of(numeric_predictors)), funs(as.numeric(.)))
 
 allX$fitcons_float <- allX$fitcons
-
+allX[is.na(allX)] <- -1
 
 #######
 # sqrt scaling of my scores to better normalize
