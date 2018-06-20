@@ -317,11 +317,13 @@ pos_id__source <- rbind(pos_id__source,
                         gnomad_processed %>% select(pos_id, Status) %>% mutate(Source='gnomAD')) %>% 
   unique()
 
-# no more than 100X gnomad benign relative to the number of clinvar pathogenic variants 
+# no more than 250X gnomad benign relative to the number of clinvar pathogenic variants 
+# also remove anything in uk10k or clinvar
 set.seed(13457)
-gnomad_processed_sub <- gnomad_processed %>% sample_n((ML_set__clinvar %>% filter(Status=='Pathogenic') %>% nrow()) * 250)
+gnomad_processed_sub <- gnomad_processed %>% filter(!pos_id %in% (pos_id__source %>% filter(Source != 'gnomAD') %>% pull(pos_id))) %>% 
+  sample_n((ML_set__clinvar %>% filter(Status=='Pathogenic') %>% nrow()) * 250)
 gnomad_processed_sub_nonEye <- gnomad_processed %>% 
-  filter(!pos_id %in% gnomad_processed_sub$pos_id) #%>% 
+  filter(!pos_id %in% gnomad_processed_sub$pos_id) %>% 
   sample_n((ML_set__clinvar__otherPath_HC %>% filter(Status=='Pathogenic') %>% nrow()) * 250)
 # the remainder gnomad variants
 gnomad_processed_other <- gnomad_processed %>% filter(!pos_id %in% c(gnomad_processed_sub$pos_id,gnomad_processed_sub_nonEye$pos_id)) # not used for model building, for potential validation purposes
