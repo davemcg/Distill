@@ -290,7 +290,7 @@ print('ClinVar Loaded')
 gnomad <- fread(paste0('gzcat ', gnomad_file))
 ## Prep data for modeling
 gnomad_processed <- gnomad %>% 
-  filter(gene %in% (clinvar %>% filter(status=='PATHOGENIC_EYE' | status == 'PATHOGENIC_OTHER_HC') %>% pull(gene) %>% unique())) %>% # only have gnomad matched for path variants in clinvar genes
+  #filter(gene %in% (clinvar %>% filter(status=='PATHOGENIC_EYE' | status == 'PATHOGENIC_OTHER_HC') %>% pull(gene) %>% unique())) %>% # only have gnomad matched for path variants in clinvar genes
   separate(gene_eyediseaseclass, c('RDGene','DiseaseClass'), sep='_') %>%  #split off RD disease type
   select(-RDGene) %>% 
   mutate(pos_id=paste0(chrom, ':', end, '_', ref, '_', alt),
@@ -319,10 +319,10 @@ pos_id__source <- rbind(pos_id__source,
 
 # no more than 100X gnomad benign relative to the number of clinvar pathogenic variants 
 set.seed(13457)
-gnomad_processed_sub <- gnomad_processed %>% sample_n((ML_set__clinvar %>% filter(Status=='Pathogenic') %>% nrow()) * 100)
+gnomad_processed_sub <- gnomad_processed %>% sample_n((ML_set__clinvar %>% filter(Status=='Pathogenic') %>% nrow()) * 250)
 gnomad_processed_sub_nonEye <- gnomad_processed %>% 
   filter(!pos_id %in% gnomad_processed_sub$pos_id) #%>% 
-  #sample_n((ML_set__clinvar__otherPath_HC %>% filter(Status=='Pathogenic') %>% nrow()) * 100)
+  sample_n((ML_set__clinvar__otherPath_HC %>% filter(Status=='Pathogenic') %>% nrow()) * 250)
 # the remainder gnomad variants
 gnomad_processed_other <- gnomad_processed %>% filter(!pos_id %in% c(gnomad_processed_sub$pos_id,gnomad_processed_sub_nonEye$pos_id)) # not used for model building, for potential validation purposes
 
@@ -575,6 +575,6 @@ model_data$pos_id__source <- pos_id__source
 model_data$predictors <- predictors
 #model_data$ML_set__spread <- ML_set__spread
 model_data$sessionInfo <- sessionInfo()
-save(model_data, file='/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/model_data_2018_06_19.Rdata')
+save(model_data, file='/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/model_data_2018_06_20.Rdata')
 
 #save(clinvar_spread, file='/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/model_spread.Rdata')
