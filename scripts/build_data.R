@@ -475,7 +475,7 @@ ML_set__eye <- inner_join(ML_set__eye,
                                   filter((Path_Eye == 1) | Status=='NotPathogenic') %>% 
                                   dplyr::select(pos_id, Status, Source))
 ML_set__eye$Status <- factor(ML_set__eye$Status, levels = c('Pathogenic','NotPathogenic'))
-ML_set__eye$DiseaseClass <- factor(ML_set__eye$DiseaseClass)
+#ML_set__eye$DiseaseClass <- factor(ML_set__eye$DiseaseClass)
 
 ML_set__eye_dummy <- inner_join(ML_set__eye_dummy, 
                                 pos_id__source %>% 
@@ -490,7 +490,7 @@ ML_set__general <- inner_join(ML_set__general,
                                 filter((Path_Eye == 1 | Path_ClinVar_Other_HC == 1) | Status=='NotPathogenic') %>% 
                                 dplyr::select(pos_id, Status, Source))
 ML_set__general$Status <- factor(ML_set__general$Status, levels = c('Pathogenic','NotPathogenic'))
-ML_set__general$DiseaseClass <- factor(ML_set__general$DiseaseClass)
+#ML_set__general$DiseaseClass <- factor(ML_set__general$DiseaseClass)
 
 ML_set__general_dummy <- inner_join(ML_set__general_dummy, 
                                     pos_id__source %>% 
@@ -501,7 +501,7 @@ ML_set__general_dummy$Status <- factor(ML_set__general_dummy$Status, levels = c(
 # the remainder
 ML_set__other <- inner_join(ML_set__other, pos_id__source %>% dplyr::select(pos_id, Status, Source))
 ML_set__other$Status <- factor(ML_set__other$Status, levels = c('Pathogenic','NotPathogenic'))
-ML_set__other$DiseaseClass <- factor(ML_set__other$DiseaseClass)
+#ML_set__other$DiseaseClass <- factor(ML_set__other$DiseaseClass)
 
 ML_set__other_dummy <- inner_join(ML_set__other_dummy, pos_id__source %>% dplyr::select(pos_id, Status, Source))
 ML_set__other_dummy$Status <- factor(ML_set__other_dummy$Status, levels = c('Pathogenic','NotPathogenic'))
