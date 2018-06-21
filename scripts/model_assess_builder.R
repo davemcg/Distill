@@ -50,21 +50,22 @@ allX <- raw_data %>%
                              pos_id %in% model_data$ML_set__other_TT$train_set$pos_id ~ 'VPaC ClinVar LC',
                              pos_id %in% model_data$ML_set__other_TT$test_set$pos_id ~ 'VPaC ClinVar LC',
                              DataSet == 'ddl_nisc_100_panel' ~ 'DDL NISC RD Cohort',
-                             pos_id %in% (raw_data %>% filter(DataSet == 'grimm', source == 'humvar') %>% pull(pos_id)) ~ 'Grimm HumVar',
-                             pos_id %in% (raw_data %>% filter(DataSet == 'grimm', source == 'exovar') %>% pull(pos_id)) ~ 'Grimm ExoVar',
-                             pos_id %in% (raw_data %>% filter(DataSet == 'grimm', source == 'exovar__humvar') %>% pull(pos_id)) ~ 'Grimm ExoVar/HumVar',
-                             pos_id %in% (raw_data %>% filter(DataSet == 'grimm', source == 'predictSNP') %>% pull(pos_id)) ~ 'Grimm PredictSNP',
-                             pos_id %in% (raw_data %>% filter(DataSet == 'grimm', source == 'swissvar') %>% pull(pos_id)) ~ 'Grimm SwissVar',
-                             pos_id %in% (raw_data %>% filter(DataSet == 'grimm', source == 'varibench') %>% pull(pos_id)) ~ 'Grimm VariBench',
-                             pos_id %in% (raw_data %>% filter(grepl('homsy', DataSet)) %>% pull(pos_id)) ~ 'Homsy',
-                             pos_id %in% (raw_data %>% filter(grepl('unifun', DataSet)) %>% pull(pos_id)) ~ 'UniFun',
-                             pos_id %in% (raw_data %>% filter(grepl('samocha', DataSet)) %>% pull(pos_id)) ~ 'Samocha',
+                             pos_id %in% (raw_data %>% filter(DataSet_o == 'grimm', source == 'humvar') %>% pull(pos_id)) ~ 'Grimm HumVar',
+                             pos_id %in% (raw_data %>% filter(DataSet_o == 'grimm', source == 'exovar') %>% pull(pos_id)) ~ 'Grimm ExoVar',
+                             pos_id %in% (raw_data %>% filter(DataSet_o == 'grimm', source == 'exovar__humvar') %>% pull(pos_id)) ~ 'Grimm ExoVar/HumVar',
+                             pos_id %in% (raw_data %>% filter(DataSet_o == 'grimm', source == 'predictSNP') %>% pull(pos_id)) ~ 'Grimm PredictSNP',
+                             pos_id %in% (raw_data %>% filter(DataSet_o == 'grimm', source == 'swissvar') %>% pull(pos_id)) ~ 'Grimm SwissVar',
+                             pos_id %in% (raw_data %>% filter(DataSet_o == 'grimm', source == 'varibench') %>% pull(pos_id)) ~ 'Grimm VariBench',
+                             pos_id %in% (raw_data %>% filter(grepl('homsy', DataSet_o)) %>% pull(pos_id)) ~ 'Homsy',
+                             pos_id %in% (raw_data %>% filter(grepl('unifun', DataSet_o)) %>% pull(pos_id)) ~ 'UniFun',
+                             pos_id %in% (raw_data %>% filter(grepl('samocha', DataSet_o)) %>% pull(pos_id)) ~ 'Samocha',
                              TRUE ~ 'Other'),
          Status = case_when(grepl('pathogenic', DataSet_o, ignore.case = T) | grepl('pathogenic', status, ignore.case = T) ~ 'Pathogenic',
                             (DataSet == 'DDL NISC RD Cohort' & pos_id %in% ddl_path_cdot$pos_id) | 
                               (DataSet == 'DDL NISC RD Cohort' & end %in% ddl_path_cdot$End)  ~ 'Pathogenic',
                             TRUE ~ 'NotPathogenic')) %>% 
   mutate_at(vars(one_of(numeric_predictors)), funs(as.numeric(.))) %>% 
+  select(-status) %>% 
   filter(!grepl('gnomad', DataSet)) %>% 
   filter(DataSet != 'Other')
 
