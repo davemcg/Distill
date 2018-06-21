@@ -41,33 +41,49 @@ numeric_predictors<-c('is_exonic','is_coding','is_lof','is_splicing','exon','aa_
 ############
 panel <- readxl::read_excel('~/git/eye_var_Pathogenicity/data/NISC100_Variant_Interpretation_June01_2018.xlsx')
 ddl_path_cdot <- panel %>% filter(grepl('Path', `Interpretation Summary`, ignore.case = T)) %>% select(`#Chr`, End, Ref, Alt, avsnp147) %>% mutate(pos_id=paste0(`#Chr`, ':', End, '_', Ref, '_', Alt))
-
+##############
+### UK10K ####
+##############
+metadata <- readxl::read_excel(path='~/git/EGA_EGAD00001002656_NGS_reanalyze/data/1-s2.0-S0002929716305274-mmc3.xlsx') %>% mutate(Sample=Patient)
+sample_gene_comp_het <- metadata %>% filter(Status=='Solved'  & Variant_HGVSc!='NA' & GT=='0/1') %>% group_by(Sample, Gene) %>% summarise(Count=n()) %>% filter(Count>1) 
+metadata <- left_join(metadata, sample_gene_comp_het) %>% mutate(Comp_Het_Path = case_when(Count >= 2 ~ 'CH', 
+                                                                                           TRUE ~ 'No')) %>% 
+  select(-Count)
 
 allX <- raw_data %>% 
   mutate(DataSet_o=DataSet) %>%
-  mutate(DataSet = case_when(pos_id %in% model_data$ML_set__general_TT$train_set$pos_id ~ 'VPaC Train Set',
-                             pos_id %in% model_data$ML_set__general_TT$test_set$pos_id ~ 'VPaC Test Set',
-                             pos_id %in% model_data$ML_set__other_TT$train_set$pos_id ~ 'VPaC ClinVar LC',
-                             pos_id %in% model_data$ML_set__other_TT$test_set$pos_id ~ 'VPaC ClinVar LC',
-                             DataSet == 'ddl_nisc_100_panel' ~ 'DDL NISC RD Cohort',
-                             pos_id %in% (raw_data %>% filter(DataSet_o == 'grimm', source == 'humvar') %>% pull(pos_id)) ~ 'Grimm HumVar',
-                             pos_id %in% (raw_data %>% filter(DataSet_o == 'grimm', source == 'exovar') %>% pull(pos_id)) ~ 'Grimm ExoVar',
-                             pos_id %in% (raw_data %>% filter(DataSet_o == 'grimm', source == 'exovar__humvar') %>% pull(pos_id)) ~ 'Grimm ExoVar/HumVar',
-                             pos_id %in% (raw_data %>% filter(DataSet_o == 'grimm', source == 'predictSNP') %>% pull(pos_id)) ~ 'Grimm PredictSNP',
-                             pos_id %in% (raw_data %>% filter(DataSet_o == 'grimm', source == 'swissvar') %>% pull(pos_id)) ~ 'Grimm SwissVar',
-                             pos_id %in% (raw_data %>% filter(DataSet_o == 'grimm', source == 'varibench') %>% pull(pos_id)) ~ 'Grimm VariBench',
-                             pos_id %in% (raw_data %>% filter(grepl('homsy', DataSet_o)) %>% pull(pos_id)) ~ 'Homsy',
-                             pos_id %in% (raw_data %>% filter(grepl('unifun', DataSet_o)) %>% pull(pos_id)) ~ 'UniFun',
-                             pos_id %in% (raw_data %>% filter(grepl('samocha', DataSet_o)) %>% pull(pos_id)) ~ 'Samocha',
-                             TRUE ~ 'Other'),
-         Status = case_when(grepl('pathogenic', DataSet_o, ignore.case = T) | grepl('pathogenic', status, ignore.case = T) ~ 'Pathogenic',
-                            (DataSet == 'DDL NISC RD Cohort' & pos_id %in% ddl_path_cdot$pos_id) | 
-                              (DataSet == 'DDL NISC RD Cohort' & end %in% ddl_path_cdot$End)  ~ 'Pathogenic',
+  mutate(start = as.numeric(as.character(start))) %>% 
+  mutate(Variant_genomic = paste0(chrom, ':', start + 1, ref, '>', alt)) %>% 
+  mutate(DataSet = case_when(DataSet_o == 'ddl_nisc_100_panel' ~ 'DDL NISC RD Cohort',
+                             DataSet_o == 'clinvar' & status != 'PATHOGENIC_OTHER' ~ 'ClinVar HC',
+                             DataSet_o == 'clinvar' & status == 'PATHOGENIC_OTHER' ~ 'ClinVar LC Path',
+                             DataSet_o == 'grimm' & source == 'humvar' ~ 'Grimm HumVar',
+                             DataSet_o == 'grimm' & source == 'exovar' ~ 'Grimm ExoVar',
+                             DataSet_o == 'grimm' & source == 'exovar__humvar' ~ 'Grimm ExoVar/HumVar',
+                             DataSet_o == 'grimm' & source == 'predictSNP' ~ 'Grimm PredictSNP',
+                             DataSet_o == 'grimm' & source == 'swissvar' ~ 'Grimm SwissVar',
+                             DataSet_o == 'grimm' & source == 'varibench' ~ 'Grimm VariBench',
+                             grepl('homsy', DataSet_o) ~ 'Homsy',
+                             grepl('unifun', DataSet_o) ~ 'UniFun',
+                             grepl('samocha', DataSet_o) ~ 'Samocha',
+                             DataSet_o == 'gnomad' & (pos_id %in% model_data$ML_set__general_TT$train_set$pos_id ||
+                                                        pos_id %in% model_data$ML_set__general_TT$test_set$pos_id ||
+                                                        pos_id %in% model_data$ML_set__other_TT$train_set$pos_id ||
+                                                        pos_id %in% model_data$ML_set__other_TT$test_set$pos_id) ~ 'gnomAD Benign',
+                             DataSet_o == 'UK10K' ~ 'UK10K',
+                             TRUE ~ 'Other')) %>%
+  mutate(Status = case_when((DataSet == 'DDL NISC RD Cohort' & pos_id %in% ddl_path_cdot$pos_id) | 
+                            (DataSet == 'DDL NISC RD Cohort' & end %in% ddl_path_cdot$End)  ~ 'Pathogenic',
+                            DataSet == 'UK10K' & (Variant_genomic %in% (metadata %>% filter(Status == 'Solved') %>% pull(Variant_genomic))) ~ 'Pathogenic',
+                            DataSet == 'UK10K' & (Variant_genomic %in% (metadata %>% filter(Status == 'Partially solved') %>% pull(Variant_genomic))) ~ 'Maybe Pathogenic',
+                            grepl('pathogenic', DataSet_o, ignore.case = T) | grepl('pathogenic', status, ignore.case = T) ~ 'Pathogenic',
                             TRUE ~ 'NotPathogenic')) %>% 
+  mutate(Status = case_when(Status = grepl('Grimm', DataSet) ~ status,
+                            TRUE ~ Status)) %>% 
   mutate_at(vars(one_of(numeric_predictors)), funs(as.numeric(.))) %>% 
-  select(-status) %>% 
-  filter(!grepl('gnomad', DataSet)) %>% 
-  filter(DataSet != 'Other')
+  #select(-status) %>% 
+  filter(DataSet != 'Other') %>% 
+  filter(Status != 'Maybe Pathogenic')
 
 #rm(raw_data)
 allX$fitcons_float <- allX$fitcons
@@ -80,4 +96,4 @@ allX$VPaC_m15 <- sqrt(predict(VPaC_15mtry, allX, type='prob')[,1])
 allX$VPaC_m12 <- sqrt(predict(VPaC_12mtry, allX, type='prob')[,1])
 allX$VPaC_m09 <- sqrt(predict(VPaC_9mtry, allX, type='prob')[,1])
 
-save(allX, file='/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/allX_2018_06_20.Rdata')
+save(allX, file='/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/allX_2018_06_21.Rdata')
