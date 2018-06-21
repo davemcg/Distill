@@ -289,7 +289,7 @@ fitControl_min <- trainControl(
   allowParallel = T,
   summaryFunction = prSummary,
   returnData = T)
-DeepVPaC <- caret::train(Status ~ ., data=test_all %>% select_(.dots=c('Status','VPaC_v02','DeepRNN')), 
+DeepVPaC <- caret::train(Status ~ ., data=test_all %>% select_(.dots=c('Status','VPaC_m15','DeepRNN')), 
                          method = "glm", metric='F', trControl=fitControl_min)
 allX$DeepVPaC <- sqrt(predict(DeepVPaC, allX, type='prob')[,1])
 
@@ -514,7 +514,7 @@ roc_maker <- function(predictor, data, cutoff=0.5) {
 # Assess Performance of Models and Existing Predictors in Test Set
 ```{r}
 pr_data <- data.frame()
-model_vec <- c('VPaC_v01','VPaC_v02', 'revel', 'cadd_phred', 'fitcons', 'metalr_rankscore', 'fathmm_converted_rankscore')
+model_vec <- c('DeepRNN','DeepVPaC','VPaC_m06','VPaC_m09','VPaC_m12', 'VPaC_m15', 'revel', 'cadd_phred', 'fitcons', 'metalr_rankscore', 'fathmm_converted_rankscore')
 for (i in model_vec){
   for (j in unique(allX$DataSet)[1:12]){
     pr <- pr_maker(i, allX %>% filter(DataSet == j))
