@@ -1,3 +1,12 @@
+######################
+# biowulf2 note
+# run with:
+# sinteractive --gres=gpu:k80:1,lscratch:10 --mem=64g -c2
+# module load cuDNN/7.0/CUDA-9.0 CUDA R/3.5.0 python/3.5
+# to load keras/tensorflow 
+# https://hpc.nih.gov/apps/caret.html
+######################
+
 # create unified df for model_assess.Rmd
 
 library(tidyverse)
@@ -96,4 +105,146 @@ allX$VPaC_m15 <- sqrt(predict(VPaC_15mtry, allX, type='prob')[,1])
 allX$VPaC_m12 <- sqrt(predict(VPaC_12mtry, allX, type='prob')[,1])
 allX$VPaC_m09 <- sqrt(predict(VPaC_9mtry, allX, type='prob')[,1])
 
-save(allX, file='/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/allX_2018_06_21.Rdata')
+
+###########################
+## Deep LSTM ##
+###########################
+
+##############################
+# keras model predict 
+#############################
+library(DMwR)
+set.seed(89345)
+train_sub <- model_data$ML_set__general_TT$train_set %>% dplyr::select(one_of(most_imp_predictors_no_disease_class), 'Status')
+test_sub <- model_data$ML_set__general_TT$test_set %>% dplyr::select(one_of(most_imp_predictors_no_disease_class),'Status')
+
+train_sub <- SMOTE(Status ~ ., as.data.frame(train_sub))
+status_train <- train_sub$Status
+status_train01 <- case_when(status_train == 'Pathogenic' ~ 1,
+                            TRUE ~ 0)
+status_test <- test_sub$Status
+status_test01 <- case_when(status_test == 'Pathogenic' ~ 1,
+                           TRUE ~ 0)
+train_sub <- train_sub %>% dplyr::select(-Status)
+test_sub <- test_sub %>% dplyr::select(-Status)
+mean <- apply(train_sub %>% dplyr::select_(.dots = most_imp_predictors_no_disease_class), 2, mean)
+std <- apply(train_sub %>% dplyr::select_(.dots = most_imp_predictors_no_disease_class), 2, sd)
+train_data <- scale(train_sub, center=mean, scale=std)
+test_data <- scale(test_sub, center=mean,scale=std)
+
+# reshape
+dim(train_data) <- c(nrow(train_data),1,length(most_imp_predictors_no_disease_class))
+dim(test_data) <- c(nrow(test_data),1,length(most_imp_predictors_no_disease_class))
+
+model <- keras_model_sequential() %>% 
+  layer_lstm(1.5*length(most_imp_predictors_no_disease_class), recurrent_dropout=0.2, input_shape=c(1, length(most_imp_predictors_no_disease_class)), return_sequences = T) %>%
+  layer_dropout(0.2) %>%
+  layer_lstm(1.5*length(most_imp_predictors_no_disease_class), recurrent_dropout=0.2, input_shape=c(1, length(most_imp_predictors_no_disease_class)), return_sequences = T) %>%
+  layer_dropout(0.2) %>%
+  layer_lstm(1.5*length(most_imp_predictors_no_disease_class), recurrent_dropout=0.2, input_shape=c(1, length(most_imp_predictors_no_disease_class)), return_sequences = T) %>%
+  layer_dropout(0.2) %>%
+  layer_lstm(1.5*length(most_imp_predictors_no_disease_class), recurrent_dropout=0.2, input_shape=c(1, length(most_imp_predictors_no_disease_class)), return_sequences = T) %>%
+  layer_dropout(0.2) %>%
+  layer_lstm(1.5*length(most_imp_predictors_no_disease_class), recurrent_dropout=0.2, input_shape=c(1, length(most_imp_predictors_no_disease_class)), return_sequences = T) %>%
+  layer_dropout(0.2) %>%
+  layer_lstm(1.5*length(most_imp_predictors_no_disease_class), recurrent_dropout=0.2, input_shape=c(1, length(most_imp_predictors_no_disease_class)), return_sequences = T) %>%
+  layer_dropout(0.2) %>%
+  layer_lstm(1.5*length(most_imp_predictors_no_disease_class), recurrent_dropout=0.2, input_shape=c(1, length(most_imp_predictors_no_disease_class)), return_sequences = T) %>%
+  layer_dropout(0.2) %>%
+  layer_lstm(1.5*length(most_imp_predictors_no_disease_class), recurrent_dropout=0.2, input_shape=c(1, length(most_imp_predictors_no_disease_class))) %>%
+  layer_dropout(0.1) %>%
+  layer_dense(units=1, activation='sigmoid')
+
+model %>% compile(
+  optimizer = optimizer_adam(),
+  loss = 'binary_crossentropy',
+  metric = c('accuracy')
+)
+
+history <- model %>% fit(train_data, status_train01, epochs = 10, batch_size=50)
+
+DeepRNN <- list()
+DeepRNN$model <- model
+DeepRNN$mean <- mean
+DeepRNN$std <- std
+DeepRNN$predictors <- most_imp_predictors_no_disease_class
+# save_model_hdf5(model, "/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/DeepRNN_2018_06_22.h5")
+# save(DeepRNN, file='/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/DeepRNN_2018_06_22.Rdata')
+
+
+scale_predict <- function(df, model, predictors, mean, std){
+  # takes data frame, scales, predicts DeepRNN scoring,
+  # and outputs DeepRNN scores
+  set <- df %>% select(one_of(predictors))
+  set_scale <- scale(set, center=mean, scale=std)
+  dim(set_scale) <- c(nrow(set_scale),1,length(DeepRNN$predictors))
+  preds <- model %>% predict(set_scale)
+  preds <- preds[,1]
+  preds[is.na(preds)] <- 0
+  preds
+}
+
+########
+# TEST #
+########
+test_set <- model_data$ML_set__general_TT$test_set %>% select(one_of(DeepRNN$predictors))
+test_set$DeepRNN <- scale_predict(test_set, model, DeepRNN$predictors, DeepRNN$mean, DeepRNN$std)
+# RF based prediction
+test_set$VPaC_m06 <- sqrt(predict(VPaC_6mtry, test_set, type='prob')[,1])
+test_set$VPaC_m15 <- sqrt(predict(VPaC_15mtry, test_set, type='prob')[,1])
+test_set$VPaC_m12 <- sqrt(predict(VPaC_12mtry, test_set, type='prob')[,1])
+test_set$VPaC_m09 <- sqrt(predict(VPaC_9mtry, test_set, type='prob')[,1])
+test_set$Status <- model_data$ML_set__general_TT$test_set$Status
+#########
+# TRAIN #
+#########
+train_set <- model_data$ML_set__general_TT$train_set %>% select(one_of(DeepRNN$predictors))
+train_set$DeepRNN <- scale_predict(train_set, model, DeepRNN$predictors, DeepRNN$mean, DeepRNN$std)
+# RF based prediction
+train_set$VPaC_m06 <- sqrt(predict(VPaC_6mtry, train_set, type='prob')[,1])
+train_set$VPaC_m15 <- sqrt(predict(VPaC_15mtry, train_set, type='prob')[,1])
+train_set$VPaC_m12 <- sqrt(predict(VPaC_12mtry, train_set, type='prob')[,1])
+train_set$VPaC_m09 <- sqrt(predict(VPaC_9mtry, train_set, type='prob')[,1])
+train_set$Status <- model_data$ML_set__general_TT$train_set$Status
+
+test_set$VPaC_m15 <- sqrt(predict(VPaC_15mtry, test_set, type='prob')[,1])
+test_set$DeepRNN <- keras_preds
+test_set$Status <- model_data$ML_set__general_TT$test_set$Status
+
+#############################
+### create DeepVPaC score ###
+#############################
+fitControl_min <- trainControl(
+  classProbs=T,
+  savePredictions = T,
+  allowParallel = T,
+  summaryFunction = prSummary,
+  returnData = T)
+DeepVPaC <- caret::train(Status ~ ., data=test_set %>% select_(.dots=c('Status','VPaC_m15','DeepRNN')), 
+                         method = "glm", metric='F', trControl=fitControl_min)
+
+########################
+# predict DeepVPaC on train/test
+########################
+test_set$DeepVPaC <- predict(DeepVPaC, test_set, type='prob')[,1]
+train_set$DeepVPaC <- predict(DeepVPaC, train_set, type='prob')[,1]
+
+
+# predict DeepVPaC on allX
+# but first, scale data for DeepRNN model to work on
+all_sub <- allX %>% select_(.dots=most_imp_predictors_no_disease_class)
+all_sub$DeepRNN <- scale_predict(all_sub, model, DeepRNN$predictors, DeepRNN$mean, DeepRNN$std)
+all_sub$VPaC_m15 <- allX$VPaC_m15
+all_sub$DeepVPaC <- predict(DeepVPaC, all_sub, type='prob')[,1]
+
+allX$DeepRNN <- all_sub$DeepRNN
+allX$Distill <- all_sub$DeepVPaC
+
+# merge test and train set with allX
+allX2 <- bind_rows(allX, 
+                   test_set %>% mutate(DataSet = 'Test Set', Distill = DeepVPaC), 
+                   train_set %>% mutate(DataSet = 'Train Set', Distill = DeepVPaC))
+allX2[is.na(allX2)] <- -1
+allX <- allX2
+
+save(allX, file='/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/allX_2018_06_22.Rdata')
