@@ -164,7 +164,9 @@ DeepRNN <- list()
 DeepRNN$model <- model
 DeepRNN$mean <- mean
 DeepRNN$std <- std
-save(DeepRNN, file='/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/DeepRNN_2018_06_20.Rdata')
+DeepRNN$predictors <- most_imp_predictors_no_disease_class
+
+save(DeepRNN, file='/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/DeepRNN_2018_06_22.Rdata')
 
 
 
