@@ -12,10 +12,9 @@ library(tidyverse)
 library(caret)
 library(ModelMetrics)
 library(randomForest)
-load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/allX_2018_06_21.Rdata')
-load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/model_data_2018_06_20.Rdata')
-load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/DeepRNN_2018_06_22.Rdata')
-load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/VPaC_15mtry.Rdata')
+library(keras)
+library(tensorflow)
+load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/allX_2018_06_22.Rdata')
 # confusion matrix maker for built models
 cm_maker <- function(predictor = 'cadd_phred', data, cutoff=0.5, mode = 'prec_recall') {
   if (class(predictor)!='character'){
@@ -44,199 +43,20 @@ cm_maker <- function(predictor = 'cadd_phred', data, cutoff=0.5, mode = 'prec_re
 }
 
 
-# cm_maker('revel', grimm$grimm_ML_set, cutoff=0.5)
-# cm_maker(VPaC_15mtry, grimm$grimm_ML_set, cutoff=0.01)
-# cm_maker(VPaC_15mtry, raw_data %>% filter(DataSet=='grimm'), cutoff=0.01)
-#cm_maker(model, grimm$grimm_ML_set, cutoff=0.01)
-```
-
-# Pick best mtry for OVPaC and VPaC
-```{r}
-# cm_maker(OVPaC_3mtry, model_data$ML_set__eye_TT$test_set, cutoff=0.4)
-# cm_maker(OVPaC_6mtry, model_data$ML_set__eye_TT$test_set, cutoff=0.4)
-# cm_maker(OVPaC_10mtry, model_data$ML_set__eye_TT$test_set, cutoff=0.4)
-# 
-# cm_maker(VPaC_3mtry, model_data$ML_set__general_dummy_TT$test_set, cutoff=0.4)
-# cm_maker(VPaC_6mtry, model_data$ML_set__general_dummy_TT$test_set, cutoff=0.4)
-# cm_maker(VPaC_10mtry, model_data$ML_set__general_dummy_TT$test_set, cutoff=0.4)
-```
-**While 10mtry has slightly better performance on my test set, it performs slightly worse on the grimm and unifun datasets. So using mtry of 6 for OVPaC and VPaC.**
-
-
-
-# Build DeepVPaC (Distill)
-Add models to train and test data
-```{r}
-
-##############################
-# keras model predict 
-#############################
-
-# predict DeepRNN model on test data
-set.seed(89345)
-# extract predictor only data
-test_set <- model_data$ML_set__general_TT$test_set %>% select_(.dots=DeepRNN$predictors)
-# scale with scaling used by DeepRNN in neural_net_play.R
-all_keras <- scale(test_set, center=DeepRNN$mean,scale=DeepRNN$std)
-dim(all_keras) <- c(nrow(all_keras),1,length(DeepRNN$predictors))
-# predict (generated in neural_net_play.R)
-keras_preds <- predict(DeepRNN$model, all_keras)[,1]
-keras_preds[is.na(keras_preds)] <- 0
-# predict VPaC_m15 on test data
-
-test_set$VPaC_m15 <- sqrt(predict(VPaC_15mtry, test_set, type='prob')[,1])
-test_set$DeepRNN <- keras_preds
-test_set$Status <- model_data$ML_set__general_TT$test_set$Status
-# create DeepVPaC score
-fitControl_min <- trainControl(
-  classProbs=T,
-  savePredictions = T,
-  allowParallel = T,
-  summaryFunction = prSummary,
-  returnData = T)
-DeepVPaC <- caret::train(Status ~ ., data=test_set %>% select_(.dots=c('Status','VPaC_m15','DeepRNN')), 
-                         method = "glm", metric='F', trControl=fitControl_min)
-
-# predict DeepRNN on allX
-# but first, scale data for DeepRNN model to work on
-all_sub <- allX %>% select_(.dots=most_imp_predictors_no_disease_class)
-all_keras <- scale(all_sub, center=DeepRNN$mean,scale=DeepRNN$std)
-dim(all_keras) <- c(nrow(all_keras),1,length(most_imp_predictors_no_disease_class))
-keras_preds <- predict(DeepRNN$model, all_keras)[,1]
-keras_preds[is.na(keras_preds)] <- 0
-all_sub$DeepRNN <- keras_preds
-
-all_sub$VPaC_m15 <- allX$VPaC_m15
-all_sub$DeepVPaC <- predict(DeepVPaC, all_sub)
-
-allX$DeepRNN <- all_sub$DeepRNN
-allX$Distill <- all_sub$DeepVPaC
-```
-# Save pre-computed data 
-```{r}
-save(allX, file = '/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/all_data.2018_06_22.Rdata')
-load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/all_data.2018_06_22.Rdata')
 ```
 
 # Correlation of predictors
 ## VPaC
-```{r, fig.width=6, fig.height=4}
+```{r, fig.width=6, fig.height=6}
 library(superheat)
 
-predictors <- c('ccr_pct_v1',
-                                          'cadd_raw',
-                                          'vest3_rankscore',
-                                          'cadd_phred',
-                                          'mis_z',
-                                          'pli',
-                                          'lof_z',
-                                          'phylop_100way',
-                                          'revel',
-                                          'hapmap2',
-                                          'hapmap1',
-                                          'n_mis',
-                                          'epilogos_quies',
-                                          'n_lof',
-                                          'precessive',
-                                          'pnull',
-                                          'adj_exp_lof',
-                                          'adj_exp_syn',
-                                          'dann',
-                                          'adj_exp_mis',
-                                          'syn_z',
-                                          'n_syn',
-                                          'epilogos_txwk',
-                                          'fitcons',
-                                          'm_cap_score',
-                                          'm_cap_rankscore',
-                                          'eigen_phred',
-                                          'eigen_raw',
-                                          'epilogos_tx',
-                                          'is_lof',
-                                          'eigen_pc_raw_rankscore',
-                                          'epilogos_reprpcwk',
-                                          'fathmm_mkl_coding_rankscore',
-                                          'metalr_score',
-                                          'fathmm_mkl_coding_score',
-                                          'metalr_rankscore',
-                                          'impact_severity',
-                                          'metasvm_rankscore',
-                                          'metasvm_score',
-                                          'epilogos_enh',
-                                          'genocanyon_score',
-                                          'fathmm_converted_rankscore',
-                                          'mpc',
-                                          'epilogos_enhg',
-                                          'af_exac_all',
-                                          'epilogos_reprpc',
-                                          'max_aaf_all',
-                                          'mutationassessor_score',
-                                          'gerp',
-                                          'polyphen_score',
-                                          'gerp_elements',
-                                          'mutationassessor_score_rankscore',
-                                          'stam_mean',
-                                          'an_exac_all',
-                                          'af_exac_nfe',
-                                          'provean_converted_rankscore',
-                                          'an_exac_nfe',
-                                          'lrt_score',
-                                          'lrt_omega',
-                                          'grantham',
-                                          'lrt_converted_rankscore',
-                                          'genocanyon_score_rankscore',
-                                          'an_exac_afr',
-                                          'an_exac_amr',
-                                          'an_exac_sas',
-                                          'epilogos_het',
-                                          'ac_exac_all',
-                                          'linsight',
-                                          'gno_an_popmax',
-                                          'exac_num_het',
-                                          'an_exac_eas',
-                                          'gno_an_all',
-                                          'ac_exac_nfe',
-                                          'mutationtaster_converted_rankscore',
-                                          'an_exac_oth',
-                                          'an_exac_fin',
-                                          'gno_an_nfe',
-                                          'gno_af_all',
-                                          'gno_an_afr',
-                                          'epilogos_tssaflnk',
-                                          'gno_af_popmax',
-                                          'epilogos_znf',
-                                          'segway_sum_score',
-                                          'aaf_esp_ea',
-                                          'epilogos_txflnk',
-                                          'provean_score',
-                                          'segway_mean_score',
-                                          'epilogos_tss',
-                                          'aaf_esp_all',
-                                          'af_exac_amr',
-                                          'gno_af_nfe',
-                                          'epilogos_enhbiv',
-                                          'af_exac_sas',
-                                          'sift_score',
-                                          'fathmm_score',
-                                          'ac_exac_amr',
-                                          'aaf_esp_aa',
-                                          'gno_ac_all',
-                                          'gno_af_afr',
-                                          'ac_exac_sas',
-                                          'af_exac_eas',
-                                          'gno_an_fin',
-                                          'af_exac_afr',
-                                          'gno_an_eas',
-                                          'gno_an_oth',
-                                          'gno_ac_nfe',
-                                          'gno_ac_popmax',
-                                          'ac_exac_eas',
-                                          'ac_exac_afr',
-                                          'epilogos_tssbiv',
-                                          'gno_ac_afr',
-                                          'vest3_score')
+predictors<-c('ccr_pct_v1','cadd_raw','vest3_rankscore','cadd_phred','mis_z','pli','lof_z','phylop_100way','revel','hapmap2','hapmap1','n_mis','epilogos_quies','n_lof','precessive','pnull','adj_exp_lof','adj_exp_syn','dann','adj_exp_mis','syn_z','n_syn','epilogos_txwk','fitcons','m_cap_score','m_cap_rankscore','eigen_phred','eigen_raw','epilogos_tx','is_lof','eigen_pc_raw_rankscore','epilogos_reprpcwk','fathmm_mkl_coding_rankscore','metalr_score','fathmm_mkl_coding_score','metalr_rankscore','impact_severity','metasvm_rankscore','metasvm_score','epilogos_enh','genocanyon_score','fathmm_converted_rankscore','mpc','epilogos_enhg','af_exac_all','epilogos_reprpc','max_aaf_all','mutationassessor_score','gerp','polyphen_score','gerp_elements','mutationassessor_score_rankscore','stam_mean','an_exac_all','af_exac_nfe','provean_converted_rankscore','an_exac_nfe','lrt_score','lrt_omega','grantham','lrt_converted_rankscore','genocanyon_score_rankscore','an_exac_afr','an_exac_amr','an_exac_sas','epilogos_het','ac_exac_all','linsight','gno_an_popmax','exac_num_het','an_exac_eas','gno_an_all','ac_exac_nfe','mutationtaster_converted_rankscore','an_exac_oth','an_exac_fin','gno_an_nfe','gno_af_all','gno_an_afr','epilogos_tssaflnk','gno_af_popmax','epilogos_znf','segway_sum_score','aaf_esp_ea','epilogos_txflnk','provean_score','segway_mean_score','epilogos_tss','aaf_esp_all','af_exac_amr','gno_af_nfe','epilogos_enhbiv','af_exac_sas','sift_score','fathmm_score','ac_exac_amr','aaf_esp_aa','gno_ac_all','gno_af_afr','ac_exac_sas','af_exac_eas','gno_an_fin','af_exac_afr','gno_an_eas','gno_an_oth','gno_ac_nfe','gno_ac_popmax','ac_exac_eas','ac_exac_afr','epilogos_tssbiv','gno_ac_afr','vest3_score')
 
-superheat(cor(allX %>% filter(DataSet=='VPaC Test Set') %>% select(one_of(predictors[1:30], 'VPaC_m06', 'VPaC_m15','DeepVPAC','DeepRNN'))), 
+# remove near zero var predictors with caret's nearZeroVar
+dat <- allX %>% filter(DataSet == 'Homsy') %>% select(one_of(predictors, 'VPaC_m06', 'VPaC_m15','DeepRNN'))
+rem <- nearZeroVar(dat)
+dat <- dat[,-rem]
+superheat(cor(dat), 
           pretty.order.rows = T, 
           pretty.order.cols = T, 
           left.label = 'variable', 
@@ -329,7 +149,7 @@ roc_maker <- function(predictor, data, cutoff=0.5) {
 # Assess Performance of Models and Existing Predictors in Test Set
 ```{r}
 pr_data <- data.frame()
-model_vec <- c('DeepRNN','Distill','VPaC_m06','VPaC_m09','VPaC_m12', 'VPaC_m15', 'revel', 'cadd_phred', 'fitcons', 'metalr_rankscore', 'fathmm_converted_rankscore')
+model_vec <- c('DeepRNN','DeepVPaC','VPaC_m15', 'VPaC_m06', 'ccr_pct_v1', 'revel', 'cadd_phred', 'fitcons', 'metalr_rankscore', 'fathmm_converted_rankscore')
 for (i in model_vec){
   for (j in unique(allX$DataSet)){
     pr <- pr_maker(i, allX %>% filter(DataSet == j))
@@ -359,7 +179,13 @@ for (i in model_vec){
 ```
 ## Table Data
 ```{r}
-pr_data %>% mutate(Model = factor(Model, levels = model_vec)) %>% dplyr::select(AUC, Model, DataSet) %>% filter(grepl('Grimm|ClinVar|Test|UniFun|DDL|Sam|Hom', DataSet)) %>% unique() %>% mutate(AUC=round(AUC,4)) %>% spread(Model, AUC) %>% DT::datatable()
+pr_data %>% mutate(Model = factor(Model, levels = model_vec)) %>% 
+  dplyr::select(AUC, Model, DataSet) %>% 
+  #filter(grepl('Grimm|ClinVar|Test|UniFun|DDL|Sam|Hom', DataSet)) %>% 
+  unique() %>% 
+  mutate(AUC=round(AUC,4)) %>% 
+  spread(Model, AUC) %>% 
+  DT::datatable()
 
 roc_data %>% mutate(Model = factor(Model, levels = model_vec)) %>% dplyr::select(AUC, Model, DataSet) %>% filter(grepl('Grimm|ClinVar|Test|UniFun|DDL|Sam|Hom', DataSet)) %>% unique() %>% mutate(AUC=round(AUC,4)) %>% spread(Model, AUC) %>% DT::datatable()
 ```
