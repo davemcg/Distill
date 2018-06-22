@@ -120,8 +120,8 @@ allX$VPaC_m09 <- sqrt(predict(VPaC_9mtry, allX, type='prob')[,1])
 #############################
 library(DMwR)
 set.seed(89345)
-train_sub <- model_data$ML_set__general_TT$train_set %>% dplyr::select(one_of(numeric_predictors), 'Status')
-test_sub <- model_data$ML_set__general_TT$test_set %>% dplyr::select(one_of(numeric_predictors),'Status')
+train_sub <- model_data$ML_set__general_TT$train_set %>% dplyr::select(one_of(nn_predictors), 'Status')
+test_sub <- model_data$ML_set__general_TT$test_set %>% dplyr::select(one_of(nn_predictors),'Status')
 
 train_sub <- SMOTE(Status ~ ., as.data.frame(train_sub))
 status_train <- train_sub$Status
@@ -132,31 +132,31 @@ status_test01 <- case_when(status_test == 'Pathogenic' ~ 1,
                            TRUE ~ 0)
 train_sub <- train_sub %>% dplyr::select(-Status)
 test_sub <- test_sub %>% dplyr::select(-Status)
-mean <- apply(train_sub %>% dplyr::select_(.dots = numeric_predictors), 2, mean)
-std <- apply(train_sub %>% dplyr::select_(.dots = numeric_predictors), 2, sd)
+mean <- apply(train_sub %>% dplyr::select_(.dots = nn_predictors), 2, mean)
+std <- apply(train_sub %>% dplyr::select_(.dots = nn_predictors), 2, sd)
 train_data <- scale(train_sub, center=mean, scale=std)
 test_data <- scale(test_sub, center=mean,scale=std)
 
 # reshape
-dim(train_data) <- c(nrow(train_data),1,length(numeric_predictors))
-dim(test_data) <- c(nrow(test_data),1,length(numeric_predictors))
+dim(train_data) <- c(nrow(train_data),1,length(nn_predictors))
+dim(test_data) <- c(nrow(test_data),1,length(nn_predictors))
 
 model <- keras_model_sequential() %>% 
-  layer_lstm(1.5*length(numeric_predictors), recurrent_dropout=0.2, input_shape=c(1, length(numeric_predictors)), return_sequences = T) %>%
+  layer_lstm(1.5*length(nn_predictors), recurrent_dropout=0.2, input_shape=c(1, length(nn_predictors)), return_sequences = T) %>%
   layer_dropout(0.2) %>%
-  layer_lstm(1.5*length(numeric_predictors), recurrent_dropout=0.2, input_shape=c(1, length(numeric_predictors)), return_sequences = T) %>%
+  layer_lstm(1.5*length(nn_predictors), recurrent_dropout=0.2, input_shape=c(1, length(nn_predictors)), return_sequences = T) %>%
   layer_dropout(0.2) %>%
-  layer_lstm(1.5*length(numeric_predictors), recurrent_dropout=0.2, input_shape=c(1, length(numeric_predictors)), return_sequences = T) %>%
+  layer_lstm(1.5*length(nn_predictors), recurrent_dropout=0.2, input_shape=c(1, length(nn_predictors)), return_sequences = T) %>%
   layer_dropout(0.2) %>%
-  layer_lstm(1.5*length(numeric_predictors), recurrent_dropout=0.2, input_shape=c(1, length(numeric_predictors)), return_sequences = T) %>%
+  layer_lstm(1.5*length(nn_predictors), recurrent_dropout=0.2, input_shape=c(1, length(nn_predictors)), return_sequences = T) %>%
   layer_dropout(0.2) %>%
-  layer_lstm(1.5*length(numeric_predictors), recurrent_dropout=0.2, input_shape=c(1, length(numeric_predictors)), return_sequences = T) %>%
+  layer_lstm(1.5*length(nn_predictors), recurrent_dropout=0.2, input_shape=c(1, length(nn_predictors)), return_sequences = T) %>%
   layer_dropout(0.2) %>%
-  layer_lstm(1.5*length(numeric_predictors), recurrent_dropout=0.2, input_shape=c(1, length(numeric_predictors)), return_sequences = T) %>%
+  layer_lstm(1.5*length(nn_predictors), recurrent_dropout=0.2, input_shape=c(1, length(nn_predictors)), return_sequences = T) %>%
   layer_dropout(0.2) %>%
-  layer_lstm(1.5*length(numeric_predictors), recurrent_dropout=0.2, input_shape=c(1, length(numeric_predictors)), return_sequences = T) %>%
+  layer_lstm(1.5*length(nn_predictors), recurrent_dropout=0.2, input_shape=c(1, length(nn_predictors)), return_sequences = T) %>%
   layer_dropout(0.2) %>%
-  layer_lstm(1.5*length(numeric_predictors), recurrent_dropout=0.2, input_shape=c(1, length(numeric_predictors))) %>%
+  layer_lstm(1.5*length(nn_predictors), recurrent_dropout=0.2, input_shape=c(1, length(nn_predictors))) %>%
   layer_dropout(0.1) %>%
   layer_dense(units=1, activation='sigmoid')
 
@@ -168,11 +168,18 @@ model %>% compile(
 
 history <- model %>% fit(train_data, status_train01, epochs = 10, batch_size=50)
 
+# assess performance on test data
+# suggest only run if doing interactively
+test_score <- model %>% predict(test_data)
+test_score[is.na(test_score)] <- 0
+model_data$ML_set__general_dummy_TT$test_set$keras <- test_score[,1]
+cm_maker('keras', model_data$ML_set__general_dummy_TT$test_set, cutoff=0.99)
+
 DeepRNN <- list()
 DeepRNN$model <- model
 DeepRNN$mean <- mean
 DeepRNN$std <- std
-DeepRNN$predictors <- numeric_predictors
+DeepRNN$predictors <- nn_predictors
 # save_model_hdf5(model, "/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/DeepRNN_2018_06_22.h5")
 # save(DeepRNN, file='/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/DeepRNN_2018_06_22.Rdata')
 
@@ -195,6 +202,7 @@ scale_predict <- function(df, model, predictors, mean, std){
 test_set <- model_data$ML_set__general_TT$test_set %>% select(one_of(DeepRNN$predictors))
 test_set$DeepRNN <- scale_predict(test_set, model, DeepRNN$predictors, DeepRNN$mean, DeepRNN$std)
 # RF based prediction
+test_set$fitcons_float <- test_set$fitcons
 test_set$VPaC_m06 <- sqrt(predict(VPaC_6mtry, test_set, type='prob')[,1])
 test_set$VPaC_m15 <- sqrt(predict(VPaC_15mtry, test_set, type='prob')[,1])
 test_set$VPaC_m12 <- sqrt(predict(VPaC_12mtry, test_set, type='prob')[,1])
@@ -206,15 +214,13 @@ test_set$Status <- model_data$ML_set__general_TT$test_set$Status
 train_set <- model_data$ML_set__general_TT$train_set %>% select(one_of(DeepRNN$predictors))
 train_set$DeepRNN <- scale_predict(train_set, model, DeepRNN$predictors, DeepRNN$mean, DeepRNN$std)
 # RF based prediction
+train_set$fitcons_float <- train_set$fitcons
 train_set$VPaC_m06 <- sqrt(predict(VPaC_6mtry, train_set, type='prob')[,1])
 train_set$VPaC_m15 <- sqrt(predict(VPaC_15mtry, train_set, type='prob')[,1])
 train_set$VPaC_m12 <- sqrt(predict(VPaC_12mtry, train_set, type='prob')[,1])
 train_set$VPaC_m09 <- sqrt(predict(VPaC_9mtry, train_set, type='prob')[,1])
 train_set$Status <- model_data$ML_set__general_TT$train_set$Status
 
-test_set$VPaC_m15 <- sqrt(predict(VPaC_15mtry, test_set, type='prob')[,1])
-test_set$DeepRNN <- keras_preds
-test_set$Status <- model_data$ML_set__general_TT$test_set$Status
 
 #############################
 ### create DeepVPaC score ###
@@ -237,13 +243,13 @@ train_set$DeepVPaC <- predict(DeepVPaC, train_set, type='prob')[,1]
 
 # predict DeepVPaC on allX
 # but first, scale data for DeepRNN model to work on
-all_sub <- allX %>% select_(.dots=numeric_predictors)
+all_sub <- allX %>% select_(.dots=nn_predictors)
 all_sub$DeepRNN <- scale_predict(all_sub, model, DeepRNN$predictors, DeepRNN$mean, DeepRNN$std)
 all_sub$VPaC_m15 <- allX$VPaC_m15
 all_sub$DeepVPaC <- predict(DeepVPaC, all_sub, type='prob')[,1]
 
 allX$DeepRNN <- all_sub$DeepRNN
-allX$Distill <- all_sub$DeepVPaC
+allX$DeepVPaC <- all_sub$DeepVPaC
 
 # merge test and train set with allX
 allX2 <- bind_rows(allX, 
