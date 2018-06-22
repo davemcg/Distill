@@ -120,7 +120,16 @@ allX$VPaC_m09 <- sqrt(predict(VPaC_9mtry, allX, type='prob')[,1])
 #############################
 library(DMwR)
 set.seed(89345)
-train_sub <- model_data$ML_set__general_TT$train_set %>% dplyr::select(one_of(nn_predictors), 'Status')
+############# 
+# first remove correlated and near zero var predictors
+# scratch this, redues F1 score
+#############
+#corred <- findCorrelation(model_data$ML_set__general_TT$train_set %>% dplyr::select(one_of(nn_predictors)))
+#nn_predictors <- nn_predictors[-corred]
+#nZV <- nearZeroVar(model_data$ML_set__general_TT$train_set %>% dplyr::select(one_of(nn_predictors)))
+#nn_predictors <- nn_predictors[-nZV]
+
+train_sub <- model_data$ML_set__general_TT$train_set %>% dplyr::select(one_of(nn_predictors),'Status')
 test_sub <- model_data$ML_set__general_TT$test_set %>% dplyr::select(one_of(nn_predictors),'Status')
 
 train_sub <- SMOTE(Status ~ ., as.data.frame(train_sub))
