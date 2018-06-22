@@ -12,9 +12,9 @@ library(tidyverse)
 library(caret)
 library(ModelMetrics)
 library(randomForest)
-load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/allX_2018_06_20.Rdata')
+load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/allX_2018_06_21.Rdata')
 load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/model_data_2018_06_20.Rdata')
-load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/DeepRNN_2018_06_20.Rdata')
+load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/DeepRNN_2018_06_22.Rdata')
 load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/VPaC_15mtry.Rdata')
 # confusion matrix maker for built models
 cm_maker <- function(predictor = 'cadd_phred', data, cutoff=0.5, mode = 'prec_recall') {
@@ -65,6 +65,7 @@ cm_maker <- function(predictor = 'cadd_phred', data, cutoff=0.5, mode = 'prec_re
 
 
 # Build DeepVPaC (Distill)
+Add models to train and test data
 ```{r}
 
 ##############################
@@ -74,16 +75,16 @@ cm_maker <- function(predictor = 'cadd_phred', data, cutoff=0.5, mode = 'prec_re
 # predict DeepRNN model on test data
 set.seed(89345)
 # extract predictor only data
-test_set <- model_data$ML_set__general_TT$test_set %>% select_(.dots=most_imp_predictors_no_disease_class)
+test_set <- model_data$ML_set__general_TT$test_set %>% select_(.dots=DeepRNN$predictors)
 # scale with scaling used by DeepRNN in neural_net_play.R
 all_keras <- scale(test_set, center=DeepRNN$mean,scale=DeepRNN$std)
-dim(all_keras) <- c(nrow(all_keras),1,length(most_imp_predictors_no_disease_class))
+dim(all_keras) <- c(nrow(all_keras),1,length(DeepRNN$predictors))
 # predict (generated in neural_net_play.R)
 keras_preds <- predict(DeepRNN$model, all_keras)[,1]
 keras_preds[is.na(keras_preds)] <- 0
 # predict VPaC_m15 on test data
 
-test_set$VPaC_m15 <- sqrt(predict(VPaC_15mtry, all_sub, type='prob')[,1])
+test_set$VPaC_m15 <- sqrt(predict(VPaC_15mtry, test_set, type='prob')[,1])
 test_set$DeepRNN <- keras_preds
 test_set$Status <- model_data$ML_set__general_TT$test_set$Status
 # create DeepVPaC score
@@ -106,15 +107,15 @@ keras_preds[is.na(keras_preds)] <- 0
 all_sub$DeepRNN <- keras_preds
 
 all_sub$VPaC_m15 <- allX$VPaC_m15
-all_sub$DeepVPAC <- predict(DeepVPaC, all_sub)
+all_sub$DeepVPaC <- predict(DeepVPaC, all_sub)
 
 allX$DeepRNN <- all_sub$DeepRNN
-allX$Distill <- all_sub$DeepVPAC
+allX$Distill <- all_sub$DeepVPaC
 ```
 # Save pre-computed data 
 ```{r}
-save(allX, file = '/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/all_data.2018_06_20.Rdata')
-load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/all_data.2018_06_20.Rdata')
+save(allX, file = '/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/all_data.2018_06_22.Rdata')
+load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/all_data.2018_06_22.Rdata')
 ```
 
 # Correlation of predictors
@@ -328,7 +329,7 @@ roc_maker <- function(predictor, data, cutoff=0.5) {
 # Assess Performance of Models and Existing Predictors in Test Set
 ```{r}
 pr_data <- data.frame()
-model_vec <- c('DeepRNN','DeepVPAC','VPaC_m06','VPaC_m09','VPaC_m12', 'VPaC_m15', 'revel', 'cadd_phred', 'fitcons', 'metalr_rankscore', 'fathmm_converted_rankscore')
+model_vec <- c('DeepRNN','Distill','VPaC_m06','VPaC_m09','VPaC_m12', 'VPaC_m15', 'revel', 'cadd_phred', 'fitcons', 'metalr_rankscore', 'fathmm_converted_rankscore')
 for (i in model_vec){
   for (j in unique(allX$DataSet)){
     pr <- pr_maker(i, allX %>% filter(DataSet == j))
