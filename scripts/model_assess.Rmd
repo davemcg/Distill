@@ -187,7 +187,9 @@ pr_data %>% mutate(Model = factor(Model, levels = model_vec)) %>%
   spread(Model, AUC) %>% 
   DT::datatable()
 
-roc_data %>% mutate(Model = factor(Model, levels = model_vec)) %>% dplyr::select(AUC, Model, DataSet) %>% filter(grepl('Grimm|ClinVar|Test|UniFun|DDL|Sam|Hom', DataSet)) %>% unique() %>% mutate(AUC=round(AUC,4)) %>% spread(Model, AUC) %>% DT::datatable()
+roc_data %>% mutate(Model = factor(Model, levels = model_vec)) %>% dplyr::select(AUC, Model, DataSet) %>% 
+  #filter(grepl('Grimm|ClinVar|Test|UniFun|DDL|Sam|Hom', DataSet)) %>% 
+  unique() %>% mutate(AUC=round(AUC,4)) %>% spread(Model, AUC) %>% DT::datatable()
 ```
 ## Dot plots of AUC
 ```{r, fig.height=4}
