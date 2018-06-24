@@ -407,22 +407,32 @@ print('gnomAD Loaded')
 # Combine UK10K and ClinVar and gnomAD data
 ################################################
 
-ML_set__eye <- bind_rows(ML_set__clinvar %>% select_(.dots = colnames(ML_set__UK10K %>% select(-Complicated_Status, -Status))), 
-                         ML_set__UK10K %>% select(-Complicated_Status, -Status),
-                         gnomad_processed_sub %>% select_(.dots = colnames(ML_set__UK10K %>% select(-Complicated_Status, -Status)))) %>% 
+# ML_set__eye <- bind_rows(ML_set__clinvar %>% select_(.dots = colnames(ML_set__UK10K %>% select(-Complicated_Status, -Status))), 
+#                          ML_set__UK10K %>% select(-Complicated_Status, -Status),
+#                          gnomad_processed_sub %>% select_(.dots = colnames(ML_set__UK10K %>% select(-Complicated_Status, -Status)))) %>% 
+#   group_by(pos_id) %>% filter(row_number() == 1) %>% ungroup()
+
+ML_set__eye <- bind_rows(ML_set__clinvar %>% mutate_all(as.character), 
+                         ML_set__UK10K %>% mutate_all(as.character),
+                         gnomad_processed_sub %>% mutate_all(as.character)) %>% 
+  mutate_at(vars(one_of(numeric_predictors)), funs(as.numeric(.))) %>% 
   group_by(pos_id) %>% filter(row_number() == 1) %>% ungroup()
 
 # same as eye, but also adding HC clinvar and a bunch more gnomad
-ML_set__general <- bind_rows(ML_set__clinvar %>% select_(.dots = colnames(ML_set__UK10K %>% select(-Complicated_Status, -Status))), 
-                             ML_set__UK10K %>% select(-Complicated_Status, -Status),
-                             gnomad_processed_sub %>% select_(.dots = colnames(ML_set__UK10K %>% select(-Complicated_Status, -Status))),
-                             ML_set__clinvar__otherPath_HC %>% select_(.dots = colnames(ML_set__UK10K %>% select(-Complicated_Status, -Status))), 
-                             gnomad_processed_sub_nonEye %>% select_(.dots = colnames(ML_set__UK10K %>% select(-Complicated_Status, -Status)))) %>% 
+ML_set__general <- bind_rows(ML_set__clinvar %>% mutate_all(as.character),
+                             ML_set__UK10K %>% mutate_all(as.character),
+                             gnomad_processed_sub %>% mutate_all(as.character),
+                             ML_set__clinvar__otherPath_HC %>% mutate_all(as.character), 
+                             gnomad_processed_sub_nonEye %>% mutate_all(as.character)) %>% 
+  mutate_at(vars(one_of(numeric_predictors)), funs(as.numeric(.))) %>%
   group_by(pos_id) %>% filter(row_number() == 1) %>% ungroup()
 
 # the leftovers
-ML_set__other <- bind_rows(gnomad_processed_other %>% select(-Status), ML_set__clinvar__otherPath %>% select(-Status)) %>% 
+ML_set__other <- bind_rows(gnomad_processed_other %>% mutate_all(as.character), 
+                           ML_set__clinvar__otherPath %>% mutate_all(as.character)) %>% 
+  mutate_at(vars(one_of(numeric_predictors)), funs(as.numeric(.))) %>%
   group_by(pos_id) %>% filter(row_number() == 1) %>% ungroup()
+
 print('Core Sets Created')
 ################################
 # one hot encode
@@ -470,41 +480,27 @@ pos_id__source <- pos_id__source %>%
 print('Position ID table created')
 # eye pathogenicity 
 # select variants pathogenic in eye (either from ClinVar eye related or UK10K) or benign (clinvar, uk10k, gnomad)
-ML_set__eye <- inner_join(ML_set__eye, 
+ML_set__eye <- inner_join(ML_set__eye %>% select(-Status), 
                                 pos_id__source %>% 
                                   filter((Path_Eye == 1) | Status=='NotPathogenic') %>% 
                                   dplyr::select(pos_id, Status, Source))
 ML_set__eye$Status <- factor(ML_set__eye$Status, levels = c('Pathogenic','NotPathogenic'))
 #ML_set__eye$DiseaseClass <- factor(ML_set__eye$DiseaseClass)
 
-ML_set__eye_dummy <- inner_join(ML_set__eye_dummy, 
-                                pos_id__source %>% 
-                                  filter((Path_Eye == 1) | Status=='NotPathogenic') %>% 
-                                  dplyr::select(pos_id, Status, Source))
-ML_set__eye_dummy$Status <- factor(ML_set__eye_dummy$Status, levels = c('Pathogenic','NotPathogenic'))
-
-
 # general pathogenicity (can include eye)
-ML_set__general <- inner_join(ML_set__general, 
+ML_set__general <- inner_join(ML_set__general %>% select(-Status), 
                               pos_id__source %>% 
                                 filter((Path_Eye == 1 | Path_ClinVar_Other_HC == 1) | Status=='NotPathogenic') %>% 
                                 dplyr::select(pos_id, Status, Source))
 ML_set__general$Status <- factor(ML_set__general$Status, levels = c('Pathogenic','NotPathogenic'))
 #ML_set__general$DiseaseClass <- factor(ML_set__general$DiseaseClass)
 
-ML_set__general_dummy <- inner_join(ML_set__general_dummy, 
-                                    pos_id__source %>% 
-                                      filter((Path_Eye == 1 | Path_ClinVar_Other_HC == 1) | Status=='NotPathogenic') %>% 
-                                      dplyr::select(pos_id, Status, Source))
-ML_set__general_dummy$Status <- factor(ML_set__general_dummy$Status, levels = c('Pathogenic','NotPathogenic'))
 
 # the remainder
-ML_set__other <- inner_join(ML_set__other, pos_id__source %>% dplyr::select(pos_id, Status, Source))
+ML_set__other <- inner_join(ML_set__other %>% select(-Status), pos_id__source %>% dplyr::select(pos_id, Status, Source))
 ML_set__other$Status <- factor(ML_set__other$Status, levels = c('Pathogenic','NotPathogenic'))
 #ML_set__other$DiseaseClass <- factor(ML_set__other$DiseaseClass)
 
-ML_set__other_dummy <- inner_join(ML_set__other_dummy, pos_id__source %>% dplyr::select(pos_id, Status, Source))
-ML_set__other_dummy$Status <- factor(ML_set__other_dummy$Status, levels = c('Pathogenic','NotPathogenic'))
 
 # center scale 
 # ML_set_dummy_CS <- preProcess(ML_set_dummy, method = c('center','scale')) %>% predict(., ML_set_dummy)
@@ -530,52 +526,19 @@ train_test_maker <- function(df){
   out
 }
 
-ML_set__eye_dummy_TT <- train_test_maker(ML_set__eye_dummy)
-ML_set__general_dummy_TT <- train_test_maker(ML_set__general_dummy)
-ML_set__other_dummy_TT <- train_test_maker(ML_set__other_dummy)
-
 ML_set__eye_TT <- train_test_maker(ML_set__eye)
 ML_set__general_TT <- train_test_maker(ML_set__general)
 ML_set__other_TT <- train_test_maker(ML_set__other)
-
-# ##################################
-# # ClinVar Spread
-# # train, validate, and test sets
-# # 70% to train
-# # 30% to test 
-# ##################################
-# train_test_maker_SPREAD <- function(df){
-#   set.seed(115470)
-#   train_set <- df %>% 
-#     group_by(Status) %>% 
-#     sample_frac(0.7) %>% ungroup() 
-#   
-#   test_set <- df %>% 
-#     filter(!pos_id %in% c(train_set$pos_id))
-#   
-#   out <- list()
-#   out$train_set <- train_set
-#   out$test_set <- test_set
-#   out
-# }
-# 
-# 
-# clinvar_spread <- train_test_maker_SPREAD(ML_set__clinvar)
-# clinvar_spread$spread <- ML_set__spread
 
 ###########################################
 # SAVE DATA
 ##########################################
 model_data <- list()
-#model_data$ML_set__eye_dummy_TT  <- ML_set__eye_dummy_TT
-#model_data$ML_set__general_dummy_TT <- ML_set__general_dummy_TT
-#model_data$ML_set__other_dummy_TT <- ML_set__other_dummy_TT
 model_data$ML_set__eye_TT <- ML_set__eye_TT
 model_data$ML_set__general_TT <- ML_set__general_TT
 model_data$ML_set__other_TT <- ML_set__other_TT
 model_data$pos_id__source <- pos_id__source
-model_data$predictors <- predictors
-#model_data$ML_set__spread <- ML_set__spread
+model_data$predictors <- numeric_predictors
 model_data$sessionInfo <- sessionInfo()
 save(model_data, file='/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/model_data_2018_06_23.Rdata')
 
