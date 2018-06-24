@@ -229,6 +229,19 @@ train_set$VPaC_m15 <- sqrt(predict(VPaC_15mtry, train_set, type='prob')[,1])
 train_set$VPaC_m12 <- sqrt(predict(VPaC_12mtry, train_set, type='prob')[,1])
 train_set$VPaC_m09 <- sqrt(predict(VPaC_9mtry, train_set, type='prob')[,1])
 train_set$Status <- model_data$ML_set__general_TT$train_set$Status
+#########
+# OTHER #
+#########
+other_set <- bind_rows(model_data$ML_set__other_TT$train_set %>% select(one_of(DeepRNN$predictors)),
+                       model_data$ML_set__other_TT$test_set %>% select(one_of(DeepRNN$predictors)))
+other_set$DeepRNN <- scale_predict(other_set, model, DeepRNN$predictors, DeepRNN$mean, DeepRNN$std)
+# RF based prediction
+other_set$fitcons_float <- other_set$fitcons
+other_set$VPaC_m06 <- sqrt(predict(VPaC_6mtry, other_set, type='prob')[,1])
+other_set$VPaC_m15 <- sqrt(predict(VPaC_15mtry, other_set, type='prob')[,1])
+other_set$VPaC_m12 <- sqrt(predict(VPaC_12mtry, other_set, type='prob')[,1])
+other_set$VPaC_m09 <- sqrt(predict(VPaC_9mtry, other_set, type='prob')[,1])
+other_set$Status <- model_data$ML_set__general_TT$other_set$Status
 
 
 #############################
@@ -244,11 +257,11 @@ DeepVPaC <- caret::train(Status ~ ., data=test_set %>% select_(.dots=c('Status',
                          method = "glm", metric='F', trControl=fitControl_min)
 
 ########################
-# predict DeepVPaC on train/test
+# predict DeepVPaC on train/test/other
 ########################
 test_set$DeepVPaC <- predict(DeepVPaC, test_set, type='prob')[,1]
 train_set$DeepVPaC <- predict(DeepVPaC, train_set, type='prob')[,1]
-
+other_set$DeepVPaC <- predict(DeepVPaC, other_set, type='prob')[,1]
 
 # predict DeepVPaC on allX
 # but first, scale data for DeepRNN model to work on
@@ -263,7 +276,8 @@ allX$DeepVPaC <- all_sub$DeepVPaC
 # merge test and train set with allX
 allX2 <- bind_rows(allX, 
                    test_set %>% mutate(DataSet = 'Test Set', Distill = DeepVPaC), 
-                   train_set %>% mutate(DataSet = 'Train Set', Distill = DeepVPaC))
+                   train_set %>% mutate(DataSet = 'Train Set', Distill = DeepVPaC),
+                   other_set %>% mutate(DataAset = 'Other Set', Distill = DeepVPaCb))
 allX2[is.na(allX2)] <- -1
 allX <- allX2
 
