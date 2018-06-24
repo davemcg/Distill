@@ -577,6 +577,6 @@ model_data$pos_id__source <- pos_id__source
 model_data$predictors <- predictors
 #model_data$ML_set__spread <- ML_set__spread
 model_data$sessionInfo <- sessionInfo()
-save(model_data, file='/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/model_data_2018_06_20.Rdata')
+save(model_data, file='/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/model_data_2018_06_23.Rdata')
 
 #save(clinvar_spread, file='/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/model_spread.Rdata')
