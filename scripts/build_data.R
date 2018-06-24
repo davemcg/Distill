@@ -203,7 +203,7 @@ all_processed <- uk10k_gemini_rare_variants %>%
                                  TRUE ~ 'Else')) %>% 
   mutate(Status = factor(Status, levels=c('Pathogenic','NotPathogenic'))) %>% 
   mutate_at(vars(one_of(numeric_predictors)), funs(as.numeric(.))) %>%  # convert columns with ac_|whatever to integer (ac is allele count), etc. af is allele frequency
-  select(one_of(info), one_of(numeric_predictors), one_of(cat_predictors)) %>% 
+  #select(one_of(info), one_of(numeric_predictors), one_of(cat_predictors)) %>% 
   filter(max_aaf_all < 0.01) %>% 
   unique() # remove any common variants
 
@@ -254,7 +254,7 @@ clinvar_processed <- clinvar %>%
                                  grepl('^diff', genesplicer) ~ 'Diff',
                                  TRUE ~ 'Else')) %>% 
   mutate_at(vars(one_of(numeric_predictors)), funs(as.numeric(.))) %>%  # convert columns with ac_|whatever to integer (ac is allele count), etc. af is allele frequency
-  select(one_of(info), one_of(numeric_predictors), one_of(cat_predictors)) %>% 
+  #select(one_of(info), one_of(numeric_predictors), one_of(cat_predictors)) %>% 
   filter(max_aaf_all < 0.01) # remove any common variants
 
 # fill missing with -1
@@ -306,7 +306,7 @@ gnomad_processed <- gnomad %>%
   mutate(Status = factor(Status, levels=c('Pathogenic','NotPathogenic'))) %>% 
   filter(hgmd_overlap=='None' & clinvar_pathogenic == 'None') %>% # remove possible pathogenic by checking against hgmd or clinvar presence
   mutate_at(vars(one_of(numeric_predictors)), funs(as.numeric(.))) %>%  # convert columns with ac_|whatever to integer (ac is allele count), etc. af is allele frequency
-  select(one_of(info), one_of(numeric_predictors), one_of(cat_predictors)) %>% 
+  #select(one_of(info), one_of(numeric_predictors), one_of(cat_predictors)) %>% 
   filter(max_aaf_all < 0.01) # remove any common variants 
 
 
@@ -435,11 +435,11 @@ one_hot_encode <- function(df){
   ML_set_dummy
 }
 
-ML_set__eye_dummy <- one_hot_encode(ML_set__eye)
-ML_set__general_dummy <- one_hot_encode(ML_set__general)
-ML_set__other_dummy <- one_hot_encode(ML_set__other)
+#ML_set__eye_dummy <- one_hot_encode(ML_set__eye)
+#ML_set__general_dummy <- one_hot_encode(ML_set__general)
+#ML_set__other_dummy <- one_hot_encode(ML_set__other)
 
-print('One Hot Encoding Done')
+#print('One Hot Encoding Done')
 ##################################
 # add back status, remove dups
 ##################################
@@ -567,9 +567,9 @@ ML_set__other_TT <- train_test_maker(ML_set__other)
 # SAVE DATA
 ##########################################
 model_data <- list()
-model_data$ML_set__eye_dummy_TT  <- ML_set__eye_dummy_TT
-model_data$ML_set__general_dummy_TT <- ML_set__general_dummy_TT
-model_data$ML_set__other_dummy_TT <- ML_set__other_dummy_TT
+#model_data$ML_set__eye_dummy_TT  <- ML_set__eye_dummy_TT
+#model_data$ML_set__general_dummy_TT <- ML_set__general_dummy_TT
+#model_data$ML_set__other_dummy_TT <- ML_set__other_dummy_TT
 model_data$ML_set__eye_TT <- ML_set__eye_TT
 model_data$ML_set__general_TT <- ML_set__general_TT
 model_data$ML_set__other_TT <- ML_set__other_TT
