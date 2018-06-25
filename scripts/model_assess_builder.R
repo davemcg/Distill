@@ -1,7 +1,7 @@
 ######################
 # biowulf2 note
 # run with:
-# sinteractive --gres=gpu:k80:1,lscratch:10 --mem=64g -c2
+# sinteractive --gres=gpu:k80:1,lscratch:10 --mem=96g -c2
 # module load cuDNN/7.0/CUDA-9.0 CUDA R/3.5.0 python/3.5
 # to load keras/tensorflow 
 # https://hpc.nih.gov/apps/caret.html
@@ -60,8 +60,9 @@ ddl_path_cdot <- panel %>% filter(grepl('Path', `Interpretation Summary`, ignore
 ##############
 metadata <- readxl::read_excel(path='~/git/EGA_EGAD00001002656_NGS_reanalyze/data/1-s2.0-S0002929716305274-mmc3.xlsx') %>% mutate(Sample=Patient)
 sample_gene_comp_het <- metadata %>% filter(Status=='Solved'  & Variant_HGVSc!='NA' & GT=='0/1') %>% group_by(Sample, Gene) %>% summarise(Count=n()) %>% filter(Count>1) 
-metadata <- left_join(metadata, sample_gene_comp_het) %>% mutate(Comp_Het_Path = case_when(Count >= 2 ~ 'CH', 
-                                                                                           TRUE ~ 'No')) %>% 
+metadata <- left_join(metadata, sample_gene_comp_het) %>% 
+  mutate(Comp_Het_Path = case_when(Count >= 2 ~ 'CH', 
+                                   TRUE ~ 'No')) %>% 
   select(-Count)
 
 allX <- raw_data %>% 
@@ -237,7 +238,7 @@ scale_predict <- function(df, model, predictors, mean, std){
 ########
 # TEST #
 ########
-test_set <- model_data$ML_set__general_TT$test_set %>% select(one_of(DeepRNN$predictors))
+test_set <- model_data$ML_set__general_TT$test_set
 test_set$DeepRNN <- scale_predict(test_set, model, DeepRNN$predictors, DeepRNN$mean, DeepRNN$std)
 # RF based prediction
 test_set$fitcons_float <- test_set$fitcons
@@ -245,11 +246,11 @@ test_set$VPaC_m06 <- sqrt(predict(VPaC_6mtry, test_set, type='prob')[,1])
 test_set$VPaC_m15 <- sqrt(predict(VPaC_15mtry, test_set, type='prob')[,1])
 test_set$VPaC_m12 <- sqrt(predict(VPaC_12mtry, test_set, type='prob')[,1])
 test_set$VPaC_m09 <- sqrt(predict(VPaC_9mtry, test_set, type='prob')[,1])
-test_set$Status <- model_data$ML_set__general_TT$test_set$Status
+
 #########
 # TRAIN #
 #########
-train_set <- model_data$ML_set__general_TT$train_set %>% select(one_of(DeepRNN$predictors))
+train_set <- model_data$ML_set__general_TT$train_set
 train_set$DeepRNN <- scale_predict(train_set, model, DeepRNN$predictors, DeepRNN$mean, DeepRNN$std)
 # RF based prediction
 train_set$fitcons_float <- train_set$fitcons
@@ -257,12 +258,12 @@ train_set$VPaC_m06 <- sqrt(predict(VPaC_6mtry, train_set, type='prob')[,1])
 train_set$VPaC_m15 <- sqrt(predict(VPaC_15mtry, train_set, type='prob')[,1])
 train_set$VPaC_m12 <- sqrt(predict(VPaC_12mtry, train_set, type='prob')[,1])
 train_set$VPaC_m09 <- sqrt(predict(VPaC_9mtry, train_set, type='prob')[,1])
-train_set$Status <- model_data$ML_set__general_TT$train_set$Status
+
 #########
 # OTHER #
 #########
-other_set <- bind_rows(model_data$ML_set__other_TT$train_set %>% select(one_of(DeepRNN$predictors)),
-                       model_data$ML_set__other_TT$test_set %>% select(one_of(DeepRNN$predictors)))
+other_set <- bind_rows(model_data$ML_set__other_TT$train_set,
+                       model_data$ML_set__other_TT$test_set)
 other_set$DeepRNN <- scale_predict(other_set, model, DeepRNN$predictors, DeepRNN$mean, DeepRNN$std)
 # RF based prediction
 other_set$fitcons_float <- other_set$fitcons
@@ -272,7 +273,7 @@ other_set$VPaC_m12 <- sqrt(predict(VPaC_12mtry, other_set, type='prob')[,1])
 other_set$VPaC_m09 <- sqrt(predict(VPaC_9mtry, other_set, type='prob')[,1])
 other_set$Status <- c(as.character(model_data$ML_set__other_TT$train_set$Status), 
                       as.character(model_data$ML_set__other_TT$test_set$Status))
-other_set$Status  <- as.factor(other_set$Status)
+
 
 #############################
 ### create DeepVPaC score ###
@@ -304,10 +305,11 @@ allX$DeepRNN <- all_sub$DeepRNN
 allX$DeepVPaC <- all_sub$DeepVPaC
 
 # merge test and train set with allX
-allX2 <- bind_rows(allX, 
-                   test_set %>% mutate(DataSet = 'Test Set', Distill = DeepVPaC), 
-                   train_set %>% mutate(DataSet = 'Train Set', Distill = DeepVPaC),
-                   other_set %>% mutate(DataSet = 'Other Set', Distill = DeepVPaC))
+allX2 <- bind_rows(allX %>% mutate_all(as.character), 
+                   test_set %>% mutate(DataSet = 'Test Set', Distill = DeepVPaC) %>% mutate_all(as.character) , 
+                   train_set %>% mutate(DataSet = 'Train Set', Distill = DeepVPaC) %>% mutate_all(as.character) ,
+                   other_set %>% mutate(DataSet = 'Other Set', Distill = DeepVPaC) %>% mutate_all(as.character)) %>% 
+  mutate_at(vars(one_of(numeric_predictors)), funs(as.numeric(.)))
 allX2[is.na(allX2)] <- -1
 allX <- allX2
 
