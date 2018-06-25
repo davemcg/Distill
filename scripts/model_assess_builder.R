@@ -270,8 +270,9 @@ other_set$VPaC_m06 <- sqrt(predict(VPaC_6mtry, other_set, type='prob')[,1])
 other_set$VPaC_m15 <- sqrt(predict(VPaC_15mtry, other_set, type='prob')[,1])
 other_set$VPaC_m12 <- sqrt(predict(VPaC_12mtry, other_set, type='prob')[,1])
 other_set$VPaC_m09 <- sqrt(predict(VPaC_9mtry, other_set, type='prob')[,1])
-other_set$Status <- model_data$ML_set__general_TT$other_set$Status
-
+other_set$Status <- c(as.character(model_data$ML_set__other_TT$train_set$Status), 
+                      as.character(model_data$ML_set__other_TT$test_set$Status))
+other_set$Status  <- as.factor(other_set$Status)
 
 #############################
 ### create DeepVPaC score ###
@@ -306,7 +307,7 @@ allX$DeepVPaC <- all_sub$DeepVPaC
 allX2 <- bind_rows(allX, 
                    test_set %>% mutate(DataSet = 'Test Set', Distill = DeepVPaC), 
                    train_set %>% mutate(DataSet = 'Train Set', Distill = DeepVPaC),
-                   other_set %>% mutate(DataAset = 'Other Set', Distill = DeepVPaC))
+                   other_set %>% mutate(DataSet = 'Other Set', Distill = DeepVPaC))
 allX2[is.na(allX2)] <- -1
 allX <- allX2
 
