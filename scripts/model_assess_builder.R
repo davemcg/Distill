@@ -177,12 +177,41 @@ model %>% compile(
 
 history <- model %>% fit(train_data, status_train01, epochs = 10, batch_size=50)
 
+
+# confusion matrix maker for built models
+cm_maker <- function(predictor = 'cadd_phred', data, cutoff=0.5, mode = 'prec_recall') {
+  if (class(predictor)!='character'){
+    print("Running in predictor is a model mode")
+    new_predictions <- predict(predictor, data, type='prob') %>% data.frame() %>% 
+      mutate(Answers = data$Status, Prediction = case_when(Pathogenic > cutoff ~ 'Pathogenic', TRUE ~ 'NotPathogenic'))
+    new_predictions <- new_predictions %>% mutate(preds = case_when(Prediction == 'Pathogenic' ~ 1,
+                                                                    TRUE ~ 0),
+                                                  actuals = case_when(Answers == 'Pathogenic' ~ 1,
+                                                                      TRUE ~ 0))
+    out <- caret::confusionMatrix(data = as.factor(new_predictions$Prediction), reference = as.factor(new_predictions$Answers), mode= mode)
+    out$MCC <- mcc(new_predictions$preds, new_predictions$actuals, cutoff=cutoff)
+  } else {
+    print("Running in predictor is a precomputed column in data mode")
+    new_predictions <- data 
+    new_predictions$Prediction <- 'NotPathogenic'
+    new_predictions[(new_predictions[,predictor] > cutoff), 'Prediction'] <- "Pathogenic"
+    new_predictions <- new_predictions %>% mutate(preds = case_when(Prediction == 'Pathogenic' ~ 1,
+                                                                    TRUE ~ 0),
+                                                  actuals = case_when(Status == 'Pathogenic' ~ 1,
+                                                                      TRUE ~ 0))
+    out <- caret::confusionMatrix(data = as.factor(new_predictions$Prediction), reference = as.factor(new_predictions$Status), mode= mode)
+    out$MCC <- mcc(new_predictions$preds, new_predictions$actuals, cutoff=cutoff)
+  }
+  out
+}
+
+
 # assess performance on test data
 # suggest only run if doing interactively
-test_score <- model %>% predict(test_data)
-test_score[is.na(test_score)] <- 0
-model_data$ML_set__general_dummy_TT$test_set$keras <- test_score[,1]
-cm_maker('keras', model_data$ML_set__general_dummy_TT$test_set, cutoff=0.99)
+# test_score <- model %>% predict(test_data)
+# test_score[is.na(test_score)] <- 0
+# model_data$ML_set__general_dummy_TT$test_set$keras <- test_score[,1]
+# cm_maker('keras', model_data$ML_set__general_dummy_TT$test_set, cutoff=0.99)
 
 DeepRNN <- list()
 DeepRNN$model <- model
@@ -277,8 +306,8 @@ allX$DeepVPaC <- all_sub$DeepVPaC
 allX2 <- bind_rows(allX, 
                    test_set %>% mutate(DataSet = 'Test Set', Distill = DeepVPaC), 
                    train_set %>% mutate(DataSet = 'Train Set', Distill = DeepVPaC),
-                   other_set %>% mutate(DataAset = 'Other Set', Distill = DeepVPaCb))
+                   other_set %>% mutate(DataAset = 'Other Set', Distill = DeepVPaC))
 allX2[is.na(allX2)] <- -1
 allX <- allX2
 
-save(allX, file='/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/allX_2018_06_24.Rdata')
+save(allX, file='/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/allX_2018_06_25.Rdata')
