@@ -279,13 +279,13 @@ other_set$Status <- c(as.character(model_data$ML_set__other_TT$train_set$Status)
 ### create DeepVPaC score ###
 #############################
 fitControl_min <- trainControl(
-  classProbs=T,
-  savePredictions = T,
-  allowParallel = T,
-  summaryFunction = prSummary,
-  returnData = T)
-DeepVPaC <- caret::train(Status ~ ., data=test_set %>% select_(.dots=c('Status','VPaC_m15','DeepRNN')), 
-                         method = "glm", metric='F', trControl=fitControl_min)
+   classProbs=T,
+   savePredictions = T,
+   allowParallel = T,
+   summaryFunction = prSummary,
+   returnData = T)
+DeepVPaC <- caret::train(Status ~ ., data=test_set %>% select_(.dots=c('Status','VPaC_m15','DeepRNN')) %>% mutate(Status=factor(Status, levels=c('Pathogenic','NotPathogenic'))), 
+                         method = "glm", metric='Precision', trControl = fitControl_min)
 
 ########################
 # predict DeepVPaC on train/test/other
@@ -295,7 +295,7 @@ train_set$DeepVPaC <- predict(DeepVPaC, train_set, type='prob')[,1]
 other_set$DeepVPaC <- predict(DeepVPaC, other_set, type='prob')[,1]
 
 # predict DeepVPaC on allX
-# but first, scale data for DeepRNN model to work on
+# but first, predict DeepRNN with scale_predict
 all_sub <- allX %>% select_(.dots=nn_predictors)
 all_sub$DeepRNN <- scale_predict(all_sub, model, DeepRNN$predictors, DeepRNN$mean, DeepRNN$std)
 all_sub$VPaC_m15 <- allX$VPaC_m15
@@ -313,4 +313,37 @@ allX2 <- bind_rows(allX %>% mutate_all(as.character),
 allX2[is.na(allX2)] <- -1
 allX <- allX2
 
-save(allX, file='/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/allX_2018_06_25.Rdata')
+allX <- allX %>% mutate_at(vars(contains('VP')), as.numeric) %>% mutate_at(vars(contains('Deep')), as.numeric) %>% 
+  mutate(Status=factor(Status, levels=c('Pathogenic','NotPathogenic')))
+
+#############
+# build assess data 
+#############
+
+SuperGrimm <- allX %>% filter(grepl('Grimm', DataSet)) %>% 
+  filter(!pos_id %in% (allX %>% filter(!grepl('Grimm', DataSet)) %>% 
+                         pull(pos_id)))
+
+HalfOther_1 <- allX %>% 
+  filter(DataSet == 'Other Set', Status=='NotPathogenic') %>% 
+  filter(!pos_id %in% (allX %>% filter(DataSet != 'Other Set') %>% pull(pos_id))) %>% 
+  sample_frac(0.5)
+
+HalfOther_2 <- allX %>% 
+  filter(DataSet == 'Other Set', Status=='NotPathogenic') %>% 
+  filter(!pos_id %in% (allX %>% filter(DataSet != 'Other Set') %>% pull(pos_id))) %>% 
+  filter(!pos_id %in% HalfOther_1)
+
+assess_set <- bind_rows(SuperGrimm %>% mutate(DataSet = 'SuperGrimm'), 
+                        HalfOther_1 %>% mutate(DataSet = 'SuperGrimm'),
+                        HalfOther_2,
+                        allX %>% filter(DataSet == 'Test Set'),
+                        allX %>% filter(DataSet == 'DDL NISC RD Cohort'),
+                        allX %>% filter(DataSet == 'Unifun'),
+                        allX %>% filter(DataSet == 'Homsy'),
+                        allX %>% filter(DataSet == 'Samocha'))
+
+
+
+save(allX, file='/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/allX_2018_06_26.Rdata')
+save(assess_set, file='/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/assess_2018_06_26.Rdata')
