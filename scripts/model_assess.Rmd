@@ -14,7 +14,7 @@ library(ModelMetrics)
 library(randomForest)
 library(keras)
 library(tensorflow)
-load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/allX_2018_06_22.Rdata')
+load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/allX_2018_06_25.Rdata')
 # confusion matrix maker for built models
 cm_maker <- function(predictor = 'cadd_phred', data, cutoff=0.5, mode = 'prec_recall') {
   if (class(predictor)!='character'){
@@ -146,6 +146,23 @@ roc_maker <- function(predictor, data, cutoff=0.5) {
 }
 ```
 
+# Grimm merged data
+Get all of the Grimm sub sets into one Grimm 
+```{r}
+SuperGrimm <- allX %>% filter(grepl('Grimm', DataSet)) %>% 
+  filter(!pos_id %in% (allX %>% filter(!grepl('Grimm', DataSet)) %>% 
+                         pull(pos_id)))
+
+HalfOther_1 <- allX %>% 
+  filter(DataSet == 'Other Set', Status=='NotPathogenic') %>% 
+  filter(!pos_id %in% (allX %>% filter(DataSet != 'Other Set') %>% pull(pos_id))) %>% 
+  sample_frac(0.5)
+
+HalfOther_2 <- allX %>% 
+  filter(DataSet == 'Other Set', Status=='NotPathogenic') %>% 
+  filter(!pos_id %in% (allX %>% filter(DataSet != 'Other Set') %>% pull(pos_id))) %>% 
+  filter(!pos_id %in% HalfOther_1)
+```
 # Assess Performance of Models and Existing Predictors in Test Set
 ```{r}
 pr_data <- data.frame()
