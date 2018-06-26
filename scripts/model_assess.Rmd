@@ -14,7 +14,9 @@ library(ModelMetrics)
 library(randomForest)
 library(keras)
 library(tensorflow)
+library(PRROC)
 load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/allX_2018_06_25.Rdata')
+allX <- allX %>% mutate_at(vars(contains('VP')), as.numeric) %>% mutate_at(vars(contains('Deep')), as.numeric)
 # confusion matrix maker for built models
 cm_maker <- function(predictor = 'cadd_phred', data, cutoff=0.5, mode = 'prec_recall') {
   if (class(predictor)!='character'){
@@ -56,7 +58,7 @@ predictors<-c('ccr_pct_v1','cadd_raw','vest3_rankscore','cadd_phred','mis_z','pl
 dat <- allX %>% filter(DataSet == 'Homsy') %>% select(one_of(predictors, 'VPaC_m06', 'VPaC_m15','DeepRNN'))
 rem <- nearZeroVar(dat)
 dat <- dat[,-rem]
-superheat(cor(dat), 
+superheat(cor(dat),
           pretty.order.rows = T, 
           pretty.order.cols = T, 
           left.label = 'variable', 
@@ -72,7 +74,7 @@ For random forest model
 
 Mean Decrease Gini
 ```{r, fig.height=6, fig.width=2}
-VPaC_12mtry$importance %>% data.frame() %>% rownames_to_column('Predictor') %>% 
+VPaC_15mtry$importance %>% data.frame() %>% rownames_to_column('Predictor') %>% 
   arrange(MeanDecreaseGini) %>% 
   mutate(Predictor = factor(Predictor, levels=unique(Predictor))) %>% 
   ggplot(aes(x=Predictor, y=MeanDecreaseGini)) +
@@ -81,16 +83,6 @@ VPaC_12mtry$importance %>% data.frame() %>% rownames_to_column('Predictor') %>%
   theme_minimal()
 ```
 
-Mean Decrease Accuracy
-```{r, fig.height=6, fig.width=2}
-VPaC_12mtry$importance %>% data.frame() %>% rownames_to_column('Predictor') %>% 
-  arrange(MeanDecreaseAccuracy) %>% 
-  mutate(Predictor = factor(Predictor, levels=unique(Predictor))) %>% 
-  ggplot(aes(x=Predictor, y=MeanDecreaseAccuracy)) +
-  geom_point() +
-  coord_flip() +
-  theme_minimal()
-```
 
 ## Grimm
 ```{r, fig.width=6, fig.height=4}
@@ -162,14 +154,24 @@ HalfOther_2 <- allX %>%
   filter(DataSet == 'Other Set', Status=='NotPathogenic') %>% 
   filter(!pos_id %in% (allX %>% filter(DataSet != 'Other Set') %>% pull(pos_id))) %>% 
   filter(!pos_id %in% HalfOther_1)
+
+assess_set <- bind_rows(SuperGrimm %>% mutate(DataSet = 'SuperGrimm'), 
+                        HalfOther_1 %>% mutate(DataSet = 'SuperGrimm'),
+                        HalfOther_2,
+                        allX %>% filter(DataSet == 'Test Set'),
+                        allX %>% filter(DataSet == 'DDL NISC RD Cohort'),
+                        allX %>% filter(DataSet == 'Unifun'),
+                        allX %>% filter(DataSet == 'Homsy'),
+                        allX %>% filter(DataSet == 'Samocha'))
 ```
 # Assess Performance of Models and Existing Predictors in Test Set
 ```{r}
 pr_data <- data.frame()
 model_vec <- c('DeepRNN','DeepVPaC','VPaC_m15', 'VPaC_m06', 'ccr_pct_v1', 'revel', 'cadd_phred', 'fitcons', 'metalr_rankscore', 'fathmm_converted_rankscore')
+dataset <- assess_set
 for (i in model_vec){
-  for (j in unique(allX$DataSet)){
-    pr <- pr_maker(i, allX %>% filter(DataSet == j))
+  for (j in unique(dataset$DataSet)){
+    pr <- pr_maker(i, dataset %>% filter(DataSet == j))
     out <- pr$curve[,1:2] %>% data.frame()
     colnames(out) <- c('Recall','Precision')
     out$AUC <- pr$auc.integral
@@ -182,8 +184,8 @@ for (i in model_vec){
 
 roc_data <- data.frame()
 for (i in model_vec){
-  for (j in unique(allX$DataSet)){
-    roc <- roc_maker(i, allX %>% filter(DataSet == j))
+  for (j in unique(dataset$DataSet)){
+    roc <- roc_maker(i, dataset %>% filter(DataSet == j))
     out <- roc$curve[,1:2] %>% data.frame()
     colnames(out) <- c('FPR','Sensitivity')
     out$AUC <- roc$auc
@@ -210,14 +212,25 @@ roc_data %>% mutate(Model = factor(Model, levels = model_vec)) %>% dplyr::select
 ```
 ## Dot plots of AUC
 ```{r, fig.height=4}
-pr_data %>% dplyr::select(AUC, Model, DataSet) %>% filter(grepl('Grimm|ClinVar|Test|UniFun|DDL|Sam|Hom', DataSet)) %>% unique() %>% ggplot(aes(x=Model, y=AUC)) + geom_point(stat = 'identity') + coord_cartesian(ylim=c(0,1)) + facet_wrap(~DataSet, nrow=2) + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + ggtitle('Precision Recall')
+pr_data %>% dplyr::select(AUC, Model, DataSet) %>% 
+  #filter(grepl('Grimm|ClinVar|Test|UniFun|DDL|Sam|Hom', DataSet)) %>% 
+  unique() %>% 
+  ggplot(aes(x=Model, y=AUC)) + 
+  geom_point(stat = 'identity') + 
+  coord_cartesian(ylim=c(0,1)) + 
+  facet_wrap(~DataSet, nrow=2) + 
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + ggtitle('Precision Recall')
 
-roc_data %>% dplyr::select(AUC, Model, DataSet) %>% filter(grepl('Grimm|ClinVar|Test|UniFun|DDL|Sam|Hom', DataSet)) %>% unique()%>% ggplot(aes(x=Model, y=AUC)) + geom_point(stat = 'identity') + coord_cartesian(ylim=c(0,1)) + facet_wrap(~DataSet, nrow=2) + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + ggtitle('Receiver Operating Characteristic')
+roc_data %>% dplyr::select(AUC, Model, DataSet) %>% 
+  #filter(grepl('Grimm|ClinVar|Test|UniFun|DDL|Sam|Hom', DataSet)) %>% 
+  unique()%>% 
+  ggplot(aes(x=Model, y=AUC)) + 
+  geom_point(stat = 'identity') + coord_cartesian(ylim=c(0,1)) + facet_wrap(~DataSet, nrow=2) + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + ggtitle('Receiver Operating Characteristic')
 ```
 ## AUC Plots
 ```{r, fig.height=6, fig.width=6}
 pr_plot <- pr_data %>% 
-  filter(grepl('Grimm|ClinVar|Test|UniFun|DDL|Sam|Hom', DataSet)) %>% 
+  #filter(grepl('Grimm|ClinVar|Test|UniFun|DDL|Sam|Hom', DataSet)) %>% 
   filter(Model != 'VPaC') %>% 
   #filter(model %in% best_models_noDC) %>% 
   ggplot(aes(x=Recall, y=Precision, colour=Model)) + 
@@ -226,7 +239,7 @@ pr_plot <- pr_data %>%
   theme_minimal() + 
   ggtitle('Precision Recall Curve') 
 roc_plot <- roc_data %>%   #filter(model %in% best_models_noDC) %>% 
-  filter(grepl('Grimm|ClinVar|Test|UniFun|DDL|Sam|Hom', DataSet)) %>% 
+ # filter(grepl('Grimm|ClinVar|Test|UniFun|DDL|Sam|Hom', DataSet)) %>% 
   filter(Model != 'VPaC') %>% 
   ggplot(aes(x=FPR, y=Sensitivity, colour=Model)) + 
   facet_wrap(~DataSet, ncol=1) +
