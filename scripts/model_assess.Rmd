@@ -15,8 +15,9 @@ library(randomForest)
 library(keras)
 library(tensorflow)
 library(PRROC)
-load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/allX_2018_06_25.Rdata')
-allX <- allX %>% mutate_at(vars(contains('VP')), as.numeric) %>% mutate_at(vars(contains('Deep')), as.numeric)
+load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/allX_2018_06_26.Rdata')
+load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/assess_2018_06_26.Rdata')
+#allX <- allX %>% mutate_at(vars(contains('VP')), as.numeric) %>% mutate_at(vars(contains('Deep')), as.numeric)
 # confusion matrix maker for built models
 cm_maker <- function(predictor = 'cadd_phred', data, cutoff=0.5, mode = 'prec_recall') {
   if (class(predictor)!='character'){
@@ -138,36 +139,11 @@ roc_maker <- function(predictor, data, cutoff=0.5) {
 }
 ```
 
-# Grimm merged data
-Get all of the Grimm sub sets into one Grimm 
-```{r}
-SuperGrimm <- allX %>% filter(grepl('Grimm', DataSet)) %>% 
-  filter(!pos_id %in% (allX %>% filter(!grepl('Grimm', DataSet)) %>% 
-                         pull(pos_id)))
 
-HalfOther_1 <- allX %>% 
-  filter(DataSet == 'Other Set', Status=='NotPathogenic') %>% 
-  filter(!pos_id %in% (allX %>% filter(DataSet != 'Other Set') %>% pull(pos_id))) %>% 
-  sample_frac(0.5)
-
-HalfOther_2 <- allX %>% 
-  filter(DataSet == 'Other Set', Status=='NotPathogenic') %>% 
-  filter(!pos_id %in% (allX %>% filter(DataSet != 'Other Set') %>% pull(pos_id))) %>% 
-  filter(!pos_id %in% HalfOther_1)
-
-assess_set <- bind_rows(SuperGrimm %>% mutate(DataSet = 'SuperGrimm'), 
-                        HalfOther_1 %>% mutate(DataSet = 'SuperGrimm'),
-                        HalfOther_2,
-                        allX %>% filter(DataSet == 'Test Set'),
-                        allX %>% filter(DataSet == 'DDL NISC RD Cohort'),
-                        allX %>% filter(DataSet == 'Unifun'),
-                        allX %>% filter(DataSet == 'Homsy'),
-                        allX %>% filter(DataSet == 'Samocha'))
-```
 # Assess Performance of Models and Existing Predictors in Test Set
 ```{r}
 pr_data <- data.frame()
-model_vec <- c('DeepRNN','DeepVPaC','VPaC_m15', 'VPaC_m06', 'ccr_pct_v1', 'revel', 'cadd_phred', 'fitcons', 'metalr_rankscore', 'fathmm_converted_rankscore')
+model_vec <- c('DeepRNN','DeepVPaC','VPaC_m15', 'VPaC_m06', 'ccr_pct_v1', 'm_cap_rankscore', 'revel', 'cadd_phred', 'fitcons', 'metalr_rankscore', 'fathmm_converted_rankscore')
 dataset <- assess_set
 for (i in model_vec){
   for (j in unique(dataset$DataSet)){
@@ -195,6 +171,7 @@ for (i in model_vec){
     roc_data <- rbind(roc_data, out)
   }
 }
+rm(dataset)
 ```
 ## Table Data
 ```{r}
