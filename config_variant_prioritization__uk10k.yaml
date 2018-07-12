@@ -1,6 +1,6 @@
 input_vcf: 'EGAD00001002656.GATK.eye_var_path.vcf.gz'
 aaf_change: '0.1'
-family_name: ['B240001']
+family_name: ""
 ped: '/home/mcgaugheyd/git/EGA_EGAD00001002656_NGS_reanalyze/EGAD00001002656.ped'
 pick: 'all'
 gemini_db_name: 'gemini_db/gnomad_faux.gemini.db'
