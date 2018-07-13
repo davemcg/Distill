@@ -2,7 +2,7 @@
 library(tidyverse)
 library(randomForest)
 
-load('/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/model_data_2018_06_20.Rdata')
+load('/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/model_data_2018_07_13.Rdata')
 
 ########################
 # Build VPaC
@@ -134,7 +134,11 @@ most_imp_predictors_no_disease_class <- c('ccr_pct_v1',
                                           'ac_exac_afr',
                                           'epilogos_tssbiv',
                                           'gno_ac_afr',
-                                          'vest3_score')
+                                          'vest3_score',
+                                          'sigmaaf_lof_0001', 
+                                          'sigmaaf_lof_01', 
+                                          'sigmaaf_missense_0001', 
+                                          'sigmaaf_missense_01')
 
 
 ##############################################
@@ -150,7 +154,7 @@ rfFit_VPaC <- randomForest(Status ~ ., data=model_data$ML_set__general_dummy_TT$
                            importance = TRUE,
                            norm.votes = FALSE)
 
-rand_name1 = paste0('VPaC__15mtry_v5_', rand_num)
+rand_name1 = paste0('VPaC__15mtry_v6_', rand_num)
 assign(rand_name1, rfFit_VPaC)
 
 rand_num <- as.integer(paste(sample(0:9, 6, replace=F), collapse = ''))
@@ -162,7 +166,7 @@ rfFit_VPaC <- randomForest(Status ~ ., data=model_data$ML_set__general_dummy_TT$
                            importance = TRUE,
                            norm.votes = FALSE)
 
-rand_name2 = paste0('VPaC__12mtry_v5_', rand_num)
+rand_name2 = paste0('VPaC__12mtry_v6_', rand_num)
 assign(rand_name2, rfFit_VPaC)
 
 rand_num <- as.integer(paste(sample(0:9, 6, replace=F), collapse = ''))
@@ -174,7 +178,7 @@ rfFit_VPaC <- randomForest(Status ~ ., data=model_data$ML_set__general_dummy_TT$
                            importance = TRUE,
                            norm.votes = FALSE)
 
-rand_name3 = paste0('VPaC__9mtry_v5_', rand_num)
+rand_name3 = paste0('VPaC__9mtry_v6_', rand_num)
 assign(rand_name3, rfFit_VPaC)
 
 
