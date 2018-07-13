@@ -1,6 +1,6 @@
 input_vcf: 'grimm.vcf.gz'
 aaf_change: '0.1'
-family_name: ['FAUX']
+family_name: ""
 ped: '/home/mcgaugheyd/git/eye_var_Pathogenicity/processed_data/faux.ped'
 pick: 'all'
 gemini_db_name: 'gemini_db/gnomad_faux.gemini.db'

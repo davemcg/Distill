@@ -1,6 +1,6 @@
 input_vcf: 'DDL_NISC_targeted_panel.vcf.gz'
 aaf_change: '0.1'
-family_name: ['107768M']
+family_name: ""
 ped: '/home/mcgaugheyd/git/eye_var_Pathogenicity/processed_data/ddl_nisc.ped'
 pick: 'all'
 gemini_db_name: 'gemini_db/gnomad_faux.gemini.db'

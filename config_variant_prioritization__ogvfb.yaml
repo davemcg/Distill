@@ -1,6 +1,6 @@
 input_vcf: 'VCFs.GATK.vcf.gz'
 aaf_change: '0.1'
-family_name: ['COL036']
+family_name: ""
 ped: '/home/mcgaugheyd/git/NGS_db/master.ped'
 pick: 'all'
 gemini_db_name: 'gemini_db/gnomad_faux.gemini.db'
