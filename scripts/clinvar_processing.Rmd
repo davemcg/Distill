@@ -10,8 +10,8 @@ library(tidyverse)
 library(here)
 data_path <- '/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/'
 
-#clinvar_single <- fread('gzcat ~/git/clinvar/output/b37/single/clinvar_alleles.single.b37.tsv.gz')
-clinvar_single <- fread(paste0('gzcat ', data_path, '/data/clinvar/clinvar_alleles.single.b37.tsv.gz'))
+clinvar_single <- fread('gzcat ~/git/clinvar/output/b37/single/clinvar_alleles.single.b37.tsv.gz')
+#clinvar_single <- fread(paste0('gzcat ', data_path, '/data/clinvar/clinvar_alleles.single.b37.tsv.gz'))
 ```
 
 # ID RD specific pathogenic variants
@@ -71,6 +71,9 @@ dim(benign_all)
 ```{r}
 out <- rbind(path_eye, path_all, benign_eye, benign_all)
 dim(out)
+
+clinvar_data <- out
+save(clinvar_data, file = '../data/clinvar_metadata.Rdata')
 ```
 
 # Write vcf
