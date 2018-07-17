@@ -24,7 +24,8 @@ for (gemini_db in gemini_dbs){
 
 data_files = list()
 for (i in gsub('.db','.tsv.gz', gemini_dbs)){
-  name <- (i %>% str_split(., '/'))[[1]] %>% tail(1) %>% str_split(.,'\\.') %>% unlist() %>% head(1)
+  name <- (i %>% str_split(., '/'))[[1]] %>% tail(2) %>% str_split(.,'\\.') %>% unlist() %>% head(1)
+  print(name)
   data_files[[name]] <- read_tsv(paste0(base_path, i), col_types = cols(.default = "c"))
 }
 het <- read_tsv('/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/data/UK10K/UK10K_EGAD.hets.gz', col_types = cols(.default = "c"))
