@@ -1,14 +1,18 @@
 
 library(tidyverse)
 library(data.table)
-library(dummies)
+#library(dummies)
 library(caret)
-library(mlbench)
+#library(mlbench)
 library(parallel)
 library(doParallel)
-library(MLmetrics)
+#library(MLmetrics)
 
-load('/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/model_data.Rdata')
+#load('/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/model_data.Rdata')
+
+
+load('/Volumes/Arges/PROJECTS/mcgaughey/eye_var_Pathogenicity/clean_data/model_data_2018_07_13.Rdata')
+load('/Volumes/Arges/PROJECTS/mcgaughey/eye_var_Pathogenicity/clean_data/assess_2018_07_17.Rdata')
 
 ########################################
 # Set up fitcontrols for caret modeling
@@ -40,50 +44,35 @@ fitControl_min <- trainControl(
 ######################################
 # Predictors
 #######################################
-most_imp_predictors <- c('is_lof','impact_severity','`DiseaseClass_-1`','mis_z','ccr_pct_v1','cadd_phred','phylop_100way','n_mis','revel','fitcons_float','precessive','n_lof','`DiseaseClass_Stargardt,RD`','m_cap_rankscore','dann','DiseaseClass_RD','vest3_rankscore','n_syn','pnull','pli','lof_z','fathmm_mkl_coding_rankscore','an_exac_all','eigen_pc_raw_rankscore','gerp_elements','mutationassessor_score_rankscore','mpc','metasvm_rankscore','polyphen_score','metalr_rankscore','lrt_converted_rankscore','genocanyon_score_rankscore','mutationtaster_converted_rankscore','gno_an_popmax','grantham','max_aaf_all','ac_exac_all','fathmm_converted_rankscore','aaf_esp_all','sift_score','ac_exac_sas', 'linsight')
-most_imp_predictors_no_disease_class <- c('is_lof','impact_severity','mis_z','ccr_pct_v1','cadd_phred','phylop_100way','n_mis','revel','fitcons_float','precessive','n_lof','m_cap_rankscore','dann','vest3_rankscore','n_syn','pnull','pli','lof_z','fathmm_mkl_coding_rankscore','an_exac_all','eigen_pc_raw_rankscore','gerp_elements','mutationassessor_score_rankscore','mpc','metasvm_rankscore','polyphen_score','metalr_rankscore','lrt_converted_rankscore','genocanyon_score_rankscore','mutationtaster_converted_rankscore','gno_an_popmax','grantham','max_aaf_all','ac_exac_all','fathmm_converted_rankscore','aaf_esp_all','sift_score','ac_exac_sas','linsight')
+most_imp_predictors <- c('ccr_pct_v1','cadd_raw','vest3_rankscore','cadd_phred','mis_z','pli','lof_z','phylop_100way','revel','hapmap2','hapmap1','n_mis','epilogos_quies','n_lof','precessive','pnull','adj_exp_lof','adj_exp_syn','dann','adj_exp_mis','syn_z','n_syn','epilogos_txwk','fitcons','m_cap_score','m_cap_rankscore','eigen_phred','eigen_raw','epilogos_tx','eigen_pc_raw_rankscore','epilogos_reprpcwk','fathmm_mkl_coding_rankscore','metalr_score','fathmm_mkl_coding_score','metalr_rankscore','impact_severity','metasvm_rankscore','metasvm_score','epilogos_enh','genocanyon_score','sigmaaf_lof_0001','sigmaaf_lof_01','sigmaaf_missense_0001','sigmaaf_missense_01')
+
+most_imp_predictors_expand <- c('ccr_pct_v1','cadd_raw','vest3_rankscore','cadd_phred','mis_z','pli','lof_z','phylop_100way','revel','hapmap2','hapmap1','n_mis','epilogos_quies','n_lof','precessive','pnull','adj_exp_lof','adj_exp_syn','dann','adj_exp_mis','syn_z','n_syn','epilogos_txwk','fitcons','m_cap_score','m_cap_rankscore','eigen_phred','eigen_raw','epilogos_tx','is_lof','eigen_pc_raw_rankscore','epilogos_reprpcwk','fathmm_mkl_coding_rankscore','metalr_score','fathmm_mkl_coding_score','metalr_rankscore','impact_severity','metasvm_rankscore','metasvm_score','epilogos_enh','genocanyon_score','fathmm_converted_rankscore','mpc','epilogos_enhg','af_exac_all','epilogos_reprpc','max_aaf_all','mutationassessor_score','gerp','polyphen_score','gerp_elements','mutationassessor_score_rankscore','stam_mean','an_exac_all','af_exac_nfe','provean_converted_rankscore','an_exac_nfe','lrt_score','lrt_omega','grantham','lrt_converted_rankscore','genocanyon_score_rankscore','an_exac_afr','an_exac_amr','an_exac_sas','epilogos_het','ac_exac_all','linsight','gno_an_popmax','exac_num_het','an_exac_eas','gno_an_all','ac_exac_nfe','mutationtaster_converted_rankscore','an_exac_oth','an_exac_fin','gno_an_nfe','gno_af_all','gno_an_afr','epilogos_tssaflnk','gno_af_popmax','epilogos_znf','segway_sum_score','aaf_esp_ea','epilogos_txflnk','provean_score','segway_mean_score','epilogos_tss','aaf_esp_all','af_exac_amr','gno_af_nfe','epilogos_enhbiv','af_exac_sas','sift_score','fathmm_score','ac_exac_amr','aaf_esp_aa','gno_ac_all','gno_af_afr','ac_exac_sas','af_exac_eas','gno_an_fin','af_exac_afr','gno_an_eas','gno_an_oth','gno_ac_nfe','gno_ac_popmax','ac_exac_eas','ac_exac_afr','epilogos_tssbiv','gno_ac_afr','vest3_score','sigmaaf_lof_0001','sigmaaf_lof_01','sigmaaf_missense_0001','sigmaaf_missense_01')
 
 ###########################################
 # multi processing
 ##########################################
-cluster <- makeCluster(10) 
+cluster <- makeCluster(6) 
 registerDoParallel(cluster)
 
+#############################################
+# cut data down to speed up evaluation
+##############################################
+set.seed(52349)
+train_data <- model_data$ML_set__general_TT$train_set %>% sample_frac(0.1)
+test_data <- assess_set %>% filter(DataSet == 'SuperGrimm') %>% sample_frac(0.1)
+rm(assess_set)
+rm(model_data)
 ##############################################
 # BUILD MODELS!!!!!!!!!!!
 #############################################
-# rfFit_all <- caret::train(Status ~ ., data=train_set %>% select(-pos_id, -Source), 
-#                       method = "rf", metric='F',
-#                       trControl = fitControl_min)
-# # use the first rf model to pick the semi-useful predictors and limit the models to these
-# most_imp_predictors <- varImp(rfFit_all)$importance  %>% rownames_to_column('Predictors') %>% arrange(-Overall) %>% filter(Overall > 4) %>% pull(Predictors)
-# # variant with no disease class predictors
-# most_imp_predictors_no_disease_class <- most_imp_predictors[!grepl('DiseaseClass', most_imp_predictors)]
-# 
-# model_run$rfFit_all <- rfFit_all
-# model_run$most_imp_predictors <- most_imp_predictors
-# model_run$most_imp_predictors_no_disease_class <- most_imp_predictors_no_disease_class
-# save(model_run, file='model_run__2018_03_29.Rdata')
 
-rfFit_OVPaC <- caret::train(Status ~ ., data=model_data$ML_set__eye_dummy_TT$train_set %>% select_(.dots=c('Status',most_imp_predictors)), 
-                      method = "rf", metric='F', ntree=1501,
+rfFit <- caret::train(Status ~ ., data = train_data %>% select(one_of(c('Status',most_imp_predictors_expand))), 
+                      method = "rf", metric='F', ntree=50,
                       trControl = fitControl_min)
 
-# rfFit_VPaC <- caret::train(Status ~ ., data=model_data$ML_set__general_dummy_TT$train_set %>% select_(.dots=c('Status',most_imp_predictors)), 
-#                             method = "rf", metric='F', ntree=10,
-#                             trControl = fitControl_min)
-
-# bglmFit <- caret::train(Status ~ ., data=train_set %>% select_(.dots=c('Status',most_imp_predictors)), 
-#                         method = "bayesglm", metric='F',
-#                         trControl = fitControl_min)
-# 
-# bglmFit_noDC <- caret::train(Status ~ ., data=train_set %>% select_(.dots=c('Status',most_imp_predictors_no_disease_class)), 
-#                              method = "bayesglm", metric='F',
-#                              trControl = fitControl_min)
-
-# glmFit <- caret::train(Status ~ ., data=validate_set %>% select_(.dots=c('Status','pathUK','pathC')), 
-#                        method = "glm", metric='F',
-#                        trControl = fitControl_min)
+glmFit <- caret::train(Status ~ ., data = train_data %>% select(one_of(c('Status', most_imp_predictors))),
+                       method = "glm", metric='F',
+                       trControl = fitControl_min)
 # 
 # glmFit_noDC <- caret::train(Status ~ ., data=train_set %>% select_(.dots=c('Status',most_imp_predictors_no_disease_class)), 
 #                             method = "glm", metric='F',
