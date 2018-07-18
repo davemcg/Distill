@@ -3,13 +3,14 @@ library(tidyverse)
 library(data.table)
 #library(dummies)
 library(caret)
-#library(mlbench)
+library(mlbench)
 library(parallel)
 library(doParallel)
-#library(MLmetrics)
+library(ModelMetrics)
+library(PRROC)
 
-#load('/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/model_data.Rdata')
-
+#load('/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/model_data_2018_07_13.Rdata')
+#load('/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/assess_2018_07_17.Rdata')
 
 load('/Volumes/Arges/PROJECTS/mcgaughey/eye_var_Pathogenicity/clean_data/model_data_2018_07_13.Rdata')
 load('/Volumes/Arges/PROJECTS/mcgaughey/eye_var_Pathogenicity/clean_data/assess_2018_07_17.Rdata')
@@ -51,7 +52,7 @@ most_imp_predictors_expand <- c('ccr_pct_v1','cadd_raw','vest3_rankscore','cadd_
 ###########################################
 # multi processing
 ##########################################
-cluster <- makeCluster(6) 
+cluster <- makeCluster(12) 
 registerDoParallel(cluster)
 
 #############################################
@@ -73,36 +74,39 @@ rfFit <- caret::train(Status ~ ., data = train_data %>% select(one_of(c('Status'
 glmFit <- caret::train(Status ~ ., data = train_data %>% select(one_of(c('Status', most_imp_predictors))),
                        method = "glm", metric='F',
                        trControl = fitControl_min)
-# 
-# glmFit_noDC <- caret::train(Status ~ ., data=train_set %>% select_(.dots=c('Status',most_imp_predictors_no_disease_class)), 
-#                             method = "glm", metric='F',
-#                             trControl = fitControl_min)
 
-# glmboostFit <- caret::train(Status ~ ., data=train_set %>% select_(.dots=c('Status',most_imp_predictors)), 
-#                             method = "glmboost", metric='F',
-#                             trControl = fitControl_min,
-#                             preProcess = c('center','scale'))
+xgbTreeFit <- caret::train(Status ~ ., data=train_data %>% select(one_of(c('Status', most_imp_predictors))),
+                           method = "xgbTree",  metric='F',
+                           trControl = fitControl_min)
 
-# LogitBoostFit <- caret::train(Status ~ ., data=train_set %>% select_(.dots=c('Status',most_imp_predictors)), 
-#                               method = "LogitBoost", metric='F',
-#                               trControl = fitControl_min,
-#                               preProcess = c('center','scale'))
+xgbDARTFit <- caret::train(Status ~ ., data=train_data %>% select(one_of(c('Status', most_imp_predictors))),
+                           method = "xgbDART",  metric='F',
+                           trControl = fitControl_min)
 
-# avNNetFit <- caret::train(Status ~ ., data=train_set %>% select_(.dots=c('Status',most_imp_predictors)), 
-#                           method = "avNNet", metric='F',
-#                           trControl = fitControl_min,
-#                           preProcess = c('center','scale'))
-# 
-# avNNetFit_noDC <- caret::train(Status ~ ., data=train_set %>% select_(.dots=c('Status',most_imp_predictors_no_disease_class)), 
-#                                method = "avNNet", metric='F',
-#                                trControl = fitControl_min,
-#                                preProcess = c('center','scale'))
+xgbLinearFit <- caret::train(Status ~ ., data=train_data %>% select(one_of(c('Status', most_imp_predictors))),
+                             method = "xgbLinear",  metric='F',
+                             trControl = fitControl_min)
 
-# tossed, terrible performance
-# xgbTreeFit <- caret::train(Status ~ ., data=train_set %>% select(-variant_id, -Source), 
-#                      
-#                       method = "xgbTree",  metric='AUC',
-#                       trControl = fitControl)
+lssvmPolyFit <- caret::train(Status ~ ., data=train_data %>% select(one_of(c('Status', most_imp_predictors))),
+                             method = "lssvmPoly",  metric='F',
+                             trControl = fitControl_min)
+
+svmPolyFit <- caret::train(Status ~ ., data=train_data %>% select(one_of(c('Status', most_imp_predictors))),
+                           method = "svmPoly",  metric='F',
+                           trControl = fitControl_min)
+
+adaboostFit <- caret::train(Status ~ ., data=train_data %>% select(one_of(c('Status', most_imp_predictors))),
+                            method = "adaboost",  metric='F',
+                            trControl = fitControl_min)
+
+roccFit <-  caret::train(Status ~ ., data=train_data %>% select(one_of(c('Status', most_imp_predictors))),
+                         method = "rocc",  metric='F',
+                         trControl = fitControl_min)
+
+xyfFit <- caret::train(Status ~ ., data=train_data %>% select(one_of(c('Status', most_imp_predictors))),
+                       method = "xyf",  metric='F',
+                       trControl = fitControl_min)
+
 
 # stepLDAFit <- caret::train(Status ~ ., data=train_set %>% select_(.dots=c('Status',most_imp_predictors)), 
 #                            method = "stepLDA",  metric='AUC',
@@ -169,9 +173,39 @@ glmFit <- caret::train(Status ~ ., data = train_data %>% select(one_of(c('Status
 #                             method = "glm",
 #                             trControl = fitControl_min)
 
+################################
+# Quick Assess
+################################
+cm_maker <- function(predictor = 'cadd_phred', data, cutoff=0.5, mode = 'prec_recall') {
+  if (class(predictor)!='character'){
+    print("Running in predictor is a model mode")
+    new_predictions <- predict(predictor, data, type='prob') %>% data.frame() %>% 
+      mutate(Answers = data$Status, Prediction = case_when(Pathogenic > cutoff ~ 'Pathogenic', TRUE ~ 'NotPathogenic'))
+    new_predictions <- new_predictions %>% mutate(preds = case_when(Prediction == 'Pathogenic' ~ 1,
+                                                                    TRUE ~ 0),
+                                                  actuals = case_when(Answers == 'Pathogenic' ~ 1,
+                                                                      TRUE ~ 0))
+    out <- caret::confusionMatrix(data = as.factor(new_predictions$Prediction), reference = as.factor(new_predictions$Answers), mode= mode)
+    out$MCC <- mcc(new_predictions$preds, new_predictions$actuals, cutoff=cutoff)
+  } else {
+    print("Running in predictor is a precomputed column in data mode")
+    new_predictions <- data 
+    new_predictions$Prediction <- 'NotPathogenic'
+    new_predictions[(new_predictions[,predictor] > cutoff), 'Prediction'] <- "Pathogenic"
+    new_predictions <- new_predictions %>% mutate(preds = case_when(Prediction == 'Pathogenic' ~ 1,
+                                                                    TRUE ~ 0),
+                                                  actuals = case_when(Status == 'Pathogenic' ~ 1,
+                                                                      TRUE ~ 0))
+    out <- caret::confusionMatrix(data = as.factor(new_predictions$Prediction), reference = as.factor(new_predictions$Status), mode= mode)
+    out$MCC <- mcc(new_predictions$preds, new_predictions$actuals, cutoff=cutoff)
+  }
+  out
+}
+
+
 ##############################
 # SAVE MODELS
 ###############################
 
-for (i in ls()[grepl('Fit',ls())]) {model_run[[i]] <- get(i)}
-save(model_run, file='model_run__2018_03_28.Rdata')
+# for (i in ls()[grepl('Fit',ls())]) {model_run[[i]] <- get(i)}
+# save(model_run, file='model_run__2018_03_28.Rdata')
