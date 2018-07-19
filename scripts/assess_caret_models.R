@@ -2,7 +2,7 @@
 args = commandArgs(trailingOnly=TRUE)
 
 model <- args[1]
-cores <- args[2]
+cores <- as.numeric(args[2])
 
 library(tidyverse)
 library(data.table)
@@ -65,7 +65,11 @@ registerDoParallel(cluster)
 # load('/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/model_data_2018_07_13.Rdata')
 # load('/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/assess_2018_07_17.Rdata')
 # set.seed(52349)
-# train_data <- model_data$ML_set__general_TT$train_set %>% sample_frac(0.1)
+# 
+# train_Path <- model_data$ML_set__general_TT$train_set %>% filter(Status == 'Pathogenic') %>% sample_frac(0.2)
+# train_NotPath <- model_data$ML_set__general_TT$train_set %>% filter(Status == 'NotPathogenic') %>% sample_n(nrow(train_Path) * 25)
+# train_data <- bind_rows(train_Path, train_NotPath)
+# train_data <- train_data %>% sample_n(nrow(train_data))
 # test_data <- assess_set %>% filter(DataSet == 'SuperGrimm') %>% sample_frac(0.1)
 # model_toy_data <- list()
 # model_toy_data$train_data <- train_data
