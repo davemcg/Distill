@@ -76,6 +76,7 @@ registerDoParallel(cluster)
 # model_toy_data$test_data <- test_data
 # save(model_toy_data, file='/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/model_toy_data_2018_07_18.Rdata')
 
+#load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/model_toy_data_2018_07_18.Rdata')
 load('/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/model_toy_data_2018_07_18.Rdata')
 train_data <- model_toy_data$train_data
 test_data <- model_toy_data$test_data
@@ -87,6 +88,14 @@ print(paste("Starting",model,"build"))
 model <- caret::train(Status ~ ., data = train_data %>% select(one_of(c('Status', most_imp_predictors))),
                       method = model, metric='F',
                       trControl = fitControl_min)
+
+y <- recode(train_data$Status,'Pathogenic'=1, 'NotPathogenic'=0)
+model4 <- xgboost(label = y,
+                  eta = 0.4, max_depth = 3,
+                  gamma = 0, colsample_bytree = 0.8,
+                  min_child_weight = 1, subsample = 0.75,
+                  data = train_data %>% select(one_of(most_imp_predictors)) %>% as.matrix(), 
+                  nrounds = 150, objective = "binary:logistic", eval_metric = 'aucpr')
 
 # glmFit <- caret::train(Status ~ ., data = train_data %>% select(one_of(c('Status', most_imp_predictors))),
 #                        method = "glm", metric='F',
@@ -197,11 +206,19 @@ model <- caret::train(Status ~ ., data = train_data %>% select(one_of(c('Status'
 ################################
 # Quick Assess
 ################################
-cm_maker <- function(predictor = 'cadd_phred', data, cutoff=0.5, mode = 'prec_recall') {
+cm_maker <- function(predictor = 'cadd_phred', data, cutoff=0.5, mode = 'prec_recall', model_type = NA) {
   if (class(predictor)!='character'){
     print("Running in predictor is a model mode")
-    new_predictions <- predict(predictor, data, type='prob') %>% data.frame() %>% 
-      mutate(Answers = data$Status, Prediction = case_when(Pathogenic > cutoff ~ 'Pathogenic', TRUE ~ 'NotPathogenic'))
+    if (is.na(model_type)){
+      new_predictions <- predict(predictor, data, type='prob') %>% data.frame() %>% 
+        mutate(Answers = data$Status, Prediction = case_when(Pathogenic > cutoff ~ 'Pathogenic', TRUE ~ 'NotPathogenic'))
+    } else {
+      dataXG = data %>% select(-Status) %>% as.matrix()
+      new_predictions <- predict(predictor, dataXG) %>% data.frame() 
+      colnames(new_predictions) <- 'Pathogenic'
+      new_predictions <- new_predictions %>% 
+        mutate(Answers = data$Status, Prediction = case_when(Pathogenic > cutoff ~ 'Pathogenic', TRUE ~ 'NotPathogenic'))  
+    }
     new_predictions <- new_predictions %>% mutate(preds = case_when(Prediction == 'Pathogenic' ~ 1,
                                                                     TRUE ~ 0),
                                                   actuals = case_when(Answers == 'Pathogenic' ~ 1,
