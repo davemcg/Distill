@@ -1,3 +1,8 @@
+#!/usr/bin/env Rscript
+args = commandArgs(trailingOnly=TRUE)
+
+model <- args[1]
+cores <- args[2]
 
 library(tidyverse)
 library(data.table)
@@ -9,11 +14,11 @@ library(doParallel)
 library(ModelMetrics)
 library(PRROC)
 
-#load('/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/model_data_2018_07_13.Rdata')
-#load('/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/assess_2018_07_17.Rdata')
+load('/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/model_data_2018_07_13.Rdata')
+load('/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/assess_2018_07_17.Rdata')
 
-load('/Volumes/Arges/PROJECTS/mcgaughey/eye_var_Pathogenicity/clean_data/model_data_2018_07_13.Rdata')
-load('/Volumes/Arges/PROJECTS/mcgaughey/eye_var_Pathogenicity/clean_data/assess_2018_07_17.Rdata')
+#load('/Volumes/Arges/PROJECTS/mcgaughey/eye_var_Pathogenicity/clean_data/model_data_2018_07_13.Rdata')
+#load('/Volumes/Arges/PROJECTS/mcgaughey/eye_var_Pathogenicity/clean_data/assess_2018_07_17.Rdata')
 
 ########################################
 # Set up fitcontrols for caret modeling
@@ -24,7 +29,8 @@ fitControl_min <- trainControl(
   savePredictions = T,
   allowParallel = T,
   summaryFunction = prSummary,
-  returnData = T)
+  returnData = T,
+  preProcOptions = c('center','scale'))
 
 # fitControl_min_CS <- trainControl(
 #   classProbs=T,
@@ -52,7 +58,7 @@ most_imp_predictors_expand <- c('ccr_pct_v1','cadd_raw','vest3_rankscore','cadd_
 ###########################################
 # multi processing
 ##########################################
-cluster <- makeCluster(12) 
+cluster <- makeCluster(cores) 
 registerDoParallel(cluster)
 
 #############################################
@@ -67,45 +73,49 @@ rm(model_data)
 # BUILD MODELS!!!!!!!!!!!
 #############################################
 
-rfFit <- caret::train(Status ~ ., data = train_data %>% select(one_of(c('Status',most_imp_predictors_expand))), 
-                      method = "rf", metric='F', ntree=50,
+model <- caret::train(Status ~ ., data = train_data %>% select(one_of(c('Status', most_imp_predictors))),
+                      method = model, metric='F',
                       trControl = fitControl_min)
 
-glmFit <- caret::train(Status ~ ., data = train_data %>% select(one_of(c('Status', most_imp_predictors))),
-                       method = "glm", metric='F',
-                       trControl = fitControl_min)
-
-xgbTreeFit <- caret::train(Status ~ ., data=train_data %>% select(one_of(c('Status', most_imp_predictors))),
-                           method = "xgbTree",  metric='F',
-                           trControl = fitControl_min)
-
-xgbDARTFit <- caret::train(Status ~ ., data=train_data %>% select(one_of(c('Status', most_imp_predictors))),
-                           method = "xgbDART",  metric='F',
-                           trControl = fitControl_min)
-
-xgbLinearFit <- caret::train(Status ~ ., data=train_data %>% select(one_of(c('Status', most_imp_predictors))),
-                             method = "xgbLinear",  metric='F',
-                             trControl = fitControl_min)
-
-lssvmPolyFit <- caret::train(Status ~ ., data=train_data %>% select(one_of(c('Status', most_imp_predictors))),
-                             method = "lssvmPoly",  metric='F',
-                             trControl = fitControl_min)
-
-svmPolyFit <- caret::train(Status ~ ., data=train_data %>% select(one_of(c('Status', most_imp_predictors))),
-                           method = "svmPoly",  metric='F',
-                           trControl = fitControl_min)
-
-adaboostFit <- caret::train(Status ~ ., data=train_data %>% select(one_of(c('Status', most_imp_predictors))),
-                            method = "adaboost",  metric='F',
-                            trControl = fitControl_min)
-
-roccFit <-  caret::train(Status ~ ., data=train_data %>% select(one_of(c('Status', most_imp_predictors))),
-                         method = "rocc",  metric='F',
-                         trControl = fitControl_min)
-
-xyfFit <- caret::train(Status ~ ., data=train_data %>% select(one_of(c('Status', most_imp_predictors))),
-                       method = "xyf",  metric='F',
-                       trControl = fitControl_min)
+# glmFit <- caret::train(Status ~ ., data = train_data %>% select(one_of(c('Status', most_imp_predictors))),
+#                        method = "glm", metric='F',
+#                        trControl = fitControl_min)
+# 
+# rfFit <- caret::train(Status ~ ., data = train_data %>% select(one_of(c('Status',most_imp_predictors_expand))), 
+#                       method = "rf", metric='F', ntree=50,
+#                       trControl = fitControl_min)
+# 
+# xgbTreeFit <- caret::train(Status ~ ., data=train_data %>% select(one_of(c('Status', most_imp_predictors))),
+#                            method = "xgbTree",  metric='F',
+#                            trControl = fitControl_min)
+# # 
+# # xgbDARTFit <- caret::train(Status ~ ., data=train_data %>% select(one_of(c('Status', most_imp_predictors))),
+# #                            method = "xgbDART",  metric='F',
+# #                            trControl = fitControl_min)
+# 
+# xgbLinearFit <- caret::train(Status ~ ., data=train_data %>% select(one_of(c('Status', most_imp_predictors))),
+#                              method = "xgbLinear",  metric='F',
+#                              trControl = fitControl_min)
+# 
+# lssvmPolyFit <- caret::train(Status ~ ., data=train_data %>% select(one_of(c('Status', most_imp_predictors))),
+#                              method = "lssvmPoly",  metric='F',
+#                              trControl = fitControl_min)
+# 
+# svmPolyFit <- caret::train(Status ~ ., data=train_data %>% select(one_of(c('Status', most_imp_predictors))),
+#                            method = "svmPoly",  metric='F',
+#                            trControl = fitControl_min)
+# 
+# # adaboostFit <- caret::train(Status ~ ., data=train_data %>% select(one_of(c('Status', most_imp_predictors))),
+# #                             method = "adaboost",  metric='F',
+# #                             trControl = fitControl_min)
+# 
+# roccFit <-  caret::train(Status ~ ., data=train_data %>% select(one_of(c('Status', most_imp_predictors))),
+#                          method = "rocc",  metric='F',
+#                          trControl = fitControl_min)
+# 
+# xyfFit <- caret::train(Status ~ ., data=train_data %>% select(one_of(c('Status', most_imp_predictors))),
+#                        method = "xyf",  metric='F',
+#                        trControl = fitControl_min)
 
 
 # stepLDAFit <- caret::train(Status ~ ., data=train_set %>% select_(.dots=c('Status',most_imp_predictors)), 
@@ -202,6 +212,10 @@ cm_maker <- function(predictor = 'cadd_phred', data, cutoff=0.5, mode = 'prec_re
   out
 }
 
+print(model$method)
+metrics <- cm_maker(model, test_data)
+print(metrics$MCC)
+print(metrics$overall)
 
 ##############################
 # SAVE MODELS
