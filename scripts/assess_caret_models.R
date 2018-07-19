@@ -14,9 +14,6 @@ library(doParallel)
 library(ModelMetrics)
 library(PRROC)
 
-load('/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/model_data_2018_07_13.Rdata')
-load('/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/assess_2018_07_17.Rdata')
-
 #load('/Volumes/Arges/PROJECTS/mcgaughey/eye_var_Pathogenicity/clean_data/model_data_2018_07_13.Rdata')
 #load('/Volumes/Arges/PROJECTS/mcgaughey/eye_var_Pathogenicity/clean_data/assess_2018_07_17.Rdata')
 
@@ -58,17 +55,27 @@ most_imp_predictors_expand <- c('ccr_pct_v1','cadd_raw','vest3_rankscore','cadd_
 ###########################################
 # multi processing
 ##########################################
-cluster <- makeCluster(cores) 
-registerDoParallel(cluster)
+print(paste(cores, "cores loading"))
+# cluster <- makeCluster(cores) 
+# registerDoParallel(cluster)
 
 #############################################
 # cut data down to speed up evaluation
 ##############################################
-set.seed(52349)
-train_data <- model_data$ML_set__general_TT$train_set %>% sample_frac(0.1)
-test_data <- assess_set %>% filter(DataSet == 'SuperGrimm') %>% sample_frac(0.1)
-rm(assess_set)
-rm(model_data)
+# load('/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/model_data_2018_07_13.Rdata')
+# load('/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/assess_2018_07_17.Rdata')
+# set.seed(52349)
+# train_data <- model_data$ML_set__general_TT$train_set %>% sample_frac(0.1)
+# test_data <- assess_set %>% filter(DataSet == 'SuperGrimm') %>% sample_frac(0.1)
+# model_toy_data <- list()
+# model_toy_data$train_data <- train_data
+# model_toy_data$test_data <- test_data
+# save(model_toy_data, file='/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/model_toy_data_2018_07_18.Rdata')
+
+load('/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/model_toy_data_2018_07_18.Rdata')
+train_data <- model_toy_data$train_data
+test_data <- model_toy_data$test_data
+
 ##############################################
 # BUILD MODELS!!!!!!!!!!!
 #############################################
