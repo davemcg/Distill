@@ -56,8 +56,8 @@ most_imp_predictors_expand <- c('ccr_pct_v1','cadd_raw','vest3_rankscore','cadd_
 # multi processing
 ##########################################
 print(paste(cores, "cores loading"))
-# cluster <- makeCluster(cores) 
-# registerDoParallel(cluster)
+cluster <- makeCluster(cores) 
+registerDoParallel(cluster)
 
 #############################################
 # cut data down to speed up evaluation
@@ -79,7 +79,7 @@ test_data <- model_toy_data$test_data
 ##############################################
 # BUILD MODELS!!!!!!!!!!!
 #############################################
-
+print(paste("Starting",model,"build"))
 model <- caret::train(Status ~ ., data = train_data %>% select(one_of(c('Status', most_imp_predictors))),
                       method = model, metric='F',
                       trControl = fitControl_min)
