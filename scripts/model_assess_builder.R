@@ -229,6 +229,19 @@ xgbTree_150 <- xgboost(label = y,
                        eval_metric = 'aucpr', 
                        nthread = 8)
 
+xgbTree_500 <- xgboost(label = y, 
+                       eta = 0.4, 
+                       max_depth = 3,
+                       gamma = 0, 
+                       colsample_bytree = 0.8,
+                       min_child_weight = 1, 
+                       subsample = 0.75,
+                       data = train_data %>% select_if(is.numeric) %>% as.matrix(), 
+                       nrounds = 150, 
+                       objective = "binary:logistic", 
+                       eval_metric = 'aucpr', 
+                       nthread = 8)
+
 
 
 ########
@@ -257,6 +270,7 @@ train_set$VPaC_m12_v7 <- sqrt(predict(VPaC_12mtry_v7, train_set, type='prob')[,1
 #train_set$VPaC_m09_v8 <- sqrt(predict(VPaC_9mtry_v8, train_set, type='prob')[,1])
 #train_set$VPaC_m06_v8 <- sqrt(predict(VPaC_6mtry_v8, train_set, type='prob')[,1])
 train_set$xgbTree_150 <- sqrt(predict(xgbTree_150, train_set %>% dplyr::select(one_of(numeric_predictors)) %>% as.matrix()))
+train_set$xgbTree_500 <- sqrt(predict(xgbTree_500, train_set %>% dplyr::select(one_of(numeric_predictors)) %>% as.matrix()))
 
 #########
 # OTHER #
@@ -271,6 +285,7 @@ other_set$VPaC_m12_v7 <- sqrt(predict(VPaC_12mtry_v7, other_set, type='prob')[,1
 #other_set$VPaC_m09_v8 <- sqrt(predict(VPaC_9mtry_v8, other_set, type='prob')[,1])
 #other_set$VPaC_m06_v8 <- sqrt(predict(VPaC_6mtry_v8, other_set, type='prob')[,1])
 other_set$xgbTree_150 <- sqrt(predict(xgbTree_150, other_set %>% dplyr::select(one_of(numeric_predictors)) %>% as.matrix()))
+other_set$xgbTree_500 <- sqrt(predict(xgbTree_500, other_set %>% dplyr::select(one_of(numeric_predictors)) %>% as.matrix()))
 other_set$Status <- c(as.character(model_data$ML_set__other_TT$train_set$Status), 
                       as.character(model_data$ML_set__other_TT$test_set$Status))
 
@@ -297,6 +312,7 @@ other_set$DeepVPaC <- predict(DeepVPaC, other_set, type='prob')[,1]
 # predict DeepVPaC on allX
 # but first, predict xgbTree, then DeepRNN with scale_predict
 allX$xgbTree_150 <- sqrt(predict(xgbTree_150, allX %>% dplyr::select(one_of(numeric_predictors)) %>% as.matrix()))
+allX$xgbTree_500 <- sqrt(predict(xgbTree_500, allX %>% dplyr::select(one_of(numeric_predictors)) %>% as.matrix()))
 all_sub <- allX %>% select(.dots=nn_predictors)
 all_sub$DeepRNN <- scale_predict(all_sub, model, DeepRNN$predictors, DeepRNN$mean, DeepRNN$std)
 all_sub$VPaC_m12_v7 <- allX$VPaC_m12_v7
