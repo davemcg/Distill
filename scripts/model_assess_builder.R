@@ -227,7 +227,7 @@ xgbTree_150 <- xgboost(label = y,
                        nrounds = 150, 
                        objective = "binary:logistic", 
                        eval_metric = 'aucpr', 
-                       nthread = 8)
+                       nthread = 16)
 
 xgbTree_500 <- xgboost(label = y, 
                        eta = 0.4, 
@@ -237,10 +237,10 @@ xgbTree_500 <- xgboost(label = y,
                        min_child_weight = 1, 
                        subsample = 0.75,
                        data = train_data %>% select_if(is.numeric) %>% as.matrix(), 
-                       nrounds = 150, 
+                       nrounds = 500, 
                        objective = "binary:logistic", 
                        eval_metric = 'aucpr', 
-                       nthread = 8)
+                       nthread = 16)
 
 
 
