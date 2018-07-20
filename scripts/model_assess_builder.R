@@ -313,7 +313,7 @@ other_set$DeepVPaC <- predict(DeepVPaC, other_set, type='prob')[,1]
 # but first, predict xgbTree, then DeepRNN with scale_predict
 allX$xgbTree_150 <- sqrt(predict(xgbTree_150, allX %>% dplyr::select(one_of(numeric_predictors)) %>% as.matrix()))
 allX$xgbTree_500 <- sqrt(predict(xgbTree_500, allX %>% dplyr::select(one_of(numeric_predictors)) %>% as.matrix()))
-all_sub <- allX %>% select(.dots=nn_predictors)
+all_sub <- allX %>% select(one_of(nn_predictors))
 all_sub$DeepRNN <- scale_predict(all_sub, model, DeepRNN$predictors, DeepRNN$mean, DeepRNN$std)
 all_sub$VPaC_m12_v7 <- allX$VPaC_m12_v7
 all_sub$xgbTree_150 <- allX$xgbTree_150
