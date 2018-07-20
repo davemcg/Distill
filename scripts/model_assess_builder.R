@@ -344,25 +344,29 @@ SuperGrimm <- allX %>% filter(grepl('Grimm', DataSet)) %>%
   filter(!pos_id %in% (allX %>% filter(!grepl('Grimm', DataSet)) %>% 
                          pull(pos_id)))
 
-HalfOther_1 <- allX %>% 
-  filter(DataSet == 'Other Set', Status=='NotPathogenic') %>% 
+HalfOther_1 <- other_set %>% 
+  filter(Status=='NotPathogenic') %>% 
   filter(!pos_id %in% (allX %>% filter(DataSet != 'Other Set') %>% pull(pos_id))) %>% 
+  mutate(DataSet = 'Other Set') %>% 
   sample_frac(0.5)
 
-HalfOther_2 <- allX %>% 
-  filter(DataSet == 'Other Set', Status=='NotPathogenic') %>% 
+HalfOther_2 <- other_set %>% 
+  filter(Status=='NotPathogenic') %>% 
   filter(!pos_id %in% (allX %>% filter(DataSet != 'Other Set') %>% pull(pos_id))) %>% 
+  mutate(DataSet = 'Other Set') %>% 
   filter(!pos_id %in% HalfOther_1)
 
 assess_set <- bind_rows(SuperGrimm %>% mutate(DataSet = 'SuperGrimm'), 
                         HalfOther_1 %>% mutate(DataSet = 'SuperGrimm'),
                         HalfOther_2,
-                        allX %>% filter(DataSet == 'Test Set'),
+                        test_set %>% mutate(DataSet = 'Test Set'),
                         allX %>% filter(DataSet == 'DDL NISC RD Cohort'),
                         allX %>% filter(DataSet == 'Unifun'),
                         allX %>% filter(DataSet == 'Homsy'),
-                        allX %>% filter(DataSet == 'Samocha'))
-
+                        allX %>% filter(DataSet == 'Samocha'),
+                        allX %>% filter(DataSet == 'UK10K') %>% 
+                          filter(!pos_id %in% (model_data$ML_set__general_TT$train_set$pos_id)) %>% 
+                          filter(!pos_id %in% ((model_data$ML_set__general_TT$test_set$pos_id))))
 
 
 save(allX, file='/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/allX_2018_07_20.Rdata')
