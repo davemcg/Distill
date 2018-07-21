@@ -216,7 +216,7 @@ scale_predict <- function(df, model, predictors, mean, std){
 ######################################
 train_data <- model_data$ML_set__general_TT$train_set %>% dplyr::select(one_of(numeric_predictors),'Status')
 y <- recode(train_data$Status,'Pathogenic'=1, 'NotPathogenic'=0)
-xgbTree_150 <- xgboost(label = y, 
+xgbTree <- xgboost(label = y, 
                        eta = 0.4, 
                        max_depth = 3,
                        gamma = 0, 
@@ -224,20 +224,7 @@ xgbTree_150 <- xgboost(label = y,
                        min_child_weight = 1, 
                        subsample = 0.75,
                        data = train_data %>% select_if(is.numeric) %>% as.matrix(), 
-                       nrounds = 150, 
-                       objective = "binary:logistic", 
-                       eval_metric = 'aucpr', 
-                       nthread = 16)
-
-xgbTree_500 <- xgboost(label = y, 
-                       eta = 0.4, 
-                       max_depth = 3,
-                       gamma = 0, 
-                       colsample_bytree = 0.8,
-                       min_child_weight = 1, 
-                       subsample = 0.75,
-                       data = train_data %>% select_if(is.numeric) %>% as.matrix(), 
-                       nrounds = 500, 
+                       nrounds = 200, 
                        objective = "binary:logistic", 
                        eval_metric = 'aucpr', 
                        nthread = 16)
@@ -255,7 +242,7 @@ test_set$fitcons_float <- test_set$fitcons
 test_set$VPaC_m12_v7 <- sqrt(predict(VPaC_12mtry_v7, test_set, type='prob')[,1])
 #test_set$VPaC_m09_v8 <- sqrt(predict(VPaC_9mtry_v8, test_set, type='prob')[,1])
 #test_set$VPaC_m06_v8 <- sqrt(predict(VPaC_6mtry_v8, test_set, type='prob')[,1])
-test_set$xgbTree_150 <- sqrt(predict(xgbTree_150, test_set %>% dplyr::select(one_of(numeric_predictors)) %>% as.matrix()))
+test_set$xgbTree <- sqrt(predict(xgbTree, test_set %>% dplyr::select(one_of(numeric_predictors)) %>% as.matrix()))
 
 
 #########
@@ -269,8 +256,8 @@ train_set$fitcons_float <- train_set$fitcons
 train_set$VPaC_m12_v7 <- sqrt(predict(VPaC_12mtry_v7, train_set, type='prob')[,1])
 #train_set$VPaC_m09_v8 <- sqrt(predict(VPaC_9mtry_v8, train_set, type='prob')[,1])
 #train_set$VPaC_m06_v8 <- sqrt(predict(VPaC_6mtry_v8, train_set, type='prob')[,1])
-train_set$xgbTree_150 <- sqrt(predict(xgbTree_150, train_set %>% dplyr::select(one_of(numeric_predictors)) %>% as.matrix()))
-train_set$xgbTree_500 <- sqrt(predict(xgbTree_500, train_set %>% dplyr::select(one_of(numeric_predictors)) %>% as.matrix()))
+train_set$xgbTree <- sqrt(predict(xgbTree, train_set %>% dplyr::select(one_of(numeric_predictors)) %>% as.matrix()))
+
 
 #########
 # OTHER #
@@ -284,8 +271,8 @@ other_set$fitcons_float <- other_set$fitcons
 other_set$VPaC_m12_v7 <- sqrt(predict(VPaC_12mtry_v7, other_set, type='prob')[,1])
 #other_set$VPaC_m09_v8 <- sqrt(predict(VPaC_9mtry_v8, other_set, type='prob')[,1])
 #other_set$VPaC_m06_v8 <- sqrt(predict(VPaC_6mtry_v8, other_set, type='prob')[,1])
-other_set$xgbTree_150 <- sqrt(predict(xgbTree_150, other_set %>% dplyr::select(one_of(numeric_predictors)) %>% as.matrix()))
-other_set$xgbTree_500 <- sqrt(predict(xgbTree_500, other_set %>% dplyr::select(one_of(numeric_predictors)) %>% as.matrix()))
+other_set$xgbTree <- sqrt(predict(xgbTree, other_set %>% dplyr::select(one_of(numeric_predictors)) %>% as.matrix()))
+
 other_set$Status <- c(as.character(model_data$ML_set__other_TT$train_set$Status), 
                       as.character(model_data$ML_set__other_TT$test_set$Status))
 
@@ -293,30 +280,40 @@ other_set$Status <- c(as.character(model_data$ML_set__other_TT$train_set$Status)
 #############################
 ### create DeepVPaC score ###
 #############################
+
+# split test into tune/test
+set.seed(783)
+tune_set <- test_set %>% sample_frac(0.5)
+test_setN <- test_set %>% filter(!pos_id %in% tune_set$pos_id)
+test_set <- test_setN
+
 fitControl_min <- trainControl(
   classProbs=T,
   savePredictions = T,
   allowParallel = T,
   summaryFunction = prSummary,
   returnData = T)
-DeepVPaC <- caret::train(Status ~ ., data=test_set %>% select(one_of(c('Status','VPaC_m12_v7','DeepRNN','xgbTree_150'))) %>% mutate(Status=factor(Status, levels=c('Pathogenic','NotPathogenic'))), 
+
+# use glm to blend VPaC, DeepRNN, and xgbTree on the tune set
+DeepVPaC <- caret::train(Status ~ ., data=tune_set %>% select(one_of(c('Status','VPaC_m12_v7','DeepRNN','xgbTree'))) %>% mutate(Status=factor(Status, levels=c('Pathogenic','NotPathogenic'))), 
                          method = "glm", metric='Precision', trControl = fitControl_min)
 
 ########################
 # predict DeepVPaC on train/test/other
 ########################
 test_set$DeepVPaC <- predict(DeepVPaC, test_set, type='prob')[,1]
+tune_set$DeepVPaC <- predict(DeepVPaC, tune_set, type='prob')[,1]
 train_set$DeepVPaC <- predict(DeepVPaC, train_set, type='prob')[,1]
 other_set$DeepVPaC <- predict(DeepVPaC, other_set, type='prob')[,1]
 
 # predict DeepVPaC on allX
 # but first, predict xgbTree, then DeepRNN with scale_predict
-allX$xgbTree_150 <- sqrt(predict(xgbTree_150, allX %>% dplyr::select(one_of(numeric_predictors)) %>% as.matrix()))
-allX$xgbTree_500 <- sqrt(predict(xgbTree_500, allX %>% dplyr::select(one_of(numeric_predictors)) %>% as.matrix()))
+allX$xgbTree <- sqrt(predict(xgbTree, allX %>% dplyr::select(one_of(numeric_predictors)) %>% as.matrix()))
+
 all_sub <- allX %>% select(one_of(nn_predictors))
 all_sub$DeepRNN <- scale_predict(all_sub, model, DeepRNN$predictors, DeepRNN$mean, DeepRNN$std)
 all_sub$VPaC_m12_v7 <- allX$VPaC_m12_v7
-all_sub$xgbTree_150 <- allX$xgbTree_150
+all_sub$xgbTree <- allX$xgbTree
 all_sub$DeepVPaC <- predict(DeepVPaC, all_sub, type='prob')[,1]
 
 allX$DeepRNN <- all_sub$DeepRNN
@@ -325,14 +322,18 @@ allX$DeepVPaC <- all_sub$DeepVPaC
 
 # merge test and train set with allX
 allX2 <- bind_rows(allX %>% mutate_all(as.character), 
-                   test_set %>% mutate(DataSet = 'Test Set', Distill = DeepVPaC) %>% mutate_all(as.character) , 
-                   train_set %>% mutate(DataSet = 'Train Set', Distill = DeepVPaC) %>% mutate_all(as.character) ,
+                   tune_set %>% mutate(DataSet = 'Tune Set', Distill = DeepVPaC) %>% mutate_all(as.character),
+                   test_set %>% mutate(DataSet = 'Test Set', Distill = DeepVPaC) %>% mutate_all(as.character), 
+                   train_set %>% mutate(DataSet = 'Train Set', Distill = DeepVPaC) %>% mutate_all(as.character),
                    other_set %>% mutate(DataSet = 'Other Set', Distill = DeepVPaC) %>% mutate_all(as.character)) %>% 
   mutate_at(vars(one_of(numeric_predictors)), funs(as.numeric(.)))
 allX2[is.na(allX2)] <- -1
 allX <- allX2
 
-allX <- allX %>% mutate_at(vars(contains('VP')), as.numeric) %>% mutate_at(vars(contains('Deep')), as.numeric) %>% 
+allX <- allX %>% 
+  mutate_at(vars(contains('VP')), as.numeric) %>% 
+  mutate_at(vars(contains('Deep')), as.numeric) %>% 
+  mutate_at(vars(contains('xgb')), as.numeric) %>% 
   mutate(Status=factor(Status, levels=c('Pathogenic','NotPathogenic')))
 
 
@@ -344,22 +345,21 @@ SuperGrimm <- allX %>% filter(grepl('Grimm', DataSet)) %>%
   filter(!pos_id %in% (allX %>% filter(!grepl('Grimm', DataSet)) %>% 
                          pull(pos_id)))
 
-HalfOther_1 <- other_set %>% 
-  filter(Status=='NotPathogenic') %>% 
+HalfOther_1 <- allX %>% 
+  filter(DataSet == 'Other Set', Status=='NotPathogenic') %>% 
   filter(!pos_id %in% (allX %>% filter(DataSet != 'Other Set') %>% pull(pos_id))) %>% 
   mutate(DataSet = 'Other Set') %>% 
   sample_frac(0.5)
 
-HalfOther_2 <- other_set %>% 
-  filter(Status=='NotPathogenic') %>% 
+HalfOther_2 <- allX %>% 
+  filter(DataSet == 'Other Set') %>% 
   filter(!pos_id %in% (allX %>% filter(DataSet != 'Other Set') %>% pull(pos_id))) %>% 
-  mutate(DataSet = 'Other Set') %>% 
   filter(!pos_id %in% HalfOther_1)
 
 assess_set <- bind_rows(SuperGrimm %>% mutate(DataSet = 'SuperGrimm'), 
                         HalfOther_1 %>% mutate(DataSet = 'SuperGrimm'),
-                        HalfOther_2,
-                        test_set %>% mutate(DataSet = 'Test Set'),
+                        HalfOther_2 %>% mutate(DataSet = 'ClinVar LC'),
+                        allX %>% filter(DataSet == 'Test Set'),
                         allX %>% filter(DataSet == 'DDL NISC RD Cohort'),
                         allX %>% filter(DataSet == 'Unifun'),
                         allX %>% filter(DataSet == 'Homsy'),
