@@ -295,7 +295,7 @@ fitControl_min <- trainControl(
   returnData = T)
 
 # use glm to blend VPaC, DeepRNN, and xgbTree on the tune set
-DeepVPaC <- caret::train(Status ~ ., data=tune_set %>% select(one_of(c('Status','VPaC_m12_v7','DeepRNN','xgbTree'))) %>% mutate(Status=factor(Status, levels=c('Pathogenic','NotPathogenic'))), 
+DeepVPaC <- caret::train(Status ~ ., data=tune_set %>% select(one_of(c('Status','DeepRNN','xgbTree'))) %>% mutate(Status=factor(Status, levels=c('Pathogenic','NotPathogenic'))), 
                          method = "glm", metric='Precision', trControl = fitControl_min)
 
 ########################
@@ -369,5 +369,5 @@ assess_set <- bind_rows(SuperGrimm %>% mutate(DataSet = 'SuperGrimm'),
                           filter(!pos_id %in% ((model_data$ML_set__general_TT$test_set$pos_id))))
 
 
-save(allX, file='/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/allX_2018_07_20.Rdata')
-save(assess_set, file='/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/assess_2018_07_20.Rdata')
+save(allX, file='/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/allX_2018_07_21.Rdata')
+save(assess_set, file='/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/assess_2018_07_21.Rdata')
