@@ -366,7 +366,7 @@ assess_set <- bind_rows(SuperGrimm %>% mutate(DataSet = 'SuperGrimm'),
                         allX %>% filter(DataSet == 'Samocha'),
                         allX %>% filter(DataSet == 'UK10K') %>% 
                           filter(!pos_id %in% (model_data$ML_set__general_TT$train_set$pos_id)) %>% 
-                          filter(!pos_id %in% ((model_data$ML_set__general_TT$test_set$pos_id))))
+                          filter(!pos_id %in% ((model_data$ML_set__general_TT$tune_set$pos_id))))
 
 
 save(allX, file='/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/allX_2018_07_21.Rdata')
