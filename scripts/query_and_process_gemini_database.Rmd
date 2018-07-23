@@ -91,8 +91,11 @@ write(test_hom_query, file = here('scripts/gemini_query_calls_UK10K.sh'), append
 # Load in result from gemini query above
 ```{r}
 library(data.table)
-het <- fread('gzcat /Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/data/UK10K/UK10K_EGAD.hets.gz')
-hom <- fread('gzcat /Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/data/UK10K/UK10K_EGAD.homs.gz')
+test_het <- fread('gzcat /Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/data/UK10K/UK10K_EGAD.hets.test.gz')
+test_hom <- fread('gzcat /Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/data/UK10K/UK10K_EGAD.homs.test.gz')
+
+train_het <- fread('gzcat /Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/data/UK10K/UK10K_EGAD.hets.train.gz')
+train_hom <- fread('gzcat /Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/data/UK10K/UK10K_EGAD.homs.train.gz')
 ```
 
 # Create regions file
@@ -100,8 +103,10 @@ The regions file is used to generate coordinates for the selected variants, whic
 
 I've gone up into `# Create gemini query` and changed the database to the cut down one I made
 ```{r}
-regions_f <- rbind(het %>% mutate(region=paste0(chrom,'\t',end,'\t',end)),
-                   hom %>% mutate(region=paste0(chrom,'\t',end,'\t',end))) %>% 
+regions_f <- rbind(test_het %>% mutate(region=paste0(chrom,'\t',end,'\t',end)),
+                   test_hom %>% mutate(region=paste0(chrom,'\t',end,'\t',end)),
+                   train_het %>% mutate(region=paste0(chrom,'\t',end,'\t',end)),
+                   train_hom %>% mutate(region=paste0(chrom,'\t',end,'\t',end))) %>% 
   mutate(end=as.integer(end)) %>% 
   arrange(chrom, end) %>% 
   select(region)
@@ -111,53 +116,6 @@ write(regions_f$region, file='/Volumes/data/projects/nei/mcgaughey/EGA_EGAD00001
 # tabix EGAD00001002656.GATK.vcf.gz --print-header --regions eye_var_regions.txt | bgzip -c > /data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/data/EGAD00001002656.GATK.eye_var_path.vcf.gz &
 # tabix -p vcf /data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/data/EGAD00001002656.GATK.eye_var_path.vcf.gz
 ```
-# Reshape
-We have a column (hom_alt or het)_samples which has a comma separate list of samples with the genotype. I think we should split this up and get a new row for each sample. 
-```{r}
-hom_long <- hom %>% 
-  mutate(Sample = str_split(hom_alt_samples, ","), Genotype = 'Hom') %>%  # split with str_split to create a list
-  unnest(Sample, .drop=F) # unnest will spread the list, creating a row for each entry
-
-het_long <- het %>% 
-  mutate(Sample = str_split(het_samples, ","), Genotype = 'Het') %>%  # split with str_split to create a list
-  unnest(Sample, .drop=F) # unnest will spread the list, creating a row for each entry
-
-
-all <- rbind(hom_long, het_long)
-```
-
-# ID Compound Het
-Logic is solved, has HGVSc, and genotype is 0/1
-```{r}
-sample_gene_comp_het <- metadata %>% filter(Status=='Solved'  & Variant_HGVSc!='NA' & GT=='0/1') %>% group_by(Sample, Gene) %>% summarise(Count=n()) %>% filter(Count>1) 
-metadata <- left_join(metadata, sample_gene_comp_het) %>% mutate(Comp_Het_Path = case_when(Count >= 2 ~ 'CH', 
-                                                                                           TRUE ~ 'No')) %>% 
-  select(-Count)
-```
-
-# Label variants as pathogenic
-Also do complicated status (label comp het, dom, and recessive)
-
-Save for further analysis (machine learning!)
-```{r}
-uk10k_gemini_rare_variants <- all %>% 
-  mutate(Variant_genomic = paste0(chrom, ':', start + 1, ref, '>', alt)) %>% 
-  mutate(Status = case_when(Variant_genomic %in% (metadata %>% filter(Status == 'Solved') %>% pull(Variant_genomic)) ~ 'Pathogenic',
-                            Variant_genomic %in% (metadata %>% filter(Status == 'Partially solved') %>% pull(Variant_genomic)) ~ 'Maybe Pathogenic',
-                            TRUE ~ 'NotPathogenic')) %>% 
-  filter(Status != 'Maybe Pathogenic') %>% 
-  mutate(Complicated_Status = case_when(Variant_genomic %in% (metadata %>% filter(Status != 'Unsolved' & Comp_Het_Path == 'CH') %>% pull(Variant_genomic)) ~ 'Comp_Het',
-                                        Variant_genomic %in% (metadata %>% filter(Status != 'Unsolved' & GT=='0/1') %>% pull(Variant_genomic)) ~ 'AD',
-                                        Variant_genomic %in% (metadata %>% filter(Status != 'Unsolved' & GT=='1/1') %>% pull(Variant_genomic)) ~ 'AR',
-                                        TRUE ~ 'NotPathogenic')) %>% 
-  nest(Sample, .key='Samples')
-
-
-output_file <- '/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/uk10k_gemini_rare_variants.Rdata'
-if(!file.exists(output_file)){
-  save(uk10k_gemini_rare_variants, file = output_file)
-}
-```
 
 # Next step
-Use as input for model building (scripts/build_models.R)
+run scripts/build_10K_data.R
