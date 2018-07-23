@@ -66,7 +66,7 @@ rfFit_VPaC <- randomForest(Status ~ ., data=rf_data,
                            norm.votes = FALSE)
 
 rand_name4 = paste0('VPaC__09mtry_v9_', rand_num)
-assign(rand_name3, rfFit_VPaC)
+assign(rand_name4, rfFit_VPaC)
 
 
 
