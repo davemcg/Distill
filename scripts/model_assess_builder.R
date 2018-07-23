@@ -224,7 +224,7 @@ xgbTree <- xgboost(label = y,
                        min_child_weight = 1, 
                        subsample = 0.75,
                        data = train_data %>% select_if(is.numeric) %>% as.matrix(), 
-                       nrounds = 200, 
+                       nrounds = 250, 
                        objective = "binary:logistic", 
                        eval_metric = 'aucpr', 
                        nthread = 16)
@@ -358,7 +358,7 @@ HalfOther_2 <- allX %>%
 
 assess_set <- bind_rows(SuperGrimm %>% mutate(DataSet = 'SuperGrimm'), 
                         HalfOther_1 %>% mutate(DataSet = 'SuperGrimm'),
-                        HalfOther_2 %>% mutate(DataSet = 'ClinVar LC'),
+                        HalfOther_2 %>% mutate(DataSet = 'Extra NotPathogenic'),
                         allX %>% filter(DataSet == 'Test Set'),
                         allX %>% filter(DataSet == 'DDL NISC RD Cohort'),
                         allX %>% filter(DataSet == 'Unifun'),
