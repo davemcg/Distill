@@ -15,8 +15,8 @@ library(randomForest)
 library(keras)
 library(tensorflow)
 library(PRROC)
-load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/allX_2018_06_26.Rdata')
-load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/assess_2018_06_26.Rdata')
+load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/allX_2018_07_21.Rdata')
+load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/assess_2018_07_21.Rdata')
 #allX <- allX %>% mutate_at(vars(contains('VP')), as.numeric) %>% mutate_at(vars(contains('Deep')), as.numeric)
 # confusion matrix maker for built models
 cm_maker <- function(predictor = 'cadd_phred', data, cutoff=0.5, mode = 'prec_recall') {
@@ -50,13 +50,13 @@ cm_maker <- function(predictor = 'cadd_phred', data, cutoff=0.5, mode = 'prec_re
 
 # Correlation of predictors
 ## VPaC
-```{r, fig.width=6, fig.height=6}
+```{r, fig.width=10, fig.height=10}
 library(superheat)
 
 predictors<-c('ccr_pct_v1','cadd_raw','vest3_rankscore','cadd_phred','mis_z','pli','lof_z','phylop_100way','revel','hapmap2','hapmap1','n_mis','epilogos_quies','n_lof','precessive','pnull','adj_exp_lof','adj_exp_syn','dann','adj_exp_mis','syn_z','n_syn','epilogos_txwk','fitcons','m_cap_score','m_cap_rankscore','eigen_phred','eigen_raw','epilogos_tx','is_lof','eigen_pc_raw_rankscore','epilogos_reprpcwk','fathmm_mkl_coding_rankscore','metalr_score','fathmm_mkl_coding_score','metalr_rankscore','impact_severity','metasvm_rankscore','metasvm_score','epilogos_enh','genocanyon_score','fathmm_converted_rankscore','mpc','epilogos_enhg','af_exac_all','epilogos_reprpc','max_aaf_all','mutationassessor_score','gerp','polyphen_score','gerp_elements','mutationassessor_score_rankscore','stam_mean','an_exac_all','af_exac_nfe','provean_converted_rankscore','an_exac_nfe','lrt_score','lrt_omega','grantham','lrt_converted_rankscore','genocanyon_score_rankscore','an_exac_afr','an_exac_amr','an_exac_sas','epilogos_het','ac_exac_all','linsight','gno_an_popmax','exac_num_het','an_exac_eas','gno_an_all','ac_exac_nfe','mutationtaster_converted_rankscore','an_exac_oth','an_exac_fin','gno_an_nfe','gno_af_all','gno_an_afr','epilogos_tssaflnk','gno_af_popmax','epilogos_znf','segway_sum_score','aaf_esp_ea','epilogos_txflnk','provean_score','segway_mean_score','epilogos_tss','aaf_esp_all','af_exac_amr','gno_af_nfe','epilogos_enhbiv','af_exac_sas','sift_score','fathmm_score','ac_exac_amr','aaf_esp_aa','gno_ac_all','gno_af_afr','ac_exac_sas','af_exac_eas','gno_an_fin','af_exac_afr','gno_an_eas','gno_an_oth','gno_ac_nfe','gno_ac_popmax','ac_exac_eas','ac_exac_afr','epilogos_tssbiv','gno_ac_afr','vest3_score')
 
 # remove near zero var predictors with caret's nearZeroVar
-dat <- allX %>% filter(DataSet == 'Homsy') %>% select(one_of(predictors, 'VPaC_m06', 'VPaC_m15','DeepRNN'))
+dat <- assess_set %>% filter(DataSet == 'SuperGrimm') %>% select(one_of(predictors, 'xgbTree', 'VPaC_m12_v7','DeepRNN'))
 rem <- nearZeroVar(dat)
 dat <- dat[,-rem]
 superheat(cor(dat),
@@ -139,15 +139,53 @@ roc_maker <- function(predictor, data, cutoff=0.5) {
 }
 ```
 
-
-# Assess Performance of Models and Existing Predictors in Test Set
+# Assess Performance of Models and Existing Predictors in All Sets
 ```{r}
-pr_data <- data.frame()
-model_vec <- c('DeepRNN','DeepVPaC','VPaC_m15', 'VPaC_m06', 'ccr_pct_v1', 'm_cap_rankscore', 'revel', 'cadd_phred', 'fitcons', 'metalr_rankscore', 'fathmm_converted_rankscore')
-dataset <- assess_set
+allX$naive <- (allX$DeepRNN * 0.02) + (allX$xgbTree * 0.98)
+Xpr_data <- data.frame()
+model_vec <- c('DeepRNN','DeepVPaC','VPaC_m12_v7', 'naive', 'xgbTree','revel','cadd_phred')
+
 for (i in model_vec){
-  for (j in unique(dataset$DataSet)){
-    pr <- pr_maker(i, dataset %>% filter(DataSet == j))
+  print(i)
+  for (j in unique(allX$DataSet)){
+    #print(j)
+    pr <- pr_maker(i, allX %>% filter(DataSet == j))
+    out <- pr$curve[,1:2] %>% data.frame()
+    colnames(out) <- c('Recall','Precision')
+    out$AUC <- pr$auc.integral
+    out$Model <- i
+    out$'Model (AUC)' <- paste0(i, ' (',round(pr$auc.integral,5),')' )
+    out$DataSet <- j
+    Xpr_data <- rbind(Xpr_data, out)
+  }
+}
+
+Xroc_data <- data.frame()
+for (i in model_vec){
+  for (j in unique(allX$DataSet)){
+    roc <- roc_maker(i, allX %>% filter(DataSet == j))
+    out <- roc$curve[,1:2] %>% data.frame()
+    colnames(out) <- c('FPR','Sensitivity')
+    out$AUC <- roc$auc
+    out$Model <- i
+    out$'Model (AUC)' <- paste0(i, ' (',round(roc$auc,5),')' )
+    out$DataSet <- j
+    Xroc_data <- rbind(Xroc_data, out)
+  }
+}
+#rm(allX)
+```
+
+# Assess Performance of Models and Existing Predictors in Assess Sets
+```{r}
+assess_set$naive <- (assess_set$DeepRNN * 0.05) + (assess_set$xgbTree * 0.95)
+pr_data <- data.frame()
+model_vec <- c('DeepRNN','DeepVPaC','VPaC_m12_v7', 'naive', 'xgbTree','revel','cadd_phred', 'fitcons', 'metalr_rankscore', 'fathmm_converted_rankscore')
+for (i in model_vec){
+  print(i)
+  for (j in unique(assess_set$DataSet)){
+    print(j)
+    pr <- pr_maker(i, assess_set %>% filter(DataSet == j))
     out <- pr$curve[,1:2] %>% data.frame()
     colnames(out) <- c('Recall','Precision')
     out$AUC <- pr$auc.integral
@@ -160,8 +198,8 @@ for (i in model_vec){
 
 roc_data <- data.frame()
 for (i in model_vec){
-  for (j in unique(dataset$DataSet)){
-    roc <- roc_maker(i, dataset %>% filter(DataSet == j))
+  for (j in unique(assess_set$DataSet)){
+    roc <- roc_maker(i, assess_set %>% filter(DataSet == j))
     out <- roc$curve[,1:2] %>% data.frame()
     colnames(out) <- c('FPR','Sensitivity')
     out$AUC <- roc$auc
@@ -171,11 +209,11 @@ for (i in model_vec){
     roc_data <- rbind(roc_data, out)
   }
 }
-rm(dataset)
+#rm(assess_set)
 ```
 ## Table Data
 ```{r}
-pr_data %>% mutate(Model = factor(Model, levels = model_vec)) %>% 
+pr_table <- pr_data %>% mutate(Model = factor(Model, levels = model_vec)) %>% 
   dplyr::select(AUC, Model, DataSet) %>% 
   #filter(grepl('Grimm|ClinVar|Test|UniFun|DDL|Sam|Hom', DataSet)) %>% 
   unique() %>% 
@@ -183,12 +221,12 @@ pr_data %>% mutate(Model = factor(Model, levels = model_vec)) %>%
   spread(Model, AUC) %>% 
   DT::datatable()
 
-roc_data %>% mutate(Model = factor(Model, levels = model_vec)) %>% dplyr::select(AUC, Model, DataSet) %>% 
+roc_table <- roc_data %>% mutate(Model = factor(Model, levels = model_vec)) %>% dplyr::select(AUC, Model, DataSet) %>% 
   #filter(grepl('Grimm|ClinVar|Test|UniFun|DDL|Sam|Hom', DataSet)) %>% 
   unique() %>% mutate(AUC=round(AUC,4)) %>% spread(Model, AUC) %>% DT::datatable()
 ```
 ## Dot plots of AUC
-```{r, fig.height=4}
+```{r, fig.height=6}
 pr_data %>% dplyr::select(AUC, Model, DataSet) %>% 
   #filter(grepl('Grimm|ClinVar|Test|UniFun|DDL|Sam|Hom', DataSet)) %>% 
   unique() %>% 
@@ -205,9 +243,9 @@ roc_data %>% dplyr::select(AUC, Model, DataSet) %>%
   geom_point(stat = 'identity') + coord_cartesian(ylim=c(0,1)) + facet_wrap(~DataSet, nrow=2) + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + ggtitle('Receiver Operating Characteristic')
 ```
 ## AUC Plots
-```{r, fig.height=6, fig.width=6}
+```{r, fig.height=9, fig.width=18}
 pr_plot <- pr_data %>% 
-  #filter(grepl('Grimm|ClinVar|Test|UniFun|DDL|Sam|Hom', DataSet)) %>% 
+  #filter(grepl('Grimm', DataSet)) %>% 
   filter(Model != 'VPaC') %>% 
   #filter(model %in% best_models_noDC) %>% 
   ggplot(aes(x=Recall, y=Precision, colour=Model)) + 
@@ -216,7 +254,7 @@ pr_plot <- pr_data %>%
   theme_minimal() + 
   ggtitle('Precision Recall Curve') 
 roc_plot <- roc_data %>%   #filter(model %in% best_models_noDC) %>% 
- # filter(grepl('Grimm|ClinVar|Test|UniFun|DDL|Sam|Hom', DataSet)) %>% 
+  #filter(grepl('Grimm', DataSet)) %>% 
   filter(Model != 'VPaC') %>% 
   ggplot(aes(x=FPR, y=Sensitivity, colour=Model)) + 
   facet_wrap(~DataSet, ncol=1) +
@@ -233,11 +271,11 @@ cowplot::plot_grid(roc_plot, pr_plot, ncol = 2)
 # Find optimal cutoff for DataSet X for model Y
 Plot cutoff against MCC
 ```{r}
-mcc_view <- function(sequence = seq(0,1,by = 0.01), predictor = 'VPaC', dataset = all %>% filter(DataSet == 'Grimm ExoVar')){
+mcc_view <- function(sequence = seq(0,1,by = 0.01), predictor = 'VPaC', assess_set = all %>% filter(DataSet == 'Grimm ExoVar')){
   out <- data.frame(cutoff = sequence)
   mccs <- ''
   for (i in sequence){
-    capture.output(mccs <- c(mccs, cm_maker(predictor, dataset, i)$MCC), file='/dev/null')
+    capture.output(mccs <- c(mccs, cm_maker(predictor, assess_set, i)$MCC), file='/dev/null')
   }
   out$mcc <- mccs[2:length(mccs)]
   out$mcc[out$mcc == 'NaN'] <- 0
@@ -246,7 +284,7 @@ mcc_view <- function(sequence = seq(0,1,by = 0.01), predictor = 'VPaC', dataset 
   out
 }
 
-suppressWarnings(mcc_view(predictor='DeepVPaC', dataset = all %>% filter(DataSet=='Grimm PredictSNP')) %>% arrange(-mcc) %>% head())
+suppressWarnings(mcc_view(predictor='DeepVPaC', assess_set = all %>% filter(DataSet=='Grimm PredictSNP')) %>% arrange(-mcc) %>% head())
 ```
 # OGVFB Exomes
 ```{r}
