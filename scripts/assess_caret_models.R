@@ -89,13 +89,16 @@ model <- caret::train(Status ~ ., data = train_data %>% select(one_of(c('Status'
                       method = model, metric='F',
                       trControl = fitControl_min)
 
+library(xgboost)
+train_data <- model_data$ML_set__general_TT$train_set
 y <- recode(train_data$Status,'Pathogenic'=1, 'NotPathogenic'=0)
-model4 <- xgboost(label = y,
+xgbTree_500 <- xgboost(label = y, 
                   eta = 0.4, max_depth = 3,
                   gamma = 0, colsample_bytree = 0.8,
                   min_child_weight = 1, subsample = 0.75,
-                  data = train_data %>% select(one_of(most_imp_predictors)) %>% as.matrix(), 
-                  nrounds = 150, objective = "binary:logistic", eval_metric = 'aucpr')
+                  data = train_data %>% select_if(is.numeric) %>% as.matrix(), 
+                  nrounds = 500, objective = "binary:logistic", eval_metric = 'aucpr', 
+                  nthread = 8)
 
 # glmFit <- caret::train(Status ~ ., data = train_data %>% select(one_of(c('Status', most_imp_predictors))),
 #                        method = "glm", metric='F',
@@ -206,14 +209,16 @@ model4 <- xgboost(label = y,
 ################################
 # Quick Assess
 ################################
-cm_maker <- function(predictor = 'cadd_phred', data, cutoff=0.5, mode = 'prec_recall', model_type = NA) {
+cm_maker <- function(predictor = 'cadd_phred', data, cutoff=0.5, mode = 'prec_recall', model_type = 'woo') {
   if (class(predictor)!='character'){
     print("Running in predictor is a model mode")
-    if (is.na(model_type)){
+    if (model_type != 'xgboost'){
       new_predictions <- predict(predictor, data, type='prob') %>% data.frame() %>% 
         mutate(Answers = data$Status, Prediction = case_when(Pathogenic > cutoff ~ 'Pathogenic', TRUE ~ 'NotPathogenic'))
+      # if xgboost, then run tweaked predict which only uses a matrix 
+      # pulls status off of the data frame given and turns into a matrix
     } else {
-      dataXG = data %>% select(-Status) %>% as.matrix()
+      dataXG = data %>% select_if(is.numeric) %>% as.matrix()
       new_predictions <- predict(predictor, dataXG) %>% data.frame() 
       colnames(new_predictions) <- 'Pathogenic'
       new_predictions <- new_predictions %>% 
