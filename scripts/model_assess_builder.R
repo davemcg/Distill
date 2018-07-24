@@ -95,6 +95,7 @@ allX$VPaC_m12_v7 <- sqrt(predict(VPaC_12mtry_v10, allX, type='prob')[,1])
 #allX$VPaC_m09_v8 <- sqrt(predict(VPaC_9mtry_v8, allX, type='prob')[,1])
 #allX$VPaC_m06_v8 <- sqrt(predict(VPaC_6mtry_v8, allX, type='prob')[,1])
 
+print('Data loaded')
 
 ###########################
 ## Deep LSTM ##
@@ -162,6 +163,7 @@ model %>% compile(
 
 history <- model %>% fit(train_data, status_train01, epochs = 10, batch_size=50)
 
+print('LSTM trained')
 
 # confusion matrix maker for built models
 cm_maker <- function(predictor = 'cadd_phred', data, cutoff=0.5, mode = 'prec_recall') {
@@ -229,7 +231,7 @@ xgbTree <- xgboost(label = y,
                        eval_metric = 'aucpr', 
                        nthread = 16)
 
-
+print('xgboost trained')
 
 ########
 # TEST #
@@ -276,7 +278,7 @@ other_set$xgbTree <- sqrt(predict(xgbTree, other_set %>% dplyr::select(one_of(nu
 other_set$Status <- c(as.character(model_data$ML_set__other_TT$train_set$Status), 
                       as.character(model_data$ML_set__other_TT$test_set$Status))
 
-
+print('test, train, other calculated')
 #############################
 ### create DeepVPaC score ###
 #############################
@@ -298,6 +300,7 @@ fitControl_min <- trainControl(
 DeepVPaC <- caret::train(Status ~ ., data=tune_set %>% select(one_of(c('Status','DeepRNN','xgbTree'))) %>% mutate(Status=factor(Status, levels=c('Pathogenic','NotPathogenic'))), 
                          method = "glm", metric='Precision', trControl = fitControl_min)
 
+print('deepVPaC made')
 ########################
 # predict DeepVPaC on train/test/other
 ########################
@@ -319,7 +322,7 @@ all_sub$DeepVPaC <- predict(DeepVPaC, all_sub, type='prob')[,1]
 allX$DeepRNN <- all_sub$DeepRNN
 allX$DeepVPaC <- all_sub$DeepVPaC
 
-
+print('deepVPac applied to allX')
 # merge test and train set with allX
 allX2 <- bind_rows(allX %>% mutate_all(as.character), 
                    model_data$Test_set__UK10K %>% mutate_all(as.character),
@@ -337,7 +340,7 @@ allX <- allX %>%
   mutate_at(vars(contains('xgb')), as.numeric) %>% 
   mutate(Status=factor(Status, levels=c('Pathogenic','NotPathogenic')))
 
-
+print('allX reformed')
 #############
 # build assess data 
 #############
@@ -370,7 +373,7 @@ assess_set <- bind_rows(SuperGrimm %>% mutate(DataSet = 'SuperGrimm'),
                         #allX %>% filter(DataSet == 'UK10K') %>% 
                         #  filter(!pos_id %in% (model_data$ML_set__general_TT$train_set$pos_id)) %>% 
                         #  filter(!pos_id %in% ((model_data$ML_set__general_TT$tune_set$pos_id))))
-
+print('assess made')
 
 save(allX, file='/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/allX_2018_07_24.Rdata')
 save(assess_set, file='/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/assess_2018_07_24.Rdata')
