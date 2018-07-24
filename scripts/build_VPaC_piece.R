@@ -44,7 +44,7 @@ rfFit_VPaC <- randomForest(Status ~ ., data=rf_data,
                            importance = TRUE,
                            norm.votes = FALSE)
 
-rand_name2 = paste0('VPaC__15mtry_v9_', rand_num)
+rand_name2 = paste0('VPaC__15mtry_v10_', rand_num)
 assign(rand_name2, rfFit_VPaC)
 
 rand_num <- as.integer(paste(sample(0:9, 6, replace=F), collapse = ''))
@@ -56,7 +56,7 @@ rfFit_VPaC <- randomForest(Status ~ ., data=rf_data,
                            importance = TRUE,
                            norm.votes = FALSE)
 
-rand_name3 = paste0('VPaC__12mtry_v9_', rand_num)
+rand_name3 = paste0('VPaC__12mtry_v10_', rand_num)
 assign(rand_name3, rfFit_VPaC)
 
 rfFit_VPaC <- randomForest(Status ~ ., data=rf_data, 
@@ -65,7 +65,7 @@ rfFit_VPaC <- randomForest(Status ~ ., data=rf_data,
                            importance = TRUE,
                            norm.votes = FALSE)
 
-rand_name4 = paste0('VPaC__09mtry_v9_', rand_num)
+rand_name4 = paste0('VPaC__09mtry_v10_', rand_num)
 assign(rand_name4, rfFit_VPaC)
 
 
