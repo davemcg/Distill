@@ -2,7 +2,7 @@
 library(tidyverse)
 library(randomForest)
 
-load('/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/model_data_2018_07_13.Rdata')
+load('/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/model_data_2018_07_24.Rdata')
 
 ########################
 # Build VPaC
