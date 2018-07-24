@@ -120,6 +120,7 @@ train_sub <- model_data$ML_set__general_TT$train_set %>% dplyr::select(one_of(nu
 test_sub <- model_data$ML_set__general_TT$test_set %>% dplyr::select(one_of(numeric_predictors),'Status')
 
 train_sub <- SMOTE(Status ~ ., as.data.frame(train_sub))
+train_sub <- train_sub %>% sample_frac(1)
 status_train <- train_sub$Status
 status_train01 <- case_when(status_train == 'Pathogenic' ~ 1,
                             TRUE ~ 0)
@@ -137,6 +138,8 @@ test_data <- scale(test_sub, center=mean,scale=std)
 dim(train_data) <- c(nrow(train_data),1,length(numeric_predictors))
 dim(test_data) <- c(nrow(test_data),1,length(numeric_predictors))
 
+train_data[is.na(train_data)] <- -1
+test_data[is.na(test_data)] <- -1
 model <- keras_model_sequential() %>% 
   layer_lstm(1.5*length(numeric_predictors), recurrent_dropout=0.2, input_shape=c(1, length(numeric_predictors)), return_sequences = T) %>%
   layer_dropout(0.2) %>%
