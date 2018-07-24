@@ -19,13 +19,13 @@ library(xgboost)
 
 # Load processed data and models
 
-load('/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/model_data_2018_07_13.Rdata')
+load('/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/model_data_2018_07_23.Rdata')
 
 # load('/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/VPaC_6mtry.Rdata')
 # load('/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/VPaC_6mtry_v8.Rdata')
 # load('/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/VPaC_9mtry_v8.Rdata')
-load('/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/VPaC_12mtry.Rdata')
-VPaC_12mtry_v7 <- VPaC_12mtry
+load('/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/VPaC_12mtry_v10.Rdata')
+#VPaC_12mtry_v10 <- VPaC_12mtry_v10
 # all raw
 load('/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/data/master/raw_data_2018_07_13.Rdata')
 
@@ -91,7 +91,7 @@ allX[is.na(allX)] <- -1
 
 # calculate VPaC scording for allX
 #allX$VPaC_m06_v1 <- sqrt(predict(VPaC_6mtry, allX, type='prob')[,1])
-allX$VPaC_m12_v7 <- sqrt(predict(VPaC_12mtry_v7, allX, type='prob')[,1])
+allX$VPaC_m12_v7 <- sqrt(predict(VPaC_12mtry_v10, allX, type='prob')[,1])
 #allX$VPaC_m09_v8 <- sqrt(predict(VPaC_9mtry_v8, allX, type='prob')[,1])
 #allX$VPaC_m06_v8 <- sqrt(predict(VPaC_6mtry_v8, allX, type='prob')[,1])
 
@@ -239,7 +239,7 @@ test_set$DeepRNN <- scale_predict(test_set, model, DeepRNN$predictors, DeepRNN$m
 # RF based prediction
 test_set$fitcons_float <- test_set$fitcons
 #test_set$VPaC_m06_v1 <- sqrt(predict(VPaC_6mtry, test_set, type='prob')[,1])
-test_set$VPaC_m12_v7 <- sqrt(predict(VPaC_12mtry_v7, test_set, type='prob')[,1])
+test_set$VPaC_m12_v7 <- sqrt(predict(VPaC_12mtry_v10, test_set, type='prob')[,1])
 #test_set$VPaC_m09_v8 <- sqrt(predict(VPaC_9mtry_v8, test_set, type='prob')[,1])
 #test_set$VPaC_m06_v8 <- sqrt(predict(VPaC_6mtry_v8, test_set, type='prob')[,1])
 test_set$xgbTree <- sqrt(predict(xgbTree, test_set %>% dplyr::select(one_of(numeric_predictors)) %>% as.matrix()))
@@ -253,7 +253,7 @@ train_set$DeepRNN <- scale_predict(train_set, model, DeepRNN$predictors, DeepRNN
 # RF based prediction
 train_set$fitcons_float <- train_set$fitcons
 #train_set$VPaC_m06_v1 <- sqrt(predict(VPaC_6mtry, train_set, type='prob')[,1])
-train_set$VPaC_m12_v7 <- sqrt(predict(VPaC_12mtry_v7, train_set, type='prob')[,1])
+train_set$VPaC_m12_v7 <- sqrt(predict(VPaC_12mtry_v10, train_set, type='prob')[,1])
 #train_set$VPaC_m09_v8 <- sqrt(predict(VPaC_9mtry_v8, train_set, type='prob')[,1])
 #train_set$VPaC_m06_v8 <- sqrt(predict(VPaC_6mtry_v8, train_set, type='prob')[,1])
 train_set$xgbTree <- sqrt(predict(xgbTree, train_set %>% dplyr::select(one_of(numeric_predictors)) %>% as.matrix()))
@@ -268,7 +268,7 @@ other_set$DeepRNN <- scale_predict(other_set, model, DeepRNN$predictors, DeepRNN
 # RF based prediction
 other_set$fitcons_float <- other_set$fitcons
 #other_set$VPaC_m06_v1 <- sqrt(predict(VPaC_6mtry, other_set, type='prob')[,1])
-other_set$VPaC_m12_v7 <- sqrt(predict(VPaC_12mtry_v7, other_set, type='prob')[,1])
+other_set$VPaC_m12_v7 <- sqrt(predict(VPaC_12mtry_v10, other_set, type='prob')[,1])
 #other_set$VPaC_m09_v8 <- sqrt(predict(VPaC_9mtry_v8, other_set, type='prob')[,1])
 #other_set$VPaC_m06_v8 <- sqrt(predict(VPaC_6mtry_v8, other_set, type='prob')[,1])
 other_set$xgbTree <- sqrt(predict(xgbTree, other_set %>% dplyr::select(one_of(numeric_predictors)) %>% as.matrix()))
@@ -322,6 +322,7 @@ allX$DeepVPaC <- all_sub$DeepVPaC
 
 # merge test and train set with allX
 allX2 <- bind_rows(allX %>% mutate_all(as.character), 
+                   model_data$Test_set__UK10K %>% mutate_all(as.character),
                    tune_set %>% mutate(DataSet = 'Tune Set', Distill = DeepVPaC) %>% mutate_all(as.character),
                    test_set %>% mutate(DataSet = 'Test Set', Distill = DeepVPaC) %>% mutate_all(as.character), 
                    train_set %>% mutate(DataSet = 'Train Set', Distill = DeepVPaC) %>% mutate_all(as.character),
@@ -364,10 +365,12 @@ assess_set <- bind_rows(SuperGrimm %>% mutate(DataSet = 'SuperGrimm'),
                         allX %>% filter(DataSet == 'Unifun'),
                         allX %>% filter(DataSet == 'Homsy'),
                         allX %>% filter(DataSet == 'Samocha'),
-                        allX %>% filter(DataSet == 'UK10K') %>% 
-                          filter(!pos_id %in% (model_data$ML_set__general_TT$train_set$pos_id)) %>% 
-                          filter(!pos_id %in% ((model_data$ML_set__general_TT$tune_set$pos_id))))
+                        allX %>% filter(DataSet == 'Test_set__UK10K') %>% 
+                          mutate(DataSet = 'UK10K Withheld'))
+                        #allX %>% filter(DataSet == 'UK10K') %>% 
+                        #  filter(!pos_id %in% (model_data$ML_set__general_TT$train_set$pos_id)) %>% 
+                        #  filter(!pos_id %in% ((model_data$ML_set__general_TT$tune_set$pos_id))))
 
 
-save(allX, file='/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/allX_2018_07_21.Rdata')
-save(assess_set, file='/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/assess_2018_07_21.Rdata')
+save(allX, file='/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/allX_2018_07_24.Rdata')
+save(assess_set, file='/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/assess_2018_07_24.Rdata')
