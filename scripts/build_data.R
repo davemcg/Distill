@@ -3,7 +3,7 @@
 ################################################
 
 # biowulf paths
-## run: Rscript ~/git/eye_var_Pathogenicity/scripts/build_gnomad_data.R
+## run: Rscript ~/git/eye_var_Pathogenicity/scripts/build_UK10K_data.R
 uk10k_data <- '/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/uk10k_gemini_rare_variants.Rdata'
 ## run: time gemini query --header -q "SELECT * from variants WHERE (aaf_esp_all < 0.01 AND aaf_1kg_all < 0.01 AND af_exac_all < 0.01  AND (is_coding=1 OR is_splicing=1)) OR impact_severity='HIGH' OR clinvar_sig LIKE '%patho%'" clinvar_RD.PED_faux.gemini.db | bgzip > clinvar.gemini.tsv.gz 
 clinvar_file <- '/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/data/clinvar/clinvar.gemini.tsv.gz'
@@ -327,10 +327,10 @@ model_data <- list()
 model_data$ML_set__eye_TT <- ML_set__eye_TT
 model_data$ML_set__general_TT <- ML_set__general_TT
 model_data$ML_set__other_TT <- ML_set__other_TT
-model_data$Test_set__UK10K <- Test_set__UK10K
+model_data$Test_set__UK10K <- Test_set__UK10K # withheld UK10K data for model perf 
 model_data$pos_id__source <- pos_id__source
 model_data$predictors <- numeric_predictors
 model_data$sessionInfo <- sessionInfo()
-save(model_data, file='/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/model_data_2018_07_23.Rdata')
+save(model_data, file='/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/model_data_2018_07_24.Rdata')
 
 #save(clinvar_spread, file='/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/model_spread.Rdata')
