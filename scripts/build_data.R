@@ -4,7 +4,7 @@
 
 # biowulf paths
 ## run: Rscript ~/git/eye_var_Pathogenicity/scripts/build_UK10K_data.R
-uk10k_data <- '/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/uk10k_gemini_rare_variants.Rdata'
+uk10k_data <- '/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data//uk10k_gemini_rare_variants_2018_07_23.Rdata'
 ## run: time gemini query --header -q "SELECT * from variants WHERE (aaf_esp_all < 0.01 AND aaf_1kg_all < 0.01 AND af_exac_all < 0.01  AND (is_coding=1 OR is_splicing=1)) OR impact_severity='HIGH' OR clinvar_sig LIKE '%patho%'" clinvar_RD.PED_faux.gemini.db | bgzip > clinvar.gemini.tsv.gz 
 clinvar_file <- '/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/data/clinvar/clinvar.gemini.tsv.gz'
 ## run: time gemini query --header -q "SELECT * from variants WHERE (aaf_esp_all < 0.01 AND aaf_1kg_all < 0.01 AND af_exac_all < 0.01  AND (is_coding=1 OR is_splicing=1)) OR impact_severity='HIGH' OR clinvar_sig LIKE '%patho%'" gnomad.exomes.r2.0.2.sites.maxAF_0.01_20percent.PED_faux.gemini.db | bgzip > gnomad_rare_benign_ish.gemini.tsv.gz
