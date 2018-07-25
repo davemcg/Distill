@@ -30,10 +30,7 @@ load('/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/V
 load('/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/data/master/raw_data_2018_07_13.Rdata')
 
 
-numeric_predictors<-c('is_exonic','is_coding','is_lof','is_splicing','exon','aa_length','impact_severity','polyphen_score','sift_score','dann','eigen_phred','eigen_coding_or_noncoding','fathmm_converted_rankscore','fathmm_pred','gerp','genocanyon_score_rankscore','hgmd_overlap','linsight','lrt_omega','lrt_converted_rankscore','m_cap_rankscore','mpc','metalr_rankscore','metasvm_rankscore','mutationassessor_score_rankscore','mutationtaster_converted_rankscore','provean_converted_rankscore','provean_score','revel','vest3_rankscore','aaf_1kg_afr','aaf_1kg_all','aaf_1kg_amr','aaf_1kg_eas','aaf_1kg_eur','aaf_1kg_sas','aaf_esp_aa','aaf_esp_all','aaf_esp_ea','ac_exac_afr','ac_exac_all','ac_exac_amr','ac_exac_eas','ac_exac_fin','ac_exac_nfe','ac_exac_oth','ac_exac_sas','adj_exp_lof','adj_exp_mis','adj_exp_syn','af_exac_afr','af_exac_all','af_exac_amr','af_exac_eas','af_exac_nfe','af_exac_oth','af_exac_sas','an_exac_afr','an_exac_all','an_exac_amr','an_exac_eas','an_exac_fin','an_exac_nfe','an_exac_oth','an_exac_sas','ccr_pct_v1','cpg_island','epilogos_bivflnk','epilogos_enh','epilogos_enhbiv','epilogos_enhg','epilogos_het','epilogos_quies','epilogos_reprpc','epilogos_reprpcwk','epilogos_tss','epilogos_tssaflnk','epilogos_tssbiv','epilogos_tx','epilogos_txflnk','epilogos_txwk','epilogos_znf','exac_num_het','exac_num_hom_alt','fathmm_mkl_coding_group','fathmm_mkl_coding_pred','fathmm_mkl_coding_rankscore','fitcons','geno2mp','gerp_elements','gno_ac_afr','gno_ac_all','gno_ac_amr','gno_ac_asj','gno_ac_eas','gno_ac_fin','gno_ac_nfe','gno_ac_oth','gno_ac_popmax','gno_af_afr','gno_af_all','gno_af_amr','gno_af_asj','gno_af_eas','gno_af_fin','gno_af_nfe','gno_af_oth','gno_af_popmax','gno_an_afr','gno_an_all','gno_an_amr','gno_an_asj','gno_an_eas','gno_an_fin','gno_an_nfe','gno_an_oth','gno_an_popmax','gno_id','gno_popmax','hapmap1','hapmap2','in_1kg','in_esp','in_exac','lof_z','max_aaf_all','mis_z','n_lof','n_mis','n_syn','pli','pnull','precessive','phylop_100way','segway_mean_score','segway_sum_score','stam_mean','syn_z','grantham','maxentscan','cadd_phred', 'sigmaaf_lof_0001', 'sigmaaf_lof_01', 'sigmaaf_missense_0001', 'sigmaaf_missense_01')
-
-
-numeric_predictors <-c('ccr_pct_v1','cadd_raw','vest3_rankscore','cadd_phred','mis_z','pli','lof_z','phylop_100way','revel','hapmap2','hapmap1','n_mis','epilogos_quies','n_lof','precessive','pnull','adj_exp_lof','adj_exp_syn','dann','adj_exp_mis','syn_z','n_syn','epilogos_txwk','fitcons','m_cap_score','m_cap_rankscore','eigen_phred','eigen_raw','epilogos_tx','is_lof','eigen_pc_raw_rankscore','epilogos_reprpcwk','fathmm_mkl_coding_rankscore','metalr_score','fathmm_mkl_coding_score','metalr_rankscore','impact_severity','metasvm_rankscore','metasvm_score','epilogos_enh','genocanyon_score','fathmm_converted_rankscore','mpc','epilogos_enhg','af_exac_all','epilogos_reprpc','max_aaf_all','mutationassessor_score','gerp','polyphen_score','gerp_elements','mutationassessor_score_rankscore','stam_mean','an_exac_all','af_exac_nfe','provean_converted_rankscore','an_exac_nfe','lrt_score','lrt_omega','grantham','lrt_converted_rankscore','genocanyon_score_rankscore','an_exac_afr','an_exac_amr','an_exac_sas','epilogos_het','ac_exac_all','linsight','gno_an_popmax','exac_num_het','an_exac_eas','gno_an_all','ac_exac_nfe','mutationtaster_converted_rankscore','an_exac_oth','an_exac_fin','gno_an_nfe','gno_af_all','gno_an_afr','epilogos_tssaflnk','gno_af_popmax','epilogos_znf','segway_sum_score','aaf_esp_ea','epilogos_txflnk','provean_score','segway_mean_score','epilogos_tss','aaf_esp_all','af_exac_amr','gno_af_nfe','epilogos_enhbiv','af_exac_sas','sift_score','fathmm_score','ac_exac_amr','aaf_esp_aa','gno_ac_all','gno_af_afr','ac_exac_sas','af_exac_eas','gno_an_fin','af_exac_afr','gno_an_eas','gno_an_oth','gno_ac_nfe','gno_ac_popmax','ac_exac_eas','ac_exac_afr','epilogos_tssbiv','gno_ac_afr','vest3_score','sigmaaf_lof_0001', 'sigmaaf_lof_01', 'sigmaaf_missense_0001', 'sigmaaf_missense_01')
+numeric_predictors<-c('is_exonic','is_coding','is_lof','is_splicing','impact_severity','polyphen_score','sift_score','dann','eigen_phred','fathmm_converted_rankscore','gerp','genocanyon_score_rankscore','hgmd_overlap','linsight','lrt_omega','lrt_converted_rankscore','m_cap_rankscore','mpc','metalr_rankscore','metasvm_rankscore','mutationassessor_score_rankscore','mutationtaster_converted_rankscore','provean_converted_rankscore','provean_score','revel','vest3_rankscore','aaf_1kg_afr','aaf_1kg_all','aaf_1kg_amr','aaf_1kg_eas','aaf_1kg_eur','aaf_1kg_sas','aaf_esp_aa','aaf_esp_all','aaf_esp_ea','ac_exac_afr','ac_exac_all','ac_exac_amr','ac_exac_eas','ac_exac_fin','ac_exac_nfe','ac_exac_oth','ac_exac_sas','adj_exp_lof','adj_exp_mis','adj_exp_syn','af_exac_afr','af_exac_all','af_exac_amr','af_exac_eas','af_exac_nfe','af_exac_oth','af_exac_sas','an_exac_afr','an_exac_all','an_exac_amr','an_exac_eas','an_exac_fin','an_exac_nfe','an_exac_oth','an_exac_sas','ccr_pct_v1','cpg_island','epilogos_bivflnk','epilogos_enh','epilogos_enhbiv','epilogos_enhg','epilogos_het','epilogos_quies','epilogos_reprpc','epilogos_reprpcwk','epilogos_tss','epilogos_tssaflnk','epilogos_tssbiv','epilogos_tx','epilogos_txflnk','epilogos_txwk','epilogos_znf','exac_num_het','exac_num_hom_alt','fathmm_mkl_coding_rankscore','fitcons','geno2mp','gerp_elements','gno_ac_afr','gno_ac_all','gno_ac_amr','gno_ac_asj','gno_ac_eas','gno_ac_fin','gno_ac_nfe','gno_ac_oth','gno_ac_popmax','gno_af_afr','gno_af_all','gno_af_amr','gno_af_asj','gno_af_eas','gno_af_fin','gno_af_nfe','gno_af_oth','gno_af_popmax','gno_an_afr','gno_an_all','gno_an_amr','gno_an_asj','gno_an_eas','gno_an_fin','gno_an_nfe','gno_an_oth','gno_an_popmax','gno_id','gno_popmax','hapmap1','hapmap2','in_1kg','in_esp','in_exac','lof_z','max_aaf_all','mis_z','n_lof','n_mis','n_syn','pli','pnull','precessive','phylop_100way','segway_mean_score','segway_sum_score','stam_mean','syn_z','grantham','cadd_phred', 'sigmaaf_lof_0001', 'sigmaaf_lof_01', 'sigmaaf_missense_0001', 'sigmaaf_missense_01')
 
 ############ 
 ###  DDL ###
@@ -92,7 +89,7 @@ allX[is.na(allX)] <- -1
 
 # calculate VPaC scording for allX
 #allX$VPaC_m06_v1 <- sqrt(predict(VPaC_6mtry, allX, type='prob')[,1])
-allX$VPaC_m12_v7 <- sqrt(predict(VPaC_12mtry_v10, allX, type='prob')[,1])
+allX$VPaC_m12_v10<- sqrt(predict(VPaC_12mtry_v10, allX, type='prob')[,1])
 #allX$VPaC_m09_v8 <- sqrt(predict(VPaC_9mtry_v8, allX, type='prob')[,1])
 #allX$VPaC_m06_v8 <- sqrt(predict(VPaC_6mtry_v8, allX, type='prob')[,1])
 
@@ -116,8 +113,12 @@ set.seed(89345)
 #nZV <- nearZeroVar(model_data$ML_set__general_TT$train_set %>% dplyr::select(one_of(numeric_predictors)))
 #numeric_predictors <- numeric_predictors[-nZV]
 
-train_sub <- model_data$ML_set__general_TT$train_set %>% dplyr::select(one_of(numeric_predictors),'Status')
-test_sub <- model_data$ML_set__general_TT$test_set %>% dplyr::select(one_of(numeric_predictors),'Status')
+train_sub <- model_data$ML_set__general_TT$train_set %>% dplyr::select(one_of(numeric_predictors),'Status') %>% 
+  mutate_at(vars(one_of(numeric_predictors)), funs(as.numeric(.)))
+train_sub[is.na(train_sub)] <- -1
+test_sub <- model_data$ML_set__general_TT$test_set %>% dplyr::select(one_of(numeric_predictors),'Status') %>% 
+  mutate_at(vars(one_of(numeric_predictors)), funs(as.numeric(.)))
+test_sub[is.na(test_sub)] <- -1
 
 train_sub <- SMOTE(Status ~ ., as.data.frame(train_sub))
 train_sub <- train_sub %>% sample_frac(1)
@@ -138,8 +139,7 @@ test_data <- scale(test_sub, center=mean,scale=std)
 dim(train_data) <- c(nrow(train_data),1,length(numeric_predictors))
 dim(test_data) <- c(nrow(test_data),1,length(numeric_predictors))
 
-train_data[is.na(train_data)] <- -1
-test_data[is.na(test_data)] <- -1
+
 model <- keras_model_sequential() %>% 
   layer_lstm(1.5*length(numeric_predictors), recurrent_dropout=0.2, input_shape=c(1, length(numeric_predictors)), return_sequences = T) %>%
   layer_dropout(0.2) %>%
@@ -230,7 +230,7 @@ xgbTree <- xgboost(label = y,
                        min_child_weight = 1, 
                        subsample = 0.75,
                        data = train_data %>% select_if(is.numeric) %>% as.matrix(), 
-                       nrounds = 250, 
+                       nrounds = 300, 
                        objective = "binary:logistic", 
                        eval_metric = 'aucpr', 
                        nthread = 16)
@@ -245,7 +245,7 @@ test_set$DeepRNN <- scale_predict(test_set, model, DeepRNN$predictors, DeepRNN$m
 # RF based prediction
 test_set$fitcons_float <- test_set$fitcons
 #test_set$VPaC_m06_v1 <- sqrt(predict(VPaC_6mtry, test_set, type='prob')[,1])
-test_set$VPaC_m12_v7 <- sqrt(predict(VPaC_12mtry_v10, test_set, type='prob')[,1])
+test_set$VPaC_m12_v10 <- sqrt(predict(VPaC_12mtry_v10, test_set, type='prob')[,1])
 #test_set$VPaC_m09_v8 <- sqrt(predict(VPaC_9mtry_v8, test_set, type='prob')[,1])
 #test_set$VPaC_m06_v8 <- sqrt(predict(VPaC_6mtry_v8, test_set, type='prob')[,1])
 test_set$xgbTree <- sqrt(predict(xgbTree, test_set %>% dplyr::select(one_of(numeric_predictors)) %>% as.matrix()))
@@ -259,7 +259,7 @@ train_set$DeepRNN <- scale_predict(train_set, model, DeepRNN$predictors, DeepRNN
 # RF based prediction
 train_set$fitcons_float <- train_set$fitcons
 #train_set$VPaC_m06_v1 <- sqrt(predict(VPaC_6mtry, train_set, type='prob')[,1])
-train_set$VPaC_m12_v7 <- sqrt(predict(VPaC_12mtry_v10, train_set, type='prob')[,1])
+train_set$VPaC_m12_v10 <- sqrt(predict(VPaC_12mtry_v10, train_set, type='prob')[,1])
 #train_set$VPaC_m09_v8 <- sqrt(predict(VPaC_9mtry_v8, train_set, type='prob')[,1])
 #train_set$VPaC_m06_v8 <- sqrt(predict(VPaC_6mtry_v8, train_set, type='prob')[,1])
 train_set$xgbTree <- sqrt(predict(xgbTree, train_set %>% dplyr::select(one_of(numeric_predictors)) %>% as.matrix()))
@@ -274,7 +274,7 @@ other_set$DeepRNN <- scale_predict(other_set, model, DeepRNN$predictors, DeepRNN
 # RF based prediction
 other_set$fitcons_float <- other_set$fitcons
 #other_set$VPaC_m06_v1 <- sqrt(predict(VPaC_6mtry, other_set, type='prob')[,1])
-other_set$VPaC_m12_v7 <- sqrt(predict(VPaC_12mtry_v10, other_set, type='prob')[,1])
+other_set$VPaC_m12_v10 <- sqrt(predict(VPaC_12mtry_v10, other_set, type='prob')[,1])
 #other_set$VPaC_m09_v8 <- sqrt(predict(VPaC_9mtry_v8, other_set, type='prob')[,1])
 #other_set$VPaC_m06_v8 <- sqrt(predict(VPaC_6mtry_v8, other_set, type='prob')[,1])
 other_set$xgbTree <- sqrt(predict(xgbTree, other_set %>% dplyr::select(one_of(numeric_predictors)) %>% as.matrix()))
@@ -282,7 +282,26 @@ other_set$xgbTree <- sqrt(predict(xgbTree, other_set %>% dplyr::select(one_of(nu
 other_set$Status <- c(as.character(model_data$ML_set__other_TT$train_set$Status), 
                       as.character(model_data$ML_set__other_TT$test_set$Status))
 
+
+
+#########
+# UK10K Withheld #
+#########
+withheld_set <- model_data$Test_set__UK10K
+withheld_set$DeepRNN <- scale_predict(withheld_set, model, DeepRNN$predictors, DeepRNN$mean, DeepRNN$std)
+# RF based prediction
+withheld_set$fitcons_float <- withheld_set$fitcons
+#withheld_set$VPaC_m06_v1 <- sqrt(predict(VPaC_6mtry, withheld_set, type='prob')[,1])
+withheld_set$VPaC_m12_v10 <- sqrt(predict(VPaC_12mtry_v10, withheld_set, type='prob')[,1])
+#withheld_set$VPaC_m09_v8 <- sqrt(predict(VPaC_9mtry_v8, withheld_set, type='prob')[,1])
+#withheld_set$VPaC_m06_v8 <- sqrt(predict(VPaC_6mtry_v8, withheld_set, type='prob')[,1])
+withheld_set$xgbTree <- sqrt(predict(xgbTree, withheld_set %>% dplyr::select(one_of(numeric_predictors)) %>% as.matrix()))
+
+withheld_set$Status <- as.character(model_data$Test_set__UK10K$Status)
+
 print('test, train, other calculated')
+
+
 #############################
 ### create DeepVPaC score ###
 #############################
@@ -312,7 +331,7 @@ test_set$DeepVPaC <- predict(DeepVPaC, test_set, type='prob')[,1]
 tune_set$DeepVPaC <- predict(DeepVPaC, tune_set, type='prob')[,1]
 train_set$DeepVPaC <- predict(DeepVPaC, train_set, type='prob')[,1]
 other_set$DeepVPaC <- predict(DeepVPaC, other_set, type='prob')[,1]
-
+withheld_set$DeepVPaC <- predict(DeepVPaC, withheld_set, type='prob')[,1]
 # predict DeepVPaC on allX
 # but first, predict xgbTree, then DeepRNN with scale_predict
 allX$xgbTree <- sqrt(predict(xgbTree, allX %>% dplyr::select(one_of(numeric_predictors)) %>% as.matrix()))
@@ -329,7 +348,7 @@ allX$DeepVPaC <- all_sub$DeepVPaC
 print('deepVPac applied to allX')
 # merge test and train set with allX
 allX2 <- bind_rows(allX %>% mutate_all(as.character), 
-                   model_data$Test_set__UK10K %>% mutate_all(as.character),
+                   withheld_set %>% mutate(DataSet = 'UK10K Withheld', Distill= DeepVPaC),
                    tune_set %>% mutate(DataSet = 'Tune Set', Distill = DeepVPaC) %>% mutate_all(as.character),
                    test_set %>% mutate(DataSet = 'Test Set', Distill = DeepVPaC) %>% mutate_all(as.character), 
                    train_set %>% mutate(DataSet = 'Train Set', Distill = DeepVPaC) %>% mutate_all(as.character),
@@ -372,12 +391,11 @@ assess_set <- bind_rows(SuperGrimm %>% mutate(DataSet = 'SuperGrimm'),
                         allX %>% filter(DataSet == 'Unifun'),
                         allX %>% filter(DataSet == 'Homsy'),
                         allX %>% filter(DataSet == 'Samocha'),
-                        allX %>% filter(DataSet == 'Test_set__UK10K') %>% 
-                          mutate(DataSet = 'UK10K Withheld'))
+                        allX %>% filter(DataSet == 'UK10K Withheld'))
                         #allX %>% filter(DataSet == 'UK10K') %>% 
                         #  filter(!pos_id %in% (model_data$ML_set__general_TT$train_set$pos_id)) %>% 
                         #  filter(!pos_id %in% ((model_data$ML_set__general_TT$tune_set$pos_id))))
 print('assess made')
 
-save(allX, file='/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/allX_2018_07_24.Rdata')
-save(assess_set, file='/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/assess_2018_07_24.Rdata')
+save(allX, file='/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/allX_2018_07_24_x.Rdata')
+save(assess_set, file='/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/assess_2018_07_24_x.Rdata')
