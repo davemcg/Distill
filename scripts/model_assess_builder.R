@@ -24,13 +24,15 @@ load('/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/m
 # load('/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/VPaC_6mtry.Rdata')
 # load('/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/VPaC_6mtry_v8.Rdata')
 # load('/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/VPaC_9mtry_v8.Rdata')
-load('/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/VPaC_12mtry_v10.Rdata')
-#VPaC_12mtry_v10 <- VPaC_12mtry_v10
+load('/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/VPaC_12mtry_v11.Rdata')
+#VPaC_12mtry_v11 <- VPaC_12mtry_v11
 # all raw
 load('/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/data/master/raw_data_2018_07_13.Rdata')
 
 
 numeric_predictors<-c('is_exonic','is_coding','is_lof','is_splicing','impact_severity','polyphen_score','sift_score','dann','eigen_phred','fathmm_converted_rankscore','gerp','genocanyon_score_rankscore','hgmd_overlap','linsight','lrt_omega','lrt_converted_rankscore','m_cap_rankscore','mpc','metalr_rankscore','metasvm_rankscore','mutationassessor_score_rankscore','mutationtaster_converted_rankscore','provean_converted_rankscore','provean_score','revel','vest3_rankscore','aaf_1kg_afr','aaf_1kg_all','aaf_1kg_amr','aaf_1kg_eas','aaf_1kg_eur','aaf_1kg_sas','aaf_esp_aa','aaf_esp_all','aaf_esp_ea','ac_exac_afr','ac_exac_all','ac_exac_amr','ac_exac_eas','ac_exac_fin','ac_exac_nfe','ac_exac_oth','ac_exac_sas','adj_exp_lof','adj_exp_mis','adj_exp_syn','af_exac_afr','af_exac_all','af_exac_amr','af_exac_eas','af_exac_nfe','af_exac_oth','af_exac_sas','an_exac_afr','an_exac_all','an_exac_amr','an_exac_eas','an_exac_fin','an_exac_nfe','an_exac_oth','an_exac_sas','ccr_pct_v1','cpg_island','epilogos_bivflnk','epilogos_enh','epilogos_enhbiv','epilogos_enhg','epilogos_het','epilogos_quies','epilogos_reprpc','epilogos_reprpcwk','epilogos_tss','epilogos_tssaflnk','epilogos_tssbiv','epilogos_tx','epilogos_txflnk','epilogos_txwk','epilogos_znf','exac_num_het','exac_num_hom_alt','fathmm_mkl_coding_rankscore','fitcons','geno2mp','gerp_elements','gno_ac_afr','gno_ac_all','gno_ac_amr','gno_ac_asj','gno_ac_eas','gno_ac_fin','gno_ac_nfe','gno_ac_oth','gno_ac_popmax','gno_af_afr','gno_af_all','gno_af_amr','gno_af_asj','gno_af_eas','gno_af_fin','gno_af_nfe','gno_af_oth','gno_af_popmax','gno_an_afr','gno_an_all','gno_an_amr','gno_an_asj','gno_an_eas','gno_an_fin','gno_an_nfe','gno_an_oth','gno_an_popmax','gno_id','gno_popmax','hapmap1','hapmap2','in_1kg','in_esp','in_exac','lof_z','max_aaf_all','mis_z','n_lof','n_mis','n_syn','pli','pnull','precessive','phylop_100way','segway_mean_score','segway_sum_score','stam_mean','syn_z','grantham','cadd_phred', 'sigmaaf_lof_0001', 'sigmaaf_lof_01', 'sigmaaf_missense_0001', 'sigmaaf_missense_01')
+
+nn_predictors <-c('ccr_pct_v1','cadd_raw','vest3_rankscore','cadd_phred','mis_z','pli','lof_z','phylop_100way','revel','hapmap2','hapmap1','n_mis','epilogos_quies','n_lof','precessive','pnull','adj_exp_lof','adj_exp_syn','dann','adj_exp_mis','syn_z','n_syn','epilogos_txwk','fitcons','m_cap_score','m_cap_rankscore','eigen_phred','eigen_raw','epilogos_tx','is_lof','eigen_pc_raw_rankscore','epilogos_reprpcwk','fathmm_mkl_coding_rankscore','metalr_score','fathmm_mkl_coding_score','metalr_rankscore','impact_severity','metasvm_rankscore','metasvm_score','epilogos_enh','genocanyon_score','fathmm_converted_rankscore','mpc','epilogos_enhg','af_exac_all','epilogos_reprpc','max_aaf_all','mutationassessor_score','gerp','polyphen_score','gerp_elements','mutationassessor_score_rankscore','stam_mean','an_exac_all','af_exac_nfe','provean_converted_rankscore','an_exac_nfe','lrt_score','lrt_omega','grantham','lrt_converted_rankscore','genocanyon_score_rankscore','an_exac_afr','an_exac_amr','an_exac_sas','epilogos_het','ac_exac_all','linsight','gno_an_popmax','exac_num_het','an_exac_eas','gno_an_all','ac_exac_nfe','mutationtaster_converted_rankscore','an_exac_oth','an_exac_fin','gno_an_nfe','gno_af_all','gno_an_afr','epilogos_tssaflnk','gno_af_popmax','epilogos_znf','segway_sum_score','aaf_esp_ea','epilogos_txflnk','provean_score','segway_mean_score','epilogos_tss','aaf_esp_all','af_exac_amr','gno_af_nfe','epilogos_enhbiv','af_exac_sas','sift_score','fathmm_score','ac_exac_amr','aaf_esp_aa','gno_ac_all','gno_af_afr','ac_exac_sas','af_exac_eas','gno_an_fin','af_exac_afr','gno_an_eas','gno_an_oth','gno_ac_nfe','gno_ac_popmax','ac_exac_eas','ac_exac_afr','epilogos_tssbiv','gno_ac_afr','vest3_score','sigmaaf_lof_0001', 'sigmaaf_lof_01', 'sigmaaf_missense_0001', 'sigmaaf_missense_01')
 
 ############ 
 ###  DDL ###
@@ -89,7 +91,7 @@ allX[is.na(allX)] <- -1
 
 # calculate VPaC scording for allX
 #allX$VPaC_m06_v1 <- sqrt(predict(VPaC_6mtry, allX, type='prob')[,1])
-allX$VPaC_m12_v10<- sqrt(predict(VPaC_12mtry_v10, allX, type='prob')[,1])
+allX$VPaC_m12_v11<- sqrt(predict(VPaC_12mtry_v11, allX, type='prob')[,1])
 #allX$VPaC_m09_v8 <- sqrt(predict(VPaC_9mtry_v8, allX, type='prob')[,1])
 #allX$VPaC_m06_v8 <- sqrt(predict(VPaC_6mtry_v8, allX, type='prob')[,1])
 
@@ -113,15 +115,16 @@ set.seed(89345)
 #nZV <- nearZeroVar(model_data$ML_set__general_TT$train_set %>% dplyr::select(one_of(numeric_predictors)))
 #numeric_predictors <- numeric_predictors[-nZV]
 
-train_sub <- model_data$ML_set__general_TT$train_set %>% dplyr::select(one_of(numeric_predictors),'Status') %>% 
-  mutate_at(vars(one_of(numeric_predictors)), funs(as.numeric(.)))
+train_sub <- model_data$ML_set__general_TT$train_set %>% dplyr::select(one_of(nn_predictors),'Status') %>% 
+  mutate_at(vars(one_of(nn_predictors)), funs(as.numeric(.)))
 train_sub[is.na(train_sub)] <- -1
-test_sub <- model_data$ML_set__general_TT$test_set %>% dplyr::select(one_of(numeric_predictors),'Status') %>% 
-  mutate_at(vars(one_of(numeric_predictors)), funs(as.numeric(.)))
+test_sub <- model_data$ML_set__general_TT$test_set %>% dplyr::select(one_of(nn_predictors),'Status') %>% 
+  mutate_at(vars(one_of(nn_predictors)), funs(as.numeric(.)))
 test_sub[is.na(test_sub)] <- -1
 
+train_sub <- train_sub %>% sample_frac(1) # resample
 train_sub <- SMOTE(Status ~ ., as.data.frame(train_sub))
-train_sub <- train_sub %>% sample_frac(1)
+
 status_train <- train_sub$Status
 status_train01 <- case_when(status_train == 'Pathogenic' ~ 1,
                             TRUE ~ 0)
@@ -130,32 +133,32 @@ status_test01 <- case_when(status_test == 'Pathogenic' ~ 1,
                            TRUE ~ 0)
 train_sub <- train_sub %>% dplyr::select(-Status)
 test_sub <- test_sub %>% dplyr::select(-Status)
-mean <- apply(train_sub %>% dplyr::select_(.dots = numeric_predictors), 2, mean)
-std <- apply(train_sub %>% dplyr::select_(.dots = numeric_predictors), 2, sd)
+mean <- apply(train_sub %>% dplyr::select_(.dots = nn_predictors), 2, mean)
+std <- apply(train_sub %>% dplyr::select_(.dots = nn_predictors), 2, sd)
 train_data <- scale(train_sub, center=mean, scale=std)
 test_data <- scale(test_sub, center=mean,scale=std)
 
 # reshape
-dim(train_data) <- c(nrow(train_data),1,length(numeric_predictors))
-dim(test_data) <- c(nrow(test_data),1,length(numeric_predictors))
+dim(train_data) <- c(nrow(train_data),1,length(nn_predictors))
+dim(test_data) <- c(nrow(test_data),1,length(nn_predictors))
 
 
 model <- keras_model_sequential() %>% 
-  layer_lstm(1.5*length(numeric_predictors), recurrent_dropout=0.2, input_shape=c(1, length(numeric_predictors)), return_sequences = T) %>%
+  layer_lstm(1.5*length(nn_predictors), recurrent_dropout=0.2, input_shape=c(1, length(nn_predictors)), return_sequences = T) %>%
   layer_dropout(0.2) %>%
-  layer_lstm(1.5*length(numeric_predictors), recurrent_dropout=0.2, input_shape=c(1, length(numeric_predictors)), return_sequences = T) %>%
+  layer_lstm(1.5*length(nn_predictors), recurrent_dropout=0.2, input_shape=c(1, length(nn_predictors)), return_sequences = T) %>%
   layer_dropout(0.2) %>%
-  layer_lstm(1.5*length(numeric_predictors), recurrent_dropout=0.2, input_shape=c(1, length(numeric_predictors)), return_sequences = T) %>%
+  layer_lstm(1.5*length(nn_predictors), recurrent_dropout=0.2, input_shape=c(1, length(nn_predictors)), return_sequences = T) %>%
   layer_dropout(0.2) %>%
-  layer_lstm(1.5*length(numeric_predictors), recurrent_dropout=0.2, input_shape=c(1, length(numeric_predictors)), return_sequences = T) %>%
+  layer_lstm(1.5*length(nn_predictors), recurrent_dropout=0.2, input_shape=c(1, length(nn_predictors)), return_sequences = T) %>%
   layer_dropout(0.2) %>%
-  layer_lstm(1.5*length(numeric_predictors), recurrent_dropout=0.2, input_shape=c(1, length(numeric_predictors)), return_sequences = T) %>%
+  layer_lstm(1.5*length(nn_predictors), recurrent_dropout=0.2, input_shape=c(1, length(nn_predictors)), return_sequences = T) %>%
   layer_dropout(0.2) %>%
-  layer_lstm(1.5*length(numeric_predictors), recurrent_dropout=0.2, input_shape=c(1, length(numeric_predictors)), return_sequences = T) %>%
+  layer_lstm(1.5*length(nn_predictors), recurrent_dropout=0.2, input_shape=c(1, length(nn_predictors)), return_sequences = T) %>%
   layer_dropout(0.2) %>%
-  layer_lstm(1.5*length(numeric_predictors), recurrent_dropout=0.2, input_shape=c(1, length(numeric_predictors)), return_sequences = T) %>%
+  layer_lstm(1.5*length(nn_predictors), recurrent_dropout=0.2, input_shape=c(1, length(nn_predictors)), return_sequences = T) %>%
   layer_dropout(0.2) %>%
-  layer_lstm(1.5*length(numeric_predictors), recurrent_dropout=0.2, input_shape=c(1, length(numeric_predictors))) %>%
+  layer_lstm(1.5*length(nn_predictors), recurrent_dropout=0.2, input_shape=c(1, length(nn_predictors))) %>%
   layer_dropout(0.1) %>%
   layer_dense(units=1, activation='sigmoid')
 
@@ -169,38 +172,11 @@ history <- model %>% fit(train_data, status_train01, epochs = 10, batch_size=50)
 
 print('LSTM trained')
 
-# confusion matrix maker for built models
-cm_maker <- function(predictor = 'cadd_phred', data, cutoff=0.5, mode = 'prec_recall') {
-  if (class(predictor)!='character'){
-    print("Running in predictor is a model mode")
-    new_predictions <- predict(predictor, data, type='prob') %>% data.frame() %>% 
-      mutate(Answers = data$Status, Prediction = case_when(Pathogenic > cutoff ~ 'Pathogenic', TRUE ~ 'NotPathogenic'))
-    new_predictions <- new_predictions %>% mutate(preds = case_when(Prediction == 'Pathogenic' ~ 1,
-                                                                    TRUE ~ 0),
-                                                  actuals = case_when(Answers == 'Pathogenic' ~ 1,
-                                                                      TRUE ~ 0))
-    out <- caret::confusionMatrix(data = as.factor(new_predictions$Prediction), reference = as.factor(new_predictions$Answers), mode= mode)
-    out$MCC <- mcc(new_predictions$preds, new_predictions$actuals, cutoff=cutoff)
-  } else {
-    print("Running in predictor is a precomputed column in data mode")
-    new_predictions <- data 
-    new_predictions$Prediction <- 'NotPathogenic'
-    new_predictions[(new_predictions[,predictor] > cutoff), 'Prediction'] <- "Pathogenic"
-    new_predictions <- new_predictions %>% mutate(preds = case_when(Prediction == 'Pathogenic' ~ 1,
-                                                                    TRUE ~ 0),
-                                                  actuals = case_when(Status == 'Pathogenic' ~ 1,
-                                                                      TRUE ~ 0))
-    out <- caret::confusionMatrix(data = as.factor(new_predictions$Prediction), reference = as.factor(new_predictions$Status), mode= mode)
-    out$MCC <- mcc(new_predictions$preds, new_predictions$actuals, cutoff=cutoff)
-  }
-  out
-}
-
 DeepRNN <- list()
 DeepRNN$model <- model
 DeepRNN$mean <- mean
 DeepRNN$std <- std
-DeepRNN$predictors <- numeric_predictors
+DeepRNN$predictors <- nn_predictors
 # save_model_hdf5(model, "/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/DeepRNN_2018_06_22.h5")
 # save(DeepRNN, file='/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/DeepRNN_2018_06_22.Rdata')
 
@@ -220,32 +196,38 @@ scale_predict <- function(df, model, predictors, mean, std){
 ######################################
 # xgboost
 ######################################
-train_data <- model_data$ML_set__general_TT$train_set %>% dplyr::select(one_of(numeric_predictors),'Status')
+train_data <- model_data$ML_set__general_TT$train_set %>% 
+  dplyr::select(one_of(numeric_predictors),'Status') %>% 
+  mutate_at(vars(one_of(numeric_predictors)), funs(as.numeric(.)))
+train_data[is.na(train_data)] <- -1
 y <- recode(train_data$Status,'Pathogenic'=1, 'NotPathogenic'=0)
 xgbTree <- xgboost(label = y, 
-                       eta = 0.4, 
-                       max_depth = 3,
-                       gamma = 0, 
-                       colsample_bytree = 0.8,
-                       min_child_weight = 1, 
-                       subsample = 0.75,
-                       data = train_data %>% select_if(is.numeric) %>% as.matrix(), 
-                       nrounds = 300, 
-                       objective = "binary:logistic", 
-                       eval_metric = 'aucpr', 
-                       nthread = 16)
+                   eta = 0.4, 
+                   max_depth = 3,
+                   gamma = 0, 
+                   colsample_bytree = 0.8,
+                   min_child_weight = 1, 
+                   subsample = 0.75,
+                   data = train_data %>% select_if(is.numeric) %>% as.matrix(), 
+                   nrounds = 300, 
+                   objective = "binary:logistic", 
+                   eval_metric = 'aucpr', 
+                   nthread = 16)
 
 print('xgboost trained')
 
 ########
 # TEST #
 ########
-test_set <- model_data$ML_set__general_TT$test_set
+test_set <- model_data$ML_set__general_TT$test_set %>% 
+  mutate_at(vars(one_of(c(nn_predictors,numeric_predictors))), funs(as.numeric(.)))
+test_set[is.na(test_set)] <- -1
+
 test_set$DeepRNN <- scale_predict(test_set, model, DeepRNN$predictors, DeepRNN$mean, DeepRNN$std)
 # RF based prediction
 test_set$fitcons_float <- test_set$fitcons
 #test_set$VPaC_m06_v1 <- sqrt(predict(VPaC_6mtry, test_set, type='prob')[,1])
-test_set$VPaC_m12_v10 <- sqrt(predict(VPaC_12mtry_v10, test_set, type='prob')[,1])
+test_set$VPaC_m12_v11 <- sqrt(predict(VPaC_12mtry_v11, test_set, type='prob')[,1])
 #test_set$VPaC_m09_v8 <- sqrt(predict(VPaC_9mtry_v8, test_set, type='prob')[,1])
 #test_set$VPaC_m06_v8 <- sqrt(predict(VPaC_6mtry_v8, test_set, type='prob')[,1])
 test_set$xgbTree <- sqrt(predict(xgbTree, test_set %>% dplyr::select(one_of(numeric_predictors)) %>% as.matrix()))
@@ -254,12 +236,15 @@ test_set$xgbTree <- sqrt(predict(xgbTree, test_set %>% dplyr::select(one_of(nume
 #########
 # TRAIN #
 #########
-train_set <- model_data$ML_set__general_TT$train_set
+train_set <- model_data$ML_set__general_TT$train_set %>% 
+  mutate_at(vars(one_of(c(nn_predictors,numeric_predictors))), funs(as.numeric(.)))
+train_set[is.na(train_set)] <- -1
+
 train_set$DeepRNN <- scale_predict(train_set, model, DeepRNN$predictors, DeepRNN$mean, DeepRNN$std)
 # RF based prediction
 train_set$fitcons_float <- train_set$fitcons
 #train_set$VPaC_m06_v1 <- sqrt(predict(VPaC_6mtry, train_set, type='prob')[,1])
-train_set$VPaC_m12_v10 <- sqrt(predict(VPaC_12mtry_v10, train_set, type='prob')[,1])
+train_set$VPaC_m12_v11 <- sqrt(predict(VPaC_12mtry_v11, train_set, type='prob')[,1])
 #train_set$VPaC_m09_v8 <- sqrt(predict(VPaC_9mtry_v8, train_set, type='prob')[,1])
 #train_set$VPaC_m06_v8 <- sqrt(predict(VPaC_6mtry_v8, train_set, type='prob')[,1])
 train_set$xgbTree <- sqrt(predict(xgbTree, train_set %>% dplyr::select(one_of(numeric_predictors)) %>% as.matrix()))
@@ -268,13 +253,18 @@ train_set$xgbTree <- sqrt(predict(xgbTree, train_set %>% dplyr::select(one_of(nu
 #########
 # OTHER #
 #########
-other_set <- bind_rows(model_data$ML_set__other_TT$train_set,
-                       model_data$ML_set__other_TT$test_set)
+other_set <- bind_rows(model_data$ML_set__other_TT$train_set %>% 
+                         mutate_at(vars(one_of(c(nn_predictors,numeric_predictors))), funs(as.numeric(.))),
+                       model_data$ML_set__other_TT$test_set %>% 
+                         mutate_at(vars(one_of(c(nn_predictors,numeric_predictors))), funs(as.numeric(.))))
+
+other_set[is.na(other_set)] <- -1
+
 other_set$DeepRNN <- scale_predict(other_set, model, DeepRNN$predictors, DeepRNN$mean, DeepRNN$std)
 # RF based prediction
 other_set$fitcons_float <- other_set$fitcons
 #other_set$VPaC_m06_v1 <- sqrt(predict(VPaC_6mtry, other_set, type='prob')[,1])
-other_set$VPaC_m12_v10 <- sqrt(predict(VPaC_12mtry_v10, other_set, type='prob')[,1])
+other_set$VPaC_m12_v11 <- sqrt(predict(VPaC_12mtry_v11, other_set, type='prob')[,1])
 #other_set$VPaC_m09_v8 <- sqrt(predict(VPaC_9mtry_v8, other_set, type='prob')[,1])
 #other_set$VPaC_m06_v8 <- sqrt(predict(VPaC_6mtry_v8, other_set, type='prob')[,1])
 other_set$xgbTree <- sqrt(predict(xgbTree, other_set %>% dplyr::select(one_of(numeric_predictors)) %>% as.matrix()))
@@ -287,19 +277,22 @@ other_set$Status <- c(as.character(model_data$ML_set__other_TT$train_set$Status)
 #########
 # UK10K Withheld #
 #########
-withheld_set <- model_data$Test_set__UK10K
+withheld_set <- model_data$Test_set__UK10K %>% 
+  mutate_at(vars(one_of(c(nn_predictors,numeric_predictors))), funs(as.numeric(.)))
+withheld_set[is.na(withheld_set)] <- -1
+
 withheld_set$DeepRNN <- scale_predict(withheld_set, model, DeepRNN$predictors, DeepRNN$mean, DeepRNN$std)
 # RF based prediction
 withheld_set$fitcons_float <- withheld_set$fitcons
 #withheld_set$VPaC_m06_v1 <- sqrt(predict(VPaC_6mtry, withheld_set, type='prob')[,1])
-withheld_set$VPaC_m12_v10 <- sqrt(predict(VPaC_12mtry_v10, withheld_set, type='prob')[,1])
+withheld_set$VPaC_m12_v11 <- sqrt(predict(VPaC_12mtry_v11, withheld_set, type='prob')[,1])
 #withheld_set$VPaC_m09_v8 <- sqrt(predict(VPaC_9mtry_v8, withheld_set, type='prob')[,1])
 #withheld_set$VPaC_m06_v8 <- sqrt(predict(VPaC_6mtry_v8, withheld_set, type='prob')[,1])
 withheld_set$xgbTree <- sqrt(predict(xgbTree, withheld_set %>% dplyr::select(one_of(numeric_predictors)) %>% as.matrix()))
 
 withheld_set$Status <- as.character(model_data$Test_set__UK10K$Status)
 
-print('test, train, other calculated')
+print('test, train, other, uk10k withheld calculated')
 
 
 #############################
@@ -319,28 +312,50 @@ fitControl_min <- trainControl(
   summaryFunction = prSummary,
   returnData = T)
 
-# use glm to blend VPaC, DeepRNN, and xgbTree on the tune set
-DeepVPaC <- caret::train(Status ~ ., data=tune_set %>% select(one_of(c('Status','DeepRNN','xgbTree'))) %>% mutate(Status=factor(Status, levels=c('Pathogenic','NotPathogenic'))), 
-                         method = "glm", metric='Precision', trControl = fitControl_min)
+library(parallel)
+library(doParallel)
+cluster <- makeCluster(16) 
+registerDoParallel(cluster)
 
-print('deepVPaC made')
+# use grid search to linearly blend VPaC, DeepRNN, and xgbTree on the tune set
+# build naive
+params <- expand.grid(seq(0,0.3, by = 0.01), seq(0.1,0.6, by = 0.01)) %>% data.frame()
+params$Var3 = 1-(params$Var1 + params$Var2)                
+#params
+
+mcc <- c()
+for (i in seq(1:nrow(params))){
+  tune_set$grid <- (tune_set$DeepRNN * params[i,1]) + 
+    (tune_set$VPaC_m12_v11 * params[i,2]) +
+    (tune_set$xgbTree * params[i,3])
+  cm_out <- cm_maker('grid', tune_set)
+  mcc <- c(mcc, cm_out$MCC)
+  #print(paste(params[i,], cm_out$MCC))
+}
+params$MCC <- mcc
+params %>% arrange(-mcc) %>% head(20)
+
+assess_set$naive <- (assess_set$DeepRNN * 0.14) + (assess_set$VPaC_m12_v11 * 0.55) + (assess_set$xgbTree * 0.31)
+
 ########################
 # predict DeepVPaC on train/test/other
 ########################
-test_set$DeepVPaC <- predict(DeepVPaC, test_set, type='prob')[,1]
-tune_set$DeepVPaC <- predict(DeepVPaC, tune_set, type='prob')[,1]
-train_set$DeepVPaC <- predict(DeepVPaC, train_set, type='prob')[,1]
-other_set$DeepVPaC <- predict(DeepVPaC, other_set, type='prob')[,1]
-withheld_set$DeepVPaC <- predict(DeepVPaC, withheld_set, type='prob')[,1]
+test_set$DeepVPaC <- (test_set$DeepRNN * 0.14) + (test_set$VPaC_m12_v11 * 0.55) + (test_set$xgbTree * 0.31)
+tune_set$DeepVPaC <- (tune_set$DeepRNN * 0.14) + (tune_set$VPaC_m12_v11 * 0.55) + (tune_set$xgbTree * 0.31)
+train_set$DeepVPaC <- (train_set$DeepRNN * 0.14) + (train_set$VPaC_m12_v11 * 0.55) + (train_set$xgbTree * 0.31)
+other_set$DeepVPaC <- (other_set$DeepRNN * 0.14) + (other_set$VPaC_m12_v11 * 0.55) + (other_set$xgbTree * 0.31)
+withheld_set$DeepVPaC <- (withheld_set$DeepRNN * 0.14) + (withheld_set$VPaC_m12_v11 * 0.55) + (withheld_set$xgbTree * 0.31)
 # predict DeepVPaC on allX
 # but first, predict xgbTree, then DeepRNN with scale_predict
+allX <- allX %>% mutate_at(vars(one_of(c(nn_predictors,numeric_predictors))), funs(as.numeric(.)))
+allX[is.na(allX)] <- -1
 allX$xgbTree <- sqrt(predict(xgbTree, allX %>% dplyr::select(one_of(numeric_predictors)) %>% as.matrix()))
 
-all_sub <- allX %>% select(one_of(numeric_predictors))
+all_sub <- allX
 all_sub$DeepRNN <- scale_predict(all_sub, model, DeepRNN$predictors, DeepRNN$mean, DeepRNN$std)
-all_sub$VPaC_m12_v7 <- allX$VPaC_m12_v7
+all_sub$VPaC_m12_v11 <- allX$VPaC_m12_v11
 all_sub$xgbTree <- allX$xgbTree
-all_sub$DeepVPaC <- predict(DeepVPaC, all_sub, type='prob')[,1]
+all_sub$DeepVPaC <- (all_sub$DeepRNN * 0.14) + (all_sub$VPaC_m12_v11 * 0.55) + (all_sub$xgbTree * 0.31)
 
 allX$DeepRNN <- all_sub$DeepRNN
 allX$DeepVPaC <- all_sub$DeepVPaC
@@ -348,12 +363,12 @@ allX$DeepVPaC <- all_sub$DeepVPaC
 print('deepVPac applied to allX')
 # merge test and train set with allX
 allX2 <- bind_rows(allX %>% mutate_all(as.character), 
-                   withheld_set %>% mutate(DataSet = 'UK10K Withheld', Distill= DeepVPaC),
+                   withheld_set %>% mutate(DataSet = 'UK10K Withheld', Distill= DeepVPaC) %>% mutate_all(as.character),
                    tune_set %>% mutate(DataSet = 'Tune Set', Distill = DeepVPaC) %>% mutate_all(as.character),
                    test_set %>% mutate(DataSet = 'Test Set', Distill = DeepVPaC) %>% mutate_all(as.character), 
                    train_set %>% mutate(DataSet = 'Train Set', Distill = DeepVPaC) %>% mutate_all(as.character),
                    other_set %>% mutate(DataSet = 'Other Set', Distill = DeepVPaC) %>% mutate_all(as.character)) %>% 
-  mutate_at(vars(one_of(numeric_predictors)), funs(as.numeric(.)))
+  mutate_at(vars(one_of(c(numeric_predictors, nn_predictors))), funs(as.numeric(.)))
 allX2[is.na(allX2)] <- -1
 allX <- allX2
 
@@ -391,11 +406,11 @@ assess_set <- bind_rows(SuperGrimm %>% mutate(DataSet = 'SuperGrimm'),
                         allX %>% filter(DataSet == 'Unifun'),
                         allX %>% filter(DataSet == 'Homsy'),
                         allX %>% filter(DataSet == 'Samocha'),
-                        allX %>% filter(DataSet == 'UK10K Withheld'))
-                        #allX %>% filter(DataSet == 'UK10K') %>% 
-                        #  filter(!pos_id %in% (model_data$ML_set__general_TT$train_set$pos_id)) %>% 
-                        #  filter(!pos_id %in% ((model_data$ML_set__general_TT$tune_set$pos_id))))
+                        allX %>% filter(DataSet == 'UK10K Withheld') %>% filter(!pos_id %in% c(train_set$pos_id, tun_set$pos_id)))
+#allX %>% filter(DataSet == 'UK10K') %>% 
+#  filter(!pos_id %in% (model_data$ML_set__general_TT$train_set$pos_id)) %>% 
+#  filter(!pos_id %in% ((model_data$ML_set__general_TT$tune_set$pos_id))))
 print('assess made')
 
-save(allX, file='/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/allX_2018_07_24_x.Rdata')
-save(assess_set, file='/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/assess_2018_07_24_x.Rdata')
+save(allX, file='/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/allX_2018_07_26.Rdata')
+save(assess_set, file='/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/assess_2018_07_26.Rdata')
