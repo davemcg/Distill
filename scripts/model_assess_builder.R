@@ -361,8 +361,6 @@ for (i in seq(1:nrow(params))){
 params$MCC <- mcc
 params %>% arrange(-mcc) %>% head(20)
 
-assess_set$naive <- (assess_set$DeepRNN * 0.14) + (assess_set$VPaC_m12_v11 * 0.55) + (assess_set$xgbTree * 0.31)
-
 ########################
 # predict DeepVPaC on train/test/other
 ########################
