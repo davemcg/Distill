@@ -330,7 +330,7 @@ superG <- pr_data %>%
   ggsci::scale_color_futurama() + 
   ggtitle('Super Grimm') 
 
-title <- ggdraw() + draw_label("Precision Recall Curves", fontface='bold')
+title <- ggdraw() + draw_label("Precision Recall Curves")
 cowplot::plot_grid(title, uk10k, superG, ddl,  ncol=1)
 
 
