@@ -359,32 +359,25 @@ for (i in seq(1:nrow(params))){
   #print(paste(params[i,], cm_out$MCC))
 }
 params$MCC <- mcc
-params %>% arrange(-mcc) %>% head(20)
+print(params %>% arrange(-mcc) %>% head(20))
+#######
+# DeepRNN * (params %>% arrange(-mcc) %>% head(1))[1] + VPaC * (params %>% arrange(-mcc) %>% head(1))[2] + xgbTree * (params %>% arrange(-mcc) %>% head(1))[3]
+#######
 
 ########################
-# predict DeepVPaC on train/test/other
+# Calculate DeepVPaC on train/test/other
 ########################
-test_set$DeepVPaC <- (test_set$DeepRNN * 0.14) + (test_set$VPaC_m12_v11 * 0.55) + (test_set$xgbTree * 0.31)
-tune_set$DeepVPaC <- (tune_set$DeepRNN * 0.14) + (tune_set$VPaC_m12_v11 * 0.55) + (tune_set$xgbTree * 0.31)
-train_set$DeepVPaC <- (train_set$DeepRNN * 0.14) + (train_set$VPaC_m12_v11 * 0.55) + (train_set$xgbTree * 0.31)
-other_set$DeepVPaC <- (other_set$DeepRNN * 0.14) + (other_set$VPaC_m12_v11 * 0.55) + (other_set$xgbTree * 0.31)
-withheld_set$DeepVPaC <- (withheld_set$DeepRNN * 0.14) + (withheld_set$VPaC_m12_v11 * 0.55) + (withheld_set$xgbTree * 0.31)
-# predict DeepVPaC on allX
-# but first, predict xgbTree, then DeepRNN with scale_predict
+
+
+# but predict xgbTree, then DeepRNN with scale_predict on AllX
 allX <- allX %>% mutate_at(vars(one_of(c(nn_predictors,numeric_predictors))), funs(as.numeric(.)))
 allX[is.na(allX)] <- -1
 allX$xgbTree <- sqrt(predict(xgbTree, allX %>% dplyr::select(one_of(numeric_predictors)) %>% as.matrix()))
 
 all_sub <- allX
 all_sub$DeepRNN <- scale_predict(all_sub, model, DeepRNN$predictors, DeepRNN$mean, DeepRNN$std)
-all_sub$VPaC_m12_v11 <- allX$VPaC_m12_v11
-all_sub$xgbTree <- allX$xgbTree
-all_sub$DeepVPaC <- (all_sub$DeepRNN * 0.14) + (all_sub$VPaC_m12_v11 * 0.55) + (all_sub$xgbTree * 0.31)
 
 allX$DeepRNN <- all_sub$DeepRNN
-allX$DeepVPaC <- all_sub$DeepVPaC
-
-print('deepVPac applied to allX')
 # merge test and train set with allX
 allX2 <- bind_rows(allX %>% mutate_all(as.character), 
                    withheld_set %>% mutate(DataSet = 'UK10K Withheld', Distill= DeepVPaC) %>% mutate_all(as.character),
@@ -430,11 +423,22 @@ assess_set <- bind_rows(SuperGrimm %>% mutate(DataSet = 'SuperGrimm'),
                         allX %>% filter(DataSet == 'Unifun'),
                         allX %>% filter(DataSet == 'Homsy'),
                         allX %>% filter(DataSet == 'Samocha'),
-                        allX %>% filter(DataSet == 'UK10K Withheld') %>% filter(!pos_id %in% c(train_set$pos_id, tun_set$pos_id)))
+                        allX %>% filter(DataSet == 'UK10K Withheld') %>% filter(!pos_id %in% c(train_set$pos_id, tune_set$pos_id)))
 #allX %>% filter(DataSet == 'UK10K') %>% 
 #  filter(!pos_id %in% (model_data$ML_set__general_TT$train_set$pos_id)) %>% 
 #  filter(!pos_id %in% ((model_data$ML_set__general_TT$tune_set$pos_id))))
 print('assess made')
 
-save(allX, file='/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/allX_2018_07_26.Rdata')
-save(assess_set, file='/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/assess_2018_07_26.Rdata')
+
+### calculate DIstill on AllX and Assess Set
+allX$Distill <- (allX$DeepRNN * (params %>% arrange(-mcc) %>% head(1))[1] %>% as.numeric()) + 
+  (allX$VPaC_m12_v11 * (params %>% arrange(-mcc) %>% head(1))[2] %>% as.numeric()) + 
+  (allX$xgbTree * (params %>% arrange(-mcc) %>% head(1))[3] %>% as.numeric())
+
+assess_set$Distill <- (assess_set$DeepRNN * (params %>% arrange(-mcc) %>% head(1))[1] %>% as.numeric()) + 
+  (assess_set$VPaC_m12_v11 * (params %>% arrange(-mcc) %>% head(1))[2] %>% as.numeric()) + 
+  (assess_set$xgbTree * (params %>% arrange(-mcc) %>% head(1))[3] %>% as.numeric())
+
+###
+save(allX, file='/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/allX_2018_07_27.Rdata')
+save(assess_set, file='/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/assess_2018_07_27.Rdata')
