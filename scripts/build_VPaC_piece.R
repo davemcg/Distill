@@ -39,7 +39,7 @@ set.seed(rand_num)
 rand_num <- as.integer(paste(sample(0:9, 6, replace=F), collapse = ''))
 set.seed(rand_num)
 rfFit_VPaC <- randomForest(Status ~ ., data=rf_data, 
-                           ntree=10,
+                           ntree=5,
                            mtry=18,
                            importance = TRUE,
                            norm.votes = FALSE)
@@ -51,8 +51,8 @@ rand_num <- as.integer(paste(sample(0:9, 6, replace=F), collapse = ''))
 set.seed(rand_num)
 
 rfFit_VPaC <- randomForest(Status ~ ., data=rf_data, 
-                           ntree=15,
-                           mtry=12,
+                           ntree=5,
+                           mtry=15,
                            importance = TRUE,
                            norm.votes = FALSE)
 
@@ -60,8 +60,8 @@ rand_name3 = paste0('VPaC__15mtry_v12_', rand_num)
 assign(rand_name3, rfFit_VPaC)
 
 rfFit_VPaC <- randomForest(Status ~ ., data=rf_data, 
-                           ntree=12,
-                           mtry=9,
+                           ntree=5,
+                           mtry=12,
                            importance = TRUE,
                            norm.votes = FALSE)
 
