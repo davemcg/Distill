@@ -11,12 +11,12 @@ load('/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/m
 
 
 ############################
-# Only makes 10 trees
-# Run 150 times and combine the 150 10-tree forests with `combine`
+# Only makes 5 trees
+# Run 300 times and combine the 300 5-tree forests with `combine`
 #############################
 
 ############################
-# give 16GB for biowulf2 run
+# give 32GB for biowulf2 run
 ############################
 
 ######################################
@@ -29,7 +29,8 @@ numeric_predictors <- c('ccr_pct_v1','cadd_raw','vest3_rankscore','cadd_phred','
 ##############################################
 # BUILD MODEL!!!!!!!!!!!
 #############################################
-rf_data <- model_data$ML_set__general_TT$train_set %>% select_(.dots=c('Status',numeric_predictors))
+rf_data <- model_data$ML_set__general_TT$train_set %>% select_(.dots=c('Status',numeric_predictors)) %>% 
+  mutate_at(vars(one_of(numeric_predictors)), funs(as.numeric(.))) 
 rf_data[is.na(rf_data)] <- 1
 rf_data$Status <- factor(rf_data$Status, levels=c('Pathogenic','NotPathogenic'))
 
