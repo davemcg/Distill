@@ -55,7 +55,7 @@ uk10k_gemini_rare_variants <- all %>%
   nest(Sample, .key='Samples')
 
 
-output_file <- '/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/uk10k_gemini_rare_variants_2018_07_23.Rdata'
+output_file <- '/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/uk10k_gemini_rare_variants_2018_07_31.Rdata'
 #if(!file.exists(output_file)){
   save(uk10k_gemini_rare_variants, file = output_file)
 #}
