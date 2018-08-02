@@ -15,9 +15,15 @@ library(randomForest)
 library(keras)
 library(tensorflow)
 library(PRROC)
-load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/VPaC_12mtry_v11.Rdata')
-#load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/allX_2018_07_27.Rdata')
-load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/assess_2018_07_27.Rdata')
+load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/VPaC_15mtry_v14.Rdata')
+load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/allX_2018_08_02.Rdata')
+allX$primatedl  <- as.numeric(allX$primatedl)
+allX[is.na(allX)] <- -1
+load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/assess_2018_08_02.Rdata')
+
+
+assess_set$primatedl  <- as.numeric(assess_set$primatedl)
+assess_set[is.na(assess_set)] <- -1
 #allX <- allX %>% mutate_at(vars(contains('VP')), as.numeric) %>% mutate_at(vars(contains('Deep')), as.numeric)
 # confusion matrix maker for built models
 cm_maker <- function(predictor = 'cadd_phred', data, cutoff=0.5, mode = 'prec_recall') {
@@ -105,8 +111,8 @@ superheat(cor(dat),
 For random forest model
 
 Mean Decrease Gini
-```{r, fig.height=1.5, fig.width=2}
-VPaC_12mtry_v11$importance %>% data.frame() %>% rownames_to_column('Predictor') %>% 
+```{r, fig.height=1.5, fig.width=7}
+VPaC_15mtry_v14$importance %>% data.frame() %>% rownames_to_column('Predictor') %>% 
   arrange(MeanDecreaseGini) %>% 
   tail(20) %>% 
   mutate(Predictor = factor(Predictor, levels=unique(Predictor))) %>% 
@@ -117,8 +123,8 @@ VPaC_12mtry_v11$importance %>% data.frame() %>% rownames_to_column('Predictor') 
 ```
 
 Mean Decrease Accuracy
-```{r, fig.height=1.5, fig.width=2}
-VPaC_12mtry_v11$importance %>% data.frame() %>% rownames_to_column('Predictor') %>% 
+```{r, fig.height=1.5, fig.width=7}
+VPaC_18mtry_v12$importance %>% data.frame() %>% rownames_to_column('Predictor') %>% 
   arrange(MeanDecreaseAccuracy) %>% 
   tail(20) %>% 
   mutate(Predictor = factor(Predictor, levels=unique(Predictor))) %>% 
@@ -136,6 +142,7 @@ library(cowplot)
 
 # precision recall AUC
 pr_maker <- function(predictor, data, cutoff=0.5) {
+  
   if (class(predictor)=='character'){
     predictor = enquo(predictor)
     pr.curve(scores.class0 = data %>% filter(Status=='Pathogenic') %>% pull(!!predictor),
@@ -153,6 +160,7 @@ pr_maker <- function(predictor, data, cutoff=0.5) {
 
 # flip path/not path
 pr_makerX <- function(predictor, data, cutoff=0.5) {
+  
   if (class(predictor)=='character'){
     predictor = enquo(predictor)
     pr.curve(scores.class0 = data %>% filter(Status=='NotPathogenic') %>% pull(!!predictor),
@@ -170,6 +178,7 @@ pr_makerX <- function(predictor, data, cutoff=0.5) {
 
 # ROC AUC
 roc_maker <- function(predictor, data, cutoff=0.5) {
+  
   if (class(predictor)=='character'){
     predictor = enquo(predictor)
     roc.curve(scores.class0 = data %>% filter(Status=='Pathogenic') %>% pull(!!predictor),
@@ -190,13 +199,13 @@ roc_maker <- function(predictor, data, cutoff=0.5) {
 # Assess Performance of Models and Existing Predictors in Assess Sets
 ```{r}
 
-model_vec <- c('DeepRNN','VPaC_m12_v11', 'Distill', 'xgbTree','revel','cadd_phred', 'fitcons', 'metalr_rankscore', 'fathmm_converted_rankscore', 'm_cap_rankscore')
+model_vec <- c('DeepRNN','VPaC_m15_v14', 'Distill', 'xgbTree','revel','cadd_phred', 'primatedl', 'fitcons', 'metalr_rankscore', 'fathmm_converted_rankscore', 'm_cap_rankscore')
 pr_data <- data.frame()
 roc_data <- data.frame()
 
 for (i in model_vec){
-  print(i)
-  for (j in unique(assess_set$DataSet)){
+  #print(i)
+  for (j in unique(assess_set %>% filter(DataSet != 'Extra NotPathogenic') %>% pull(DataSet))){
     #print(j)
     # Samocha has way more path than not path, so use flipped pr_maker
     if (j=='Samocha'){
@@ -216,9 +225,25 @@ for (i in model_vec){
   }
 }
 
+for (i in model_vec){
+  
+  pr <- pr_maker(i, allX %>% filter(DataSet == "Test Set"))
+  
+  out <- pr$curve[,1:2] %>% data.frame()
+  colnames(out) <- c('Recall','Precision')
+  #cm_out <- cm_maker(i, assess_set %>% filter(DataSet == j))
+  out$AUC <- pr$auc.integral
+  out$Model <- i
+  #out$MCC <- cm_out$MCC
+  out$'Model (AUC)' <- paste0(i, ' (',round(pr$auc.integral,5),')' )
+  out$DataSet <- j
+  pr_data <- rbind(pr_data, out)
+
+}
+
 
 for (i in model_vec){
-  print(i)
+  #print(i)
   for (j in unique(assess_set$DataSet)){
     roc <- roc_maker(i, assess_set %>% filter(DataSet == j))
     out <- roc$curve[,1:2] %>% data.frame()
@@ -273,11 +298,11 @@ roc_table
 ```
 
 # Homsy and Samocha ROC
-```{r}
+```{r, fig.height=7}
 sam <- roc_data %>%  
   mutate(`Model (AUC)` = (paste0(Model, ' (', round(AUC, 2),')'))) %>% 
   filter(grepl('Samoch', DataSet)) %>% 
-  filter(!grepl('Deep|VPaC|xgb', Model)) %>% 
+  # filter(!grepl('Deep|VPaC', Model)) %>% 
   ggplot(aes(x=FPR, y=Sensitivity, colour=`Model (AUC)`)) + 
   geom_line() + 
   theme_minimal() + 
@@ -287,7 +312,7 @@ sam <- roc_data %>%
 homs <- roc_data %>%  
   mutate(`Model (AUC)` = (paste0(Model, ' (', round(AUC, 2),')'))) %>% 
   filter(grepl('Homs', DataSet)) %>% 
-  filter(!grepl('Deep|VPaC|xgb', Model)) %>% 
+  # filter(!grepl('Deep|VPaC', Model)) %>% 
   ggplot(aes(x=FPR, y=Sensitivity, colour=`Model (AUC)`)) + 
   geom_line() + 
   theme_minimal() + 
@@ -298,12 +323,11 @@ cowplot::plot_grid(homs, sam, ncol = 1)
 ```
 
 # SuperGrimm, UK10K, DDL NISC RD Cohort, 
-These datasets have far more Path than Not Path
-```{r, fig.height=4}
+```{r, fig.height=7}
 uk10k <- pr_data %>% 
   mutate(`Model (AUC)` = (paste0(Model, ' (', round(AUC, 2),')'))) %>% 
   filter(grepl('With', DataSet)) %>% 
-  filter(!grepl('Deep|VPaC|xgb', Model)) %>% 
+  #  filter(!grepl('Deep|VPaC', Model)) %>% 
   ggplot(aes(x=Recall, y=Precision, colour=`Model (AUC)`)) + 
   geom_step() + 
   theme_minimal() + 
@@ -313,7 +337,7 @@ uk10k <- pr_data %>%
 ddl <- pr_data %>% 
   mutate(`Model (AUC)` = (paste0(Model, ' (', round(AUC, 2),')'))) %>% 
   filter(grepl('DDL', DataSet)) %>% 
-  filter(!grepl('Deep|VPaC|xgb', Model)) %>% 
+  #  filter(!grepl('Deep|VPaC', Model)) %>% 
   ggplot(aes(x=Recall, y=Precision, colour=`Model (AUC)`)) + 
   geom_step() + 
   theme_minimal() + 
@@ -323,15 +347,25 @@ ddl <- pr_data %>%
 superG <- pr_data %>% 
   mutate(`Model (AUC)` = (paste0(Model, ' (', round(AUC, 2),')'))) %>% 
   filter(grepl('Super', DataSet)) %>% 
-  filter(!grepl('Deep|VPaC|xgb', Model)) %>% 
+  # filter(!grepl('Deep|VPaC', Model)) %>% 
   ggplot(aes(x=Recall, y=Precision, colour=`Model (AUC)`)) + 
   geom_step() + 
   theme_minimal() + 
   ggsci::scale_color_futurama() + 
   ggtitle('Super Grimm') 
 
-title <- ggdraw() + draw_label("Precision Recall Curves")
-cowplot::plot_grid(title, uk10k, superG, ddl,  ncol=1)
+test_set <- pr_data %>% 
+  mutate(`Model (AUC)` = (paste0(Model, ' (', round(AUC, 2),')'))) %>% 
+  filter(grepl('Test Set', DataSet)) %>% 
+  # filter(!grepl('Deep|VPaC', Model)) %>% 
+  ggplot(aes(x=Recall, y=Precision, colour=`Model (AUC)`)) + 
+  geom_step() + 
+  theme_minimal() + 
+  ggsci::scale_color_futurama() + 
+  ggtitle('Test Data') 
+  
+  title <- ggdraw() + draw_label("Precision Recall Curves")
+cowplot::plot_grid(title, uk10k, superG, ddl, test_set, ncol=1)
 
 
 ```
