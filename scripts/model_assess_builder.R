@@ -191,23 +191,13 @@ model <- keras_model_sequential() %>%
 
 model <- keras_model_sequential() %>% 
   layer_lstm(1.5*length(nn_predictors), recurrent_dropout=0.2, input_shape=c(1, length(nn_predictors)), return_sequences = T) %>%
-  layer_dropout(0.2) %>%
+  layer_dropout(0.6) %>%
   layer_lstm(1.5*length(nn_predictors), recurrent_dropout=0.2, input_shape=c(1, length(nn_predictors)), return_sequences = T) %>%
-  layer_dropout(0.2) %>%
+  layer_dropout(0.5) %>%
   layer_lstm(1.5*length(nn_predictors), recurrent_dropout=0.2, input_shape=c(1, length(nn_predictors)), return_sequences = T) %>%
-  layer_dropout(0.2) %>%
+  layer_dropout(0.4) %>%
   layer_lstm(1.5*length(nn_predictors), recurrent_dropout=0.2, input_shape=c(1, length(nn_predictors)), return_sequences = T) %>%
-  layer_dropout(0.2) %>%
-  layer_lstm(1.5*length(nn_predictors), recurrent_dropout=0.2, input_shape=c(1, length(nn_predictors)), return_sequences = T) %>%
-  layer_dropout(0.2) %>%
-  layer_lstm(1.5*length(nn_predictors), recurrent_dropout=0.2, input_shape=c(1, length(nn_predictors)), return_sequences = T) %>%
-  layer_dropout(0.2) %>%
-  layer_lstm(1.5*length(nn_predictors), recurrent_dropout=0.2, input_shape=c(1, length(nn_predictors)), return_sequences = T) %>%
-  layer_dropout(0.2) %>%
-  layer_lstm(1.5*length(nn_predictors), recurrent_dropout=0.2, input_shape=c(1, length(nn_predictors)), return_sequences = T) %>%
-  layer_dropout(0.2) %>%
-  layer_lstm(1.5*length(nn_predictors), recurrent_dropout=0.2, input_shape=c(1, length(nn_predictors)), return_sequences = T) %>%
-  layer_dropout(0.2) %>%
+  layer_dropout(0.3) %>%
   layer_lstm(1.5*length(nn_predictors), recurrent_dropout=0.2, input_shape=c(1, length(nn_predictors)), return_sequences = T) %>%
   layer_dropout(0.2) %>%
   layer_lstm(1.5*length(nn_predictors), recurrent_dropout=0.2, input_shape=c(1, length(nn_predictors)), return_sequences = T) %>%
@@ -258,14 +248,14 @@ train_data <- model_data$ML_set__general_TT$train_set %>%
 train_data[is.na(train_data)] <- -1
 y <- recode(train_data$Status,'Pathogenic'=1, 'NotPathogenic'=0)
 xgbTree <- xgboost(label = y, 
-                   eta = 0.4, 
+                   eta = 0.1, 
                    max_depth = 3,
                    gamma = 0, 
                    colsample_bytree = 0.8,
                    min_child_weight = 1, 
                    subsample = 0.75,
                    data = train_data %>% select_if(is.numeric) %>% as.matrix(), 
-                   nrounds = 300, 
+                   nrounds = 150, 
                    objective = "binary:logistic", 
                    eval_metric = 'aucpr', 
                    nthread = 16)
@@ -470,5 +460,5 @@ assess_set$Distill <- (assess_set$DeepRNN * (params %>% arrange(-mcc) %>% head(1
   (assess_set$xgbTree * (params %>% arrange(-mcc) %>% head(1))[3] %>% as.numeric())
 
 ###
-save(allX, file='/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/allX_2018_07_31.Rdata')
+save(allX, file='/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/allX_2018_08_01.Rdata')
 save(assess_set, file='/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/assess_2018_07_31.Rdata')
