@@ -25,7 +25,8 @@ load('/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/m
 # load('/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/VPaC_6mtry.Rdata')
 # load('/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/VPaC_6mtry_v8.Rdata')
 # load('/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/VPaC_9mtry_v8.Rdata')
-load('/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/VPaC_12mtry_v11.Rdata')
+load('/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/VPaC_12mtry_v11
+     .Rdata')
 #VPaC <- VPaC
 # all raw
 load('/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/data/master/raw_data_2018_08_01.Rdata')
@@ -141,7 +142,7 @@ allX[is.na(allX)] <- -1
 
 # calculate VPaC scording for allX
 #allX$VPaC_m06_v1 <- sqrt(predict(VPaC_6mtry, allX, type='prob')[,1])
-allX$VPaC<- sqrt(predict(VPaC, allX, type='prob')[,1])
+allX$VPaC<- sqrt(predict(VPaC_12mtry_v11, allX, type='prob')[,1])
 #allX$VPaC_m09_v8 <- sqrt(predict(VPaC_9mtry_v8, allX, type='prob')[,1])
 #allX$VPaC_m06_v8 <- sqrt(predict(VPaC_6mtry_v8, allX, type='prob')[,1])
 
@@ -298,7 +299,7 @@ test_set$DeepRNN <- scale_predict(test_set, model, DeepRNN$predictors, DeepRNN$m
 # RF based prediction
 test_set$fitcons_float <- test_set$fitcons
 #test_set$VPaC_m06_v1 <- sqrt(predict(VPaC_6mtry, test_set, type='prob')[,1])
-test_set$VPaC <- sqrt(predict(VPaC, test_set, type='prob')[,1])
+test_set$VPaC <- sqrt(predict(VPaC_12mtry_v11, test_set, type='prob')[,1])
 #test_set$VPaC_m09_v8 <- sqrt(predict(VPaC_9mtry_v8, test_set, type='prob')[,1])
 #test_set$VPaC_m06_v8 <- sqrt(predict(VPaC_6mtry_v8, test_set, type='prob')[,1])
 test_set$xgbTree <- sqrt(predict(xgbTree, test_set %>% dplyr::select(one_of(numeric_predictors)) %>% as.matrix()))
@@ -315,7 +316,7 @@ train_set$DeepRNN <- scale_predict(train_set, model, DeepRNN$predictors, DeepRNN
 # RF based prediction
 train_set$fitcons_float <- train_set$fitcons
 #train_set$VPaC_m06_v1 <- sqrt(predict(VPaC_6mtry, train_set, type='prob')[,1])
-train_set$VPaC <- sqrt(predict(VPaC, train_set, type='prob')[,1])
+train_set$VPaC <- sqrt(predict(VPaC_12mtry_v11, train_set, type='prob')[,1])
 #train_set$VPaC_m09_v8 <- sqrt(predict(VPaC_9mtry_v8, train_set, type='prob')[,1])
 #train_set$VPaC_m06_v8 <- sqrt(predict(VPaC_6mtry_v8, train_set, type='prob')[,1])
 train_set$xgbTree <- sqrt(predict(xgbTree, train_set %>% dplyr::select(one_of(numeric_predictors)) %>% as.matrix()))
@@ -335,7 +336,7 @@ other_set$DeepRNN <- scale_predict(other_set, model, DeepRNN$predictors, DeepRNN
 # RF based prediction
 other_set$fitcons_float <- other_set$fitcons
 #other_set$VPaC_m06_v1 <- sqrt(predict(VPaC_6mtry, other_set, type='prob')[,1])
-other_set$VPaC <- sqrt(predict(VPaC, other_set, type='prob')[,1])
+other_set$VPaC <- sqrt(predict(VPaC_12mtry_v11, other_set, type='prob')[,1])
 #other_set$VPaC_m09_v8 <- sqrt(predict(VPaC_9mtry_v8, other_set, type='prob')[,1])
 #other_set$VPaC_m06_v8 <- sqrt(predict(VPaC_6mtry_v8, other_set, type='prob')[,1])
 other_set$xgbTree <- sqrt(predict(xgbTree, other_set %>% dplyr::select(one_of(numeric_predictors)) %>% as.matrix()))
@@ -356,7 +357,7 @@ withheld_set$DeepRNN <- scale_predict(withheld_set, model, DeepRNN$predictors, D
 # RF based prediction
 withheld_set$fitcons_float <- withheld_set$fitcons
 #withheld_set$VPaC_m06_v1 <- sqrt(predict(VPaC_6mtry, withheld_set, type='prob')[,1])
-withheld_set$VPaC <- sqrt(predict(VPaC, withheld_set, type='prob')[,1])
+withheld_set$VPaC <- sqrt(predict(VPaC_12mtry_v11, withheld_set, type='prob')[,1])
 #withheld_set$VPaC_m09_v8 <- sqrt(predict(VPaC_9mtry_v8, withheld_set, type='prob')[,1])
 #withheld_set$VPaC_m06_v8 <- sqrt(predict(VPaC_6mtry_v8, withheld_set, type='prob')[,1])
 withheld_set$xgbTree <- sqrt(predict(xgbTree, withheld_set %>% dplyr::select(one_of(numeric_predictors)) %>% as.matrix()))
