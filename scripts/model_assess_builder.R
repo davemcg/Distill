@@ -280,7 +280,7 @@ xgbTree <- xgboost(label = y,
                    min_child_weight = 1, 
                    subsample = 0.75,
                    data = train_data %>% select_if(is.numeric) %>% as.matrix(), 
-                   nrounds = 100, 
+                   nrounds = 300, 
                    objective = "binary:logistic", 
                    eval_metric = 'aucpr', 
                    nthread = 16)
@@ -390,7 +390,7 @@ test_set <- test_setN
 
 # use grid search to linearly blend VPaC, DeepRNN, and xgbTree on the tune set
 # build naive
-params <- expand.grid(seq(0,0.3, by = 0.01), seq(0.1,0.6, by = 0.01)) %>% data.frame()
+params <- expand.grid(seq(0,0.3, by = 0.01), seq(0.1,0.4, by = 0.01)) %>% data.frame()
 params$Var3 = 1-(params$Var1 + params$Var2)                
 #params
 
@@ -485,5 +485,5 @@ assess_set$Distill <- (assess_set$DeepRNN * (params %>% arrange(-mcc) %>% head(1
   (assess_set$xgbTree * (params %>% arrange(-mcc) %>% head(1))[3] %>% as.numeric())
 
 ###
-save(allX, file='/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/allX_2018_08_02.Rdata')
-save(assess_set, file='/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/assess_2018_08_02.Rdata')
+save(allX, file='/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/allX_2018_08_03.Rdata')
+save(assess_set, file='/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/assess_2018_08_03.Rdata')
