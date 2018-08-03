@@ -394,19 +394,19 @@ params <- expand.grid(seq(0,0.3, by = 0.01), seq(0.1,0.4, by = 0.01)) %>% data.f
 params$Var3 = 1-(params$Var1 + params$Var2)                
 #params
 
-mcc <- c()
+aucpr <- c()
 for (i in seq(1:nrow(params))){
   tune_set$grid <- (tune_set$DeepRNN * params[i,1]) + 
     (tune_set$VPaC * params[i,2]) +
     (tune_set$xgbTree * params[i,3])
-  cm_out <- cm_maker('grid', tune_set)
-  mcc <- c(mcc, cm_out$MCC)
+  out <- pr_maker('grid', tune_set)$auc.integral
+  aucpr <- c(aucpr, out)
   #print(paste(params[i,], cm_out$MCC))
 }
-params$MCC <- mcc
-print(params %>% arrange(-mcc) %>% head(20))
+params$aucpr <- aucpr
+print(params %>% arrange(-aucpr) %>% head(20))
 #######
-# DeepRNN * (params %>% arrange(-mcc) %>% head(1))[1] + VPaC * (params %>% arrange(-mcc) %>% head(1))[2] + xgbTree * (params %>% arrange(-mcc) %>% head(1))[3]
+# DeepRNN * (params %>% arrange(-aucpr) %>% head(1))[1] + VPaC * (params %>% arrange(-aucpr) %>% head(1))[2] + xgbTree * (params %>% arrange(-aucpr) %>% head(1))[3]
 #######
 
 ########################
@@ -476,13 +476,13 @@ print('assess made')
 
 
 ### calculate DIstill on AllX and Assess Set
-allX$Distill <- (allX$DeepRNN * (params %>% arrange(-mcc) %>% head(1))[1] %>% as.numeric()) + 
-  (allX$VPaC * (params %>% arrange(-mcc) %>% head(1))[2] %>% as.numeric()) + 
-  (allX$xgbTree * (params %>% arrange(-mcc) %>% head(1))[3] %>% as.numeric())
+allX$Distill <- (allX$DeepRNN * (params %>% arrange(-aucpr) %>% head(1))[1] %>% as.numeric()) + 
+  (allX$VPaC * (params %>% arrange(-aucpr) %>% head(1))[2] %>% as.numeric()) + 
+  (allX$xgbTree * (params %>% arrange(-aucpr) %>% head(1))[3] %>% as.numeric())
 
-assess_set$Distill <- (assess_set$DeepRNN * (params %>% arrange(-mcc) %>% head(1))[1] %>% as.numeric()) + 
-  (assess_set$VPaC * (params %>% arrange(-mcc) %>% head(1))[2] %>% as.numeric()) + 
-  (assess_set$xgbTree * (params %>% arrange(-mcc) %>% head(1))[3] %>% as.numeric())
+assess_set$Distill <- (assess_set$DeepRNN * (params %>% arrange(-aucpr) %>% head(1))[1] %>% as.numeric()) + 
+  (assess_set$VPaC * (params %>% arrange(-aucpr) %>% head(1))[2] %>% as.numeric()) + 
+  (assess_set$xgbTree * (params %>% arrange(-aucpr) %>% head(1))[3] %>% as.numeric())
 
 ###
 save(allX, file='/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/allX_2018_08_03.Rdata')
