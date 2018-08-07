@@ -25,11 +25,11 @@ library(here)
 #hom 
 
 query_writer <- function(family_name, gemini_db = 'VCFs.GATK.PED_master.gemini.db') {
-  de_novo_query <- paste0("gemini de_novo --filter \"aaf < 0.05 and filter is NULL AND (aaf_esp_all < 0.01 AND aaf_1kg_all_float < 0.01 AND af_exac_all < 0.01  AND (is_coding=1 OR is_splicing=1)) OR impact_severity='HIGH' OR clinvar_sig LIKE '%patho%' \" --families ", family_name, ' ', gemini_db, ' > ogvfb_cohort_calls/', family_name, '.gemini.denovo')
+  de_novo_query <- paste0("gemini de_novo --filter \"aaf < 0.05 and filter is NULL AND (aaf_esp_all < 0.01 AND aaf_1kg_all < 0.01 AND af_exac_all < 0.01  AND (is_coding=1 OR is_splicing=1)) OR impact_severity='HIGH' OR clinvar_sig LIKE '%patho%' \" --families ", family_name, ' ', gemini_db, ' > ogvfb_cohort_calls/', family_name, '.gemini.denovo')
   
-  ar_query <- paste0("gemini autosomal_recessive --filter \"aaf < 0.05 and filter is NULL AND (aaf_esp_all < 0.01 AND aaf_1kg_all_float < 0.01 AND af_exac_all < 0.01  AND (is_coding=1 OR is_splicing=1)) OR impact_severity='HIGH' OR clinvar_sig LIKE '%patho%' \" --families ", family_name, ' ', gemini_db, ' > ogvfb_cohort_calls/', family_name, '.gemini.ar')
+  ar_query <- paste0("gemini autosomal_recessive --filter \"aaf < 0.05 and filter is NULL AND (aaf_esp_all < 0.01 AND aaf_1kg_all < 0.01 AND af_exac_all < 0.01  AND (is_coding=1 OR is_splicing=1)) OR impact_severity='HIGH' OR clinvar_sig LIKE '%patho%' \" --families ", family_name, ' ', gemini_db, ' > ogvfb_cohort_calls/', family_name, '.gemini.ar')
   
-  comphet_query <- paste0("gemini comp_hets --filter \"aaf < 0.05 and filter is NULL AND (aaf_esp_all < 0.01 AND aaf_1kg_all_float < 0.01 AND af_exac_all < 0.01  AND (is_coding=1 OR is_splicing=1)) OR impact_severity='HIGH' OR clinvar_sig LIKE '%patho%' \" --families ", family_name, ' ', gemini_db, ' > ogvfb_cohort_calls/', family_name, '.gemini.ch')
+  comphet_query <- paste0("gemini comp_hets --filter \"aaf < 0.05 and filter is NULL AND (aaf_esp_all < 0.01 AND aaf_1kg_all < 0.01 AND af_exac_all < 0.01  AND (is_coding=1 OR is_splicing=1)) OR impact_severity='HIGH' OR clinvar_sig LIKE '%patho%' \" --families ", family_name, ' ', gemini_db, ' > ogvfb_cohort_calls/', family_name, '.gemini.ch')
   
   queries <- c(de_novo_query, ar_query, comphet_query)
   return(queries)
@@ -102,6 +102,8 @@ We have a column (hom_alt or het)_samples which has a comma separate list of sam
 
 # Prep for model assessment
 ```{r}
+numeric_predictors <- unique(c('ccr_pct_v1','cadd_raw','vest3_rankscore','cadd_phred','mis_z','pli','lof_z','phylop_100way','revel','hapmap2','hapmap1','n_mis','epilogos_quies','n_lof','precessive','pnull','adj_exp_lof','adj_exp_syn','dann','adj_exp_mis','syn_z','n_syn','epilogos_txwk','fitcons','m_cap_score','m_cap_rankscore','eigen_phred','eigen_raw','epilogos_tx','is_lof','eigen_pc_raw_rankscore','epilogos_reprpcwk','fathmm_mkl_coding_rankscore','metalr_score','fathmm_mkl_coding_score','metalr_rankscore','impact_severity','metasvm_rankscore','metasvm_score','epilogos_enh','genocanyon_score','fathmm_converted_rankscore','mpc','epilogos_enhg','af_exac_all','epilogos_reprpc','max_aaf_all','mutationassessor_score','gerp','polyphen_score','gerp_elements','mutationassessor_score_rankscore','stam_mean','an_exac_all','af_exac_nfe','provean_converted_rankscore','an_exac_nfe','lrt_score','lrt_omega','grantham','lrt_converted_rankscore','genocanyon_score_rankscore','an_exac_afr','an_exac_amr','an_exac_sas','epilogos_het','ac_exac_all','linsight','gno_an_popmax','exac_num_het','an_exac_eas','gno_an_all','ac_exac_nfe','mutationtaster_converted_rankscore','an_exac_oth','an_exac_fin','gno_an_nfe','gno_af_all','gno_an_afr','epilogos_tssaflnk','gno_af_popmax','epilogos_znf','segway_sum_score','aaf_esp_ea','epilogos_txflnk','provean_score','segway_mean_score','epilogos_tss','aaf_esp_all','af_exac_amr','gno_af_nfe','epilogos_enhbiv','af_exac_sas','sift_score','fathmm_score','ac_exac_amr','aaf_esp_aa','gno_ac_all','gno_af_afr','ac_exac_sas','af_exac_eas','gno_an_fin','af_exac_afr','gno_an_eas','gno_an_oth','gno_ac_nfe','gno_ac_popmax','ac_exac_eas','ac_exac_afr','epilogos_tssbiv','gno_ac_afr','vest3_score','sigmaaf_lof_0001', 'sigmaaf_lof_01', 'sigmaaf_missense_0001', 'sigmaaf_missense_01', 'cadd_phred', 'Distill', 'primatedl'))
+                               
 all_processed <- gemini_ogvfb_candidates %>% 
   separate(gene_eyediseaseclass, c('RDGene','DiseaseClass'), sep='_') %>%  #split off RD disease type
   select(-RDGene) %>% 
@@ -116,7 +118,7 @@ all_processed <- gemini_ogvfb_candidates %>%
                                  TRUE ~ 'Else')) %>% 
   mutate_at(vars(matches('ac_|an_|^n_')), funs(as.integer(.))) %>% # convert columns with ac_|whatever to integer (ac is allele count)
   mutate_at(vars(matches('af_|dann|revel|mpc|gerp|polyphen_score|sift_score|fitcons_float|gerp_elements|^adj|_z$|^pli$|^pnull$|precessive|^phylop|linsight|_rankscore$|ccr_pct_v1|linsight')), funs(as.numeric(.))) %>%  # af is allele frequency
-  select(pos_id, is_exonic, is_coding, is_lof, is_splicing, impact_severity, polyphen_score, sift_score, dann, gerp_elements, DiseaseClass, mpc, revel, max_aaf_all, gno_ac_afr, gno_ac_eas, gno_ac_all, gno_ac_popmax, ac_exac_sas, ac_exac_fin, aaf_1kg_all_float, aaf_esp_all, ac_exac_all, ac_exac_amr, ac_exac_oth, gno_af_all, gno_an_popmax, an_exac_all, af_exac_all, fitcons_float, linsight, lof_z:precessive, phylop_100way, grantham, cadd_phred, contains("_rankscore"), ccr_pct_v1, genesplicer, spliceregion) %>% 
+  mutate_at(vars(one_of(numeric_predictors)), funs(as.numeric(.))) %>% 
   filter(max_aaf_all < 0.01) %>% 
   unique() # remove any common variants
 
@@ -127,46 +129,14 @@ all_processed[is.na(all_processed)] <- -1
 ogvfb_ML_set <- all_processed 
 
 ```
-Save for further analysis
+Save
 ```{r}
 ogvfb <- list()
 ogvfb$gemini_ogvfb_candidates  <- gemini_ogvfb_candidates
 ogvfb$ogvfb_ML_set <- ogvfb_ML_set
 
-output_file <- '/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/ogvfb_exome_cohort.Rdata'
+output_file <- '/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/ogvfb_exome_cohort_2018_08_07.Rdata'
 if(!file.exists(output_file)){
   save(ogvfb, file = output_file)
 }
 ```
-
-# Label variants with model!
-```{r}
-load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/model_run_2018_03_26.Rdata')
-
-predictor <- function(model, data_dummy, source){
-  # returns variant id to match to full data frame and pathogenic score
-  # Set source to only return predictions from a certain source
-    # variant id is only unique to each source, as they are separate gemini db
-  # add empty -1 columns to data_dummy if predictor not present
-  columns_needed <- model$trainingData %>% colnames()
-  columns_needed <- columns_needed[2:length(columns_needed)]
-  missing_columns <- columns_needed[!columns_needed %in% colnames(data_dummy)]
-  data_dummy[,missing_columns] <- -1
-  # predict
-  predictions <- predict(model, data_dummy, type = 'prob')
-  data_dummy <- cbind(predictions, data_dummy)
-  return(data_dummy %>% filter(Source == source) %>% select(variant_id, Pathogenic))
-}
-
-# rfFit
-left_join(predictor(model_run$rfFit, ogvfb_ML_set_dummy) %>% filter(Pathogenic>0.4), gemini_ogvfb_candidates, by='variant_id') %>% 
-  select(variant_id:spliceregion, family_id:Family) %>% 
-  filter(filter=='None') %>% 
-  DT::datatable()
-
-# rfFit without disease class
-left_join(predictor(model_run$rfFit_noDC, ogvfb_ML_set_dummy) %>% filter(Pathogenic>0.4), gemini_ogvfb_candidates, by='variant_id') %>% 
-  select(variant_id:spliceregion, family_id:Family) %>% 
-  DT::datatable()
-```
-
