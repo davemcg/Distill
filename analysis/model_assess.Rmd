@@ -16,12 +16,11 @@ library(keras)
 library(tensorflow)
 library(PRROC)
 load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/VPaC_12mtry_v11.Rdata')
-load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/allX_2018_08_0.Rdata')
+load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/allX_2018_08_03.Rdata')
 allX$primatedl  <- as.numeric(allX$primatedl)
 allX[is.na(allX)] <- -1
+
 load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/assess_2018_08_03.Rdata')
-
-
 assess_set$primatedl  <- as.numeric(assess_set$primatedl)
 assess_set[is.na(assess_set)] <- -1
 #allX <- allX %>% mutate_at(vars(contains('VP')), as.numeric) %>% mutate_at(vars(contains('Deep')), as.numeric)
@@ -145,7 +144,7 @@ library(cowplot)
 pr_maker <- function(predictor, data, cutoff=0.5) {
   
   if (class(predictor)=='character'){
-    predictor = enquo(predictor)
+    predictor <- enquo(predictor)
     pr.curve(scores.class0 = data %>% filter(Status=='Pathogenic') %>% pull(!!predictor),
              scores.class1 = data %>% filter(Status=='NotPathogenic') %>% pull(!!predictor),
              curve = T)
@@ -281,7 +280,7 @@ roc_table
 #   geom_point(stat = 'identity') + coord_cartesian(ylim=c(0,1)) + facet_wrap(~DataSet, nrow=2) + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + ggtitle('Receiver Operating Characteristic')
 ```
 
-# Homsy and Samocha ROC
+## Homsy and Samocha ROC
 ```{r, fig.height=3, fig.width=3}
 sam <- roc_data %>%  
   mutate(`Model (AUC)` = (paste0(Model, ' (', round(AUC, 2),')'))) %>% 
@@ -307,7 +306,7 @@ title <- ggdraw() + draw_label("Area Under the ROC Curve")
 cowplot::plot_grid(homs, sam, ncol = 1)
 ```
 
-# SuperGrimm, UK10K, DDL NISC RD Cohort, 
+## SuperGrimm, UK10K, DDL NISC RD Cohort, 
 ```{r, fig.height=6, fig.width=3}
 uk10k <- pr_data %>% 
   mutate(`Model (AUC)` = (paste0(Model, ' (', round(AUC, 2),')'))) %>% 
@@ -355,6 +354,94 @@ cowplot::plot_grid(title, uk10k, superG, ddl, test_set, ncol=1)
 
 ```
 
+
+
+
+# Assess Performance of Models and Existing Predictors across Grimm sets
+
+## Counts
+```{r}
+allX %>% filter(grepl('Grimm', DataSet)) %>% group_by(DataSet, Status) %>% summarise(Count = n())
+```
+## Calculate
+```{r}
+model_vec <- c('DeepRNN','VPaC', 'Distill', 'xgbTree','revel','cadd_phred', 'primatedl', 'fitcons', 'metalr_rankscore', 'fathmm_converted_rankscore', 'm_cap_rankscore')
+Gpr_data <- data.frame()
+Groc_data <- data.frame()
+
+for (i in model_vec){
+  print(i)
+  for (j in unique(allX %>% filter(grepl('Grimm', DataSet)) %>% pull(DataSet))){
+    print(j)
+   
+    pr <- pr_maker(i, allX %>% filter(DataSet == j))
+
+    out <- pr$curve[,1:2] %>% data.frame()
+    colnames(out) <- c('Recall','Precision')
+    #cm_out <- cm_maker(i, allX %>% filter(DataSet == j))
+    out$AUC <- pr$auc.integral
+    out$Model <- i
+    #out$MCC <- cm_out$MCC
+    out$'Model (AUC)' <- paste0(i, ' (',round(pr$auc.integral,5),')' )
+    out$DataSet <- j
+    Gpr_data <- rbind(Gpr_data, out)
+  }
+}
+
+for (i in model_vec){
+  #print(i)
+  for (j in unique(allX %>% filter(grepl('Grimm', DataSet)) %>% pull(DataSet))){
+    roc <- roc_maker(i, allX %>% filter(DataSet == j))
+    out <- roc$curve[,1:2] %>% data.frame()
+    colnames(out) <- c('FPR','Sensitivity')
+    out$AUC <- roc$auc
+    out$Model <- i
+    out$'Model (AUC)' <- paste0(i, ' (',round(roc$auc,5),')' )
+    out$DataSet <- j
+    Groc_data <- rbind(Groc_data, out)
+  }
+}
+#rm(allX)
+```
+
+## Table Data
+```{r}
+Gpr_table <- Gpr_data %>% mutate(Model = factor(Model, levels = model_vec)) %>% 
+  dplyr::select(AUC, Model, DataSet) %>% 
+  #filter(grepl('Grimm|Test|UniFun|DDL|Sam|Hom|With', DataSet)) %>% 
+  unique() %>% 
+  mutate(AUC=round(AUC,4)) %>% 
+  spread(Model, AUC) %>% 
+  DT::datatable()
+
+Groc_table <- Groc_data %>% mutate(Model = factor(Model, levels = model_vec)) %>% 
+  dplyr::select(AUC, Model, DataSet) %>% 
+  #filter(grepl('Grimm|Test|UniFun|DDL|Sam|Hom|With', DataSet)) %>% 
+  unique() %>% 
+  mutate(AUC=round(AUC,4)) %>% 
+  spread(Model, AUC) %>% 
+  DT::datatable()
+
+Gpr_table
+
+Groc_table
+```
+
+## AUC 
+Unimpressive performance for Distill
+```{r}
+Groc_data %>%
+  mutate(`Model (AUC)` = (paste0(Model, ' (', round(AUC, 2),')'))) %>% 
+  #filter(DataSet == 'ExoVar') %>% 
+  filter(!grepl('Deep|VPaC', Model)) %>% 
+  ggplot(aes(x=FPR, y=Sensitivity, colour=Model)) +
+  facet_wrap(~DataSet) +
+  geom_line() + 
+  theme_minimal() + 
+  ggsci::scale_color_futurama()
+```
+
+
 # Find optimal cutoff for DataSet X for model Y
 Plot cutoff against MCC
 ```{r}
@@ -370,7 +457,9 @@ mcc_view <- function(sequence = seq(0,1,by = 0.01), predictor = 'Distill', asses
   out$cutoff <- as.numeric(out$cutoff)
   out
 }
-
+print('Distill, DDL')
+suppressWarnings(mcc_view(predictor='Distill', assess_set = assess_set %>% filter(grepl('DDL', DataSet))) %>% arrange(-mcc) %>% head())
+print('Distill, UK10K')
 suppressWarnings(mcc_view(predictor='Distill', assess_set = assess_set %>% filter(grepl('UK10K', DataSet))) %>% arrange(-mcc) %>% head())
 ```
 # OGVFB Exomes
@@ -404,59 +493,3 @@ ogvfb$ogvfb_ML_set %>% filter(VPaC > 0.1) %>%
   DT::datatable(escape = FALSE, rownames = FALSE)
 ```
 
-# NISC 100
-How do we do?
-```{r}
-nisc100 <- fread('gzcat /Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/data/ddl_nisc_100_panel/ddl_nisc.gemini.tsv.gz')
-left_join(all %>% filter(DataSet=='DDL NISC RD Cohort') %>% select(pos_id, Status, DeepVPaC),
-          nisc100 %>% mutate(pos_id = paste0(chrom,':',end, '_', ref, '_', alt))) %>% 
-  filter(DeepVPaC > 0.5) %>% 
-  select(Status, pos_id, hgvsc, gene, type, num_het, num_hom_alt, aaf,aaf_1kg_all_float, impact_so, DeepVPaC, clin_sig) %>% pull(Status) %>% table()
-
-```
-Not great
-
-How about if we added a touch of info - ClinVar, Impact
-```{r}
-left_join(all %>% filter(DataSet=='DDL NISC RD Cohort') %>% select(pos_id, Status, DeepVPaC),
-          nisc100 %>% mutate(pos_id = paste0(chrom,':',end, '_', ref, '_', alt))) %>% 
-  filter(DeepVPaC > 0.5 | grepl('path', clin_sig) | impact_severity == 'HIGH') %>% 
-  filter(aaf < 0.15 | gno_af_popmax < 0.01) %>% 
-  select(Status, pos_id, hgvsc, gene, type, num_het, num_hom_alt, aaf,aaf_1kg_all_float, impact_so, DeepVPaC, clin_sig) %>% pull(Status) %>% table()
-
-grabbed <- 
-  left_join(all %>% filter(DataSet=='DDL NISC RD Cohort') %>% select(pos_id, Status, DeepVPaC),
-            nisc100 %>% mutate(pos_id = paste0(chrom,':',end, '_', ref, '_', alt))) %>% 
-  filter(DeepVPaC > 0.5 | grepl('path', clin_sig) | impact_severity=='HIGH') %>% 
-  filter(aaf < 0.15 | gno_af_popmax < 0.01) %>% 
-  select(Status, pos_id, hgvsc, gene, type, num_het, num_hom_alt, aaf,aaf_1kg_all_float, impact_so, DeepVPaC, clin_sig) %>% pull(pos_id)
-
-
-
-left_join(all %>% filter(DataSet=='DDL NISC RD Cohort') %>% select(pos_id, Status, DeepVPaC),
-          nisc100 %>% mutate(pos_id = paste0(chrom,':',end, '_', ref, '_', alt))) %>% 
-  filter(Status == 'Pathogenic', !pos_id %in% grabbed) %>% 
-  select(Status, pos_id, hgvsc, gene, type, num_het, num_hom_alt, impact_so, DeepVPaC, clin_sig) %>% 
-  DT::datatable()
-
-```
-
-
-High ranking Deep VPaC that are Not Pathogenic in NISC 100
-```{r}
-left_join(all %>% filter(DataSet=='DDL NISC RD Cohort') %>% select(pos_id, Status, DeepVPaC),
-          nisc100 %>% mutate(pos_id = paste0(chrom,':',end, '_', ref, '_', alt))) %>% 
-  filter(DeepVPaC > 0.9) %>% 
-  filter(Status == 'NotPathogenic') %>% 
-  select(Status, pos_id, hgvsc, gene, type, num_het, num_hom_alt, aaf,aaf_1kg_all_float, impact_so, DeepVPaC, clin_sig) %>% 
-  DT::datatable()
-
-left_join(all %>% filter(DataSet=='DDL NISC RD Cohort') %>% select(pos_id, Status, DeepVPaC),
-          nisc100 %>% mutate(pos_id = paste0(chrom,':',end, '_', ref, '_', alt))) %>% 
-  filter(DeepVPaC > 0.9) %>% 
-  filter(Status == 'NotPathogenic') %>% 
-  select(hgvsc, gene, type, aaf_1kg_all_float, impact_so, DeepVPaC, clin_sig) %>% 
-  DT::datatable()
-
-```
-}}
