@@ -30,7 +30,7 @@ load('/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/V
 # all raw
 load('/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/data/master/raw_data_2018_08_08.Rdata')
 # ogvfb exomes
-load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/ogvfb_exome_cohort_2018_08_07.Rdata')
+load('/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/ogvfb_exome_cohort_2018_08_07.Rdata')
 
 
 
@@ -113,7 +113,7 @@ allX <- raw_data %>%
                              DataSet_o == 'grimm' & source == 'predictSNP' ~ 'Grimm PredictSNP',
                              DataSet_o == 'grimm' & source == 'swissvar' ~ 'Grimm SwissVar',
                              DataSet_o == 'grimm' & source == 'varibench' ~ 'Grimm VariBench',
-                             DataSet_0 == 'wellderly' ~ 'Wellderly',
+                             DataSet_o == 'wellderly' ~ 'Wellderly',
                              grepl('homsy', DataSet_o) ~ 'Homsy',
                              grepl('unifun', DataSet_o) ~ 'UniFun',
                              grepl('samocha', DataSet_o) ~ 'Samocha',
@@ -195,24 +195,24 @@ dim(train_data) <- c(nrow(train_data),1,length(nn_predictors))
 dim(test_data) <- c(nrow(test_data),1,length(nn_predictors))
 
 
-model <- keras_model_sequential() %>% 
-  layer_lstm(1.5*length(nn_predictors), recurrent_dropout=0.2, input_shape=c(1, length(nn_predictors)), return_sequences = T) %>%
-  layer_dropout(0.2) %>%
-  layer_lstm(1.5*length(nn_predictors), recurrent_dropout=0.2, input_shape=c(1, length(nn_predictors)), return_sequences = T) %>%
-  layer_dropout(0.2) %>%
-  layer_lstm(1.5*length(nn_predictors), recurrent_dropout=0.2, input_shape=c(1, length(nn_predictors)), return_sequences = T) %>%
-  layer_dropout(0.2) %>%
-  layer_lstm(1.5*length(nn_predictors), recurrent_dropout=0.2, input_shape=c(1, length(nn_predictors)), return_sequences = T) %>%
-  layer_dropout(0.2) %>%
-  layer_lstm(1.5*length(nn_predictors), recurrent_dropout=0.2, input_shape=c(1, length(nn_predictors)), return_sequences = T) %>%
-  layer_dropout(0.2) %>%
-  layer_lstm(1.5*length(nn_predictors), recurrent_dropout=0.2, input_shape=c(1, length(nn_predictors)), return_sequences = T) %>%
-  layer_dropout(0.2) %>%
-  layer_lstm(1.5*length(nn_predictors), recurrent_dropout=0.2, input_shape=c(1, length(nn_predictors)), return_sequences = T) %>%
-  layer_dropout(0.2) %>%
-  layer_lstm(1.5*length(nn_predictors), recurrent_dropout=0.2, input_shape=c(1, length(nn_predictors))) %>%
-  layer_dropout(0.1) %>%
-  layer_dense(units=1, activation='sigmoid')
+# model <- keras_model_sequential() %>% 
+#   layer_lstm(1.5*length(nn_predictors), recurrent_dropout=0.2, input_shape=c(1, length(nn_predictors)), return_sequences = T) %>%
+#   layer_dropout(0.2) %>%
+#   layer_lstm(1.5*length(nn_predictors), recurrent_dropout=0.2, input_shape=c(1, length(nn_predictors)), return_sequences = T) %>%
+#   layer_dropout(0.2) %>%
+#   layer_lstm(1.5*length(nn_predictors), recurrent_dropout=0.2, input_shape=c(1, length(nn_predictors)), return_sequences = T) %>%
+#   layer_dropout(0.2) %>%
+#   layer_lstm(1.5*length(nn_predictors), recurrent_dropout=0.2, input_shape=c(1, length(nn_predictors)), return_sequences = T) %>%
+#   layer_dropout(0.2) %>%
+#   layer_lstm(1.5*length(nn_predictors), recurrent_dropout=0.2, input_shape=c(1, length(nn_predictors)), return_sequences = T) %>%
+#   layer_dropout(0.2) %>%
+#   layer_lstm(1.5*length(nn_predictors), recurrent_dropout=0.2, input_shape=c(1, length(nn_predictors)), return_sequences = T) %>%
+#   layer_dropout(0.2) %>%
+#   layer_lstm(1.5*length(nn_predictors), recurrent_dropout=0.2, input_shape=c(1, length(nn_predictors)), return_sequences = T) %>%
+#   layer_dropout(0.2) %>%
+#   layer_lstm(1.5*length(nn_predictors), recurrent_dropout=0.2, input_shape=c(1, length(nn_predictors))) %>%
+#   layer_dropout(0.1) %>%
+#   layer_dense(units=1, activation='sigmoid')
 
 
 model <- keras_model_sequential() %>% 
@@ -282,7 +282,7 @@ xgbTree <- xgboost(label = y,
                    min_child_weight = 1, 
                    subsample = 0.75,
                    data = train_data %>% select_if(is.numeric) %>% as.matrix(), 
-                   nrounds = 300, 
+                   nrounds = 200, 
                    objective = "binary:logistic", 
                    eval_metric = 'aucpr', 
                    nthread = 16)
@@ -392,7 +392,7 @@ test_set <- test_setN
 
 # use grid search to linearly blend VPaC, DeepRNN, and xgbTree on the tune set
 # build naive
-params <- expand.grid(seq(0,0.3, by = 0.01), seq(0.1,0.4, by = 0.01)) %>% data.frame()
+params <- expand.grid(seq(0.01,0.4, by = 0.01), seq(0.01,0.4, by = 0.01)) %>% data.frame()
 params$Var3 = 1-(params$Var1 + params$Var2)                
 #params
 
@@ -471,6 +471,8 @@ assess_set <- bind_rows(SuperGrimm %>% mutate(DataSet = 'SuperGrimm'),
                         allX %>% filter(DataSet == 'Unifun'),
                         allX %>% filter(DataSet == 'Homsy'),
                         allX %>% filter(DataSet == 'Samocha'),
+                        allX %>% filter(DataSet == 'Wellderly'),
+                        allX %>% filter(DataSet == 'OGVFB Exomes'),
                         allX %>% filter(DataSet == 'UK10K Withheld') %>% filter(!pos_id %in% c(train_set$pos_id, tune_set$pos_id)))
 #allX %>% filter(DataSet == 'UK10K') %>% 
 #  filter(!pos_id %in% (model_data$ML_set__general_TT$train_set$pos_id)) %>% 
@@ -488,5 +490,5 @@ assess_set$Distill <- (assess_set$DeepRNN * (params %>% arrange(-aucpr) %>% head
   (assess_set$xgbTree * (params %>% arrange(-aucpr) %>% head(1))[3] %>% as.numeric())
 
 ###
-save(allX, file='/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/allX_2018_08_03.Rdata')
+save(allX, file='/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/allX_2018_08_08.Rdata')
 save(assess_set, file='/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/assess_2018_08_08.Rdata')
