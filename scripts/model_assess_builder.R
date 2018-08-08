@@ -1,7 +1,7 @@
 ######################
 # biowulf2 note
 # run with:
-# sinteractive --gres=gpu:k80:1,lscratch:10 --mem=96g -c8
+# sinteractive --gres=gpu:k80:1,lscratch:10 --mem=128g -c8
 # module load cuDNN/7.0/CUDA-9.0 CUDA R/3.5.0 python/3.5
 # to load keras/tensorflow 
 # https://hpc.nih.gov/apps/caret.html
@@ -28,8 +28,9 @@ load('/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/m
 load('/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/VPaC_12mtry_v11.Rdata')
 #VPaC <- VPaC
 # all raw
-load('/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/data/master/raw_data_2018_08_01.Rdata')
-
+load('/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/data/master/raw_data_2018_08_08.Rdata')
+# ogvfb exomes
+load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/ogvfb_exome_cohort_2018_08_07.Rdata')
 
 
 
@@ -112,6 +113,7 @@ allX <- raw_data %>%
                              DataSet_o == 'grimm' & source == 'predictSNP' ~ 'Grimm PredictSNP',
                              DataSet_o == 'grimm' & source == 'swissvar' ~ 'Grimm SwissVar',
                              DataSet_o == 'grimm' & source == 'varibench' ~ 'Grimm VariBench',
+                             DataSet_0 == 'wellderly' ~ 'Wellderly',
                              grepl('homsy', DataSet_o) ~ 'Homsy',
                              grepl('unifun', DataSet_o) ~ 'UniFun',
                              grepl('samocha', DataSet_o) ~ 'Samocha',
@@ -429,7 +431,8 @@ allX2 <- bind_rows(allX %>% mutate_all(as.character),
                    tune_set %>% mutate(DataSet = 'Tune Set') %>% mutate_all(as.character),
                    test_set %>% mutate(DataSet = 'Test Set') %>% mutate_all(as.character), 
                    train_set %>% mutate(DataSet = 'Train Set') %>% mutate_all(as.character),
-                   other_set %>% mutate(DataSet = 'Other Set') %>% mutate_all(as.character)) %>% 
+                   other_set %>% mutate(DataSet = 'Other Set') %>% mutate_all(as.character),
+                   ogvfb_ML_set %>% mutate(DataSet = 'OGVFB Exomes') %>% mutate_all(as.character)) %>% 
   mutate_at(vars(one_of(c(numeric_predictors, nn_predictors))), funs(as.numeric(.)))
 allX2[is.na(allX2)] <- -1
 allX <- allX2
@@ -486,4 +489,4 @@ assess_set$Distill <- (assess_set$DeepRNN * (params %>% arrange(-aucpr) %>% head
 
 ###
 save(allX, file='/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/allX_2018_08_03.Rdata')
-save(assess_set, file='/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/assess_2018_08_03.Rdata')
+save(assess_set, file='/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/assess_2018_08_08.Rdata')
