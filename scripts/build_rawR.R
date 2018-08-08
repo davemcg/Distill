@@ -14,7 +14,8 @@ gemini_dbs = c(#'ddl_nisc_100_panel/DDL_NISC_targeted_panel.PED_ddl_nisc.gemini.
           'samocha_benign/samocha.benign.PED_faux.gemini.db',
           'samocha_pathogenic/samocha.pathogenic.PED_faux.gemini.db',
           'unifun_benign/UniFun_benign.fakeS.PED_faux.gemini.db',
-          'unifun_pathogenic/UniFun_deleterious.fakeS.PED_faux.gemini.db')
+          'unifun_pathogenic/UniFun_deleterious.fakeS.PED_faux.gemini.db',
+          'wellderly/wellderly.coding.benign.fakeSample.PED_faux.gemini.db')
           #'clinvar/clinvar_RD.PED_faux.gemini.db')
 
 gemini_dbs_filter <- c('ddl_nisc_100_panel/DDL_NISC_targeted_panel.PED_ddl_nisc.gemini.db',
@@ -50,4 +51,4 @@ raw_data <- bind_rows(raw_data,
 #rm(data_files)
 raw_data <- raw_data %>% mutate(pos_id=paste0(chrom, ':', end, '_', ref, '_', alt))
 
-save(raw_data, file='/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/data/master/raw_data_2018_08_01.Rdata')
+save(raw_data, file='/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/data/master/raw_data_2018_08_08.Rdata')
