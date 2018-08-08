@@ -131,12 +131,7 @@ ogvfb_ML_set <- all_processed
 ```
 Save
 ```{r}
-ogvfb <- list()
-ogvfb$gemini_ogvfb_candidates  <- gemini_ogvfb_candidates
-ogvfb$ogvfb_ML_set <- ogvfb_ML_set
-
 output_file <- '/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/ogvfb_exome_cohort_2018_08_07.Rdata'
-if(!file.exists(output_file)){
-  save(ogvfb, file = output_file)
-}
+
+save(ogvfb_ML_set, file = output_file)
 ```
