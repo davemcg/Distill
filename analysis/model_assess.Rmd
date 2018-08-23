@@ -16,11 +16,11 @@ library(keras)
 library(tensorflow)
 library(PRROC)
 load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/VPaC_12mtry_v11.Rdata')
-load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/allX_2018_08_03.Rdata')
+load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/allX_2018_08_08.Rdata')
 allX$primatedl  <- as.numeric(allX$primatedl)
 allX[is.na(allX)] <- -1
 
-load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/assess_2018_08_03.Rdata')
+load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/assess_2018_08_08.Rdata')
 assess_set$primatedl  <- as.numeric(assess_set$primatedl)
 assess_set[is.na(assess_set)] <- -1
 #allX <- allX %>% mutate_at(vars(contains('VP')), as.numeric) %>% mutate_at(vars(contains('Deep')), as.numeric)
@@ -204,9 +204,10 @@ pr_data <- data.frame()
 roc_data <- data.frame()
 
 for (i in model_vec){
-  #print(i)
-  for (j in unique(assess_set %>% filter(DataSet != 'Extra NotPathogenic') %>% pull(DataSet))){
-    #print(j)
+  print(i)
+  for (j in unique(assess_set %>% filter(DataSet != 'Extra NotPathogenic') %>% 
+                   filter(DataSet != 'OGVFB Exomes') %>% pull(DataSet))){
+    print(j)
     # Samocha has way more path than not path, so use flipped pr_maker
     if (j=='Samocha'){
       pr <- pr_makerX(i, assess_set %>% filter(DataSet == j))
@@ -227,7 +228,8 @@ for (i in model_vec){
 
 for (i in model_vec){
   #print(i)
-  for (j in unique(assess_set$DataSet)){
+  for (j in unique(assess_set %>% filter(DataSet != 'Extra NotPathogenic') %>% 
+                   filter(DataSet != 'OGVFB Exomes') %>% pull(DataSet))){
     roc <- roc_maker(i, assess_set %>% filter(DataSet == j))
     out <- roc$curve[,1:2] %>% data.frame()
     colnames(out) <- c('FPR','Sensitivity')
