@@ -8,91 +8,66 @@ output:
 
 ```{r}
 library(tidyverse)
-load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/data/master/allX_2018_08_01.Rdata')
-load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/all_data.2018_06_08.Rdata')
+load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/model_data_2018_08_01.Rdata')
+pos_id__source <- model_data$pos_id__source
+rm(model_data)
+load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/allX_2018_08_08.Rdata')
+load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/assess_2018_08_08.Rdata')
+allX <- left_join(allX, pos_id__source, by = 'pos_id')
+assess_set <- left_join(assess_set, pos_id__source, by = 'pos_id')
 ```
 
 # DataSets
 ```{r}
 allX$DataSet %>% table() %>% data.frame() %>% pull(1) %>% as.character() %>% str_split(.,'_') %>% lapply(., `[[`, 1) %>% unlist() %>% unique() %>% writeLines()
+
+assess_set$DataSet %>% table() %>% data.frame() %>% pull(1) %>% as.character() %>% str_split(.,'_') %>% lapply(., `[[`, 1) %>% unlist() %>% unique() %>% writeLines()
 ```
 
 # ML set vs Validate set
 ```{r}
 ML <- c('clinvar','UK10K','gnomad','Test Set', 'Train Set')
-val <- c('DDL NISC RD Cohort','SuperGrimm','Homsy','Samocha','UniFun')
-
+val <- c('DDL NISC RD Cohort','SuperGrimm','Homsy','Samocha','UniFun', 'Wellderly', 'Test Set')
 ```
 
 # ML
-## Basic Stats
-### Counts across type and status
-```{r}
-allX %>%
-  filter(grepl(paste(ML,collapse='|'), DataSet)) %>%  
-  select(DataSet, type, pos_id, Status) %>% unique() %>% 
-  group_by(DataSet, type, Status) %>% 
+```{r, fig.width=6}
+allX %>% filter(DataSet == 'Train Set') %>% 
+  select(Source = Source.y, type, is_splicing, Status = Status.x, pos_id) %>% unique() %>% 
+  mutate(Source = case_when(grepl('UK10K', Source) ~ 'Carrs IRD',
+                            grepl('ClinVar', Source) ~ 'ClinVar',
+                            TRUE ~ 'gnomAD')) %>% 
+  group_by(Source, type, is_splicing, Status) %>% 
   summarise(Count=n()) %>% 
-  ggplot(aes(x=type,y=log2(Count), fill=Status, label=prettyNum(Count, big.mark=","))) + 
-  geom_bar(stat='identity', position = 'dodge') + 
-  facet_wrap(~DataSet) + 
-  theme_minimal() + 
-  ggsci::scale_fill_aaas() + coord_cartesian(ylim=c(0,23)) +
-  geom_text(stat='identity', vjust=-1, position=position_dodge(width=1))
-```
-
-### Splicing
-```{r}
-allX %>% 
-  filter(grepl(paste(ML,collapse='|'), DataSet)) %>%  
-  select(DataSet, is_splicing, Status, pos_id) %>% unique() %>% 
-  group_by(DataSet, is_splicing, Status) %>% 
-  summarise(Count=n()) %>% 
-  select(DataSet, Type = is_splicing, Status, Count) %>%
+  select(Source,type, Type = is_splicing, Status, Count) %>%
   ungroup() %>% 
   mutate(Type = case_when(Type==0 ~ 'Coding',
                           TRUE ~ 'Splicing')) %>% 
   ggplot(aes(x=Type,y=log2(Count), fill=Status, label=prettyNum(Count, big.mark=","))) +
   geom_bar(stat='identity', position = 'dodge') + 
-  facet_wrap(~DataSet) + 
-  theme_minimal() + 
-  ggsci::scale_fill_aaas() + coord_cartesian(ylim=c(0,23)) +
+  facet_grid(rows = vars(type), cols = vars(Source)) + 
+  theme_minimal(base_size = 14) + 
+  ggsci::scale_fill_aaas() + coord_cartesian(ylim=c(0,20)) +
   geom_text(stat='identity', vjust=-1, position=position_dodge(width=1))
 ```
 
-# Validate
-Since the `all` data set has the properly labeled DataSets, we'll use that as the ref and use the `allX` for the variant info
-## Basic Stats
-### Counts across type and status
-```{r}
-allX %>%
+# Assess Sets
+```{r, fig.width=6}
+assess_set %>% 
   filter(grepl(paste(val,collapse='|'), DataSet)) %>%  
-  select(DataSet, type, pos_id, Status) %>% unique() %>% 
-  group_by(DataSet, type, Status) %>% 
+   mutate(DataSet = gsub("DDL NISC RD Cohort", "DDL NISC\nRD Cohort", DataSet)) %>% 
+  select(DataSet, type, is_splicing, Status = Status.x, pos_id) %>% unique() %>% 
+  group_by(DataSet, type, is_splicing, Status) %>%
+ 
   summarise(Count=n()) %>% 
-  ggplot(aes(x=type,y=log2(Count), fill=Status, label=prettyNum(Count, big.mark=","))) + 
-  geom_bar(stat='identity', position = 'dodge') + 
-  facet_wrap(~DataSet) + 
-  theme_minimal() + 
-  ggsci::scale_fill_aaas() + coord_cartesian(ylim=c(0,15)) +
-  geom_text(stat='identity', vjust=-1, position=position_dodge(width=1))
-```
-
-### Splicing
-```{r}
-allX %>% 
-  filter(grepl(paste(val,collapse='|'), DataSet)) %>%  
-  select(DataSet, is_splicing, Status, pos_id) %>% unique() %>% 
-  group_by(DataSet, is_splicing, Status) %>% 
-  summarise(Count=n()) %>% 
-  select(DataSet, Type = is_splicing, Status, Count) %>%
+  select(DataSet,type, Type = is_splicing, Status, Count) %>%
   ungroup() %>% 
   mutate(Type = case_when(Type==0 ~ 'Coding',
                           TRUE ~ 'Splicing')) %>% 
   ggplot(aes(x=Type,y=log2(Count), fill=Status, label=prettyNum(Count, big.mark=","))) +
   geom_bar(stat='identity', position = 'dodge') + 
-  facet_wrap(~DataSet) + 
-  theme_minimal() + 
-  ggsci::scale_fill_aaas() + coord_cartesian(ylim=c(0,15)) +
+  facet_grid(rows = vars(type), cols = vars(DataSet)) + 
+ theme_minimal(base_size = 14) + 
+  ggsci::scale_fill_aaas() + coord_cartesian(ylim=c(0,20)) +
   geom_text(stat='identity', vjust=-1, position=position_dodge(width=1))
 ```
