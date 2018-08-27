@@ -31,8 +31,8 @@ load('/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/V
 load('/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/data/master/raw_data_2018_08_08.Rdata')
 # ogvfb exomes
 load('/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/ogvfb_exome_cohort_2018_08_07.Rdata')
-
-
+# colombia exomes
+load('/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/colombia.Rdata')
 
 
 eyeIntegration <- c('eyeintegration_rnaseq_adipose_subcutaneous','eyeintegration_rnaseq_tpm_adipose_visceral_omentum','eyeintegration_rnaseq_tpm_adrenalgland','eyeintegration_rnaseq_tpm_artery_aorta','eyeintegration_rnaseq_tpm_artery_coronary','eyeintegration_rnaseq_tpm_artery_tibial','eyeintegration_rnaseq_tpm_brain_amygdala','eyeintegration_rnaseq_tpm_brain_anteriorcingulatecortex_ba24','eyeintegration_rnaseq_tpm_brain_caudate_basalganglia','eyeintegration_rnaseq_tpm_brain_cerebellarhemisphere','eyeintegration_rnaseq_tpm_brain_cerebellum','eyeintegration_rnaseq_tpm_brain_cortex','eyeintegration_rnaseq_tpm_brain_frontalcortex_ba9','eyeintegration_rnaseq_tpm_brain_hippocampus','eyeintegration_rnaseq_tpm_brain_hypothalamus','eyeintegration_rnaseq_tpm_brain_nucleusaccumbens_basalganglia','eyeintegration_rnaseq_tpm_brain_putamen_basalganglia','eyeintegration_rnaseq_tpm_brain_spinalcord_cervicalc_1','eyeintegration_rnaseq_tpm_brain_substantianigra','eyeintegration_rnaseq_tpm_breast_mammarytissue','eyeintegration_rnaseq_tpm_cells_ebv_transformedlymphocytes','eyeintegration_rnaseq_tpm_cells_transformedfibroblasts','eyeintegration_rnaseq_tpm_colon_sigmoid','eyeintegration_rnaseq_tpm_colon_transverse','eyeintegration_rnaseq_tpm_esc_stemcellline','eyeintegration_rnaseq_tpm_esophagus_gastroesophagealjunction','eyeintegration_rnaseq_tpm_esophagus_mucosa','eyeintegration_rnaseq_tpm_esophagus_muscularis','eyeintegration_rnaseq_tpm_heart_atrialappendage','eyeintegration_rnaseq_tpm_heart_leftventricle','eyeintegration_rnaseq_tpm_kidney_cortex','eyeintegration_rnaseq_tpm_liver','eyeintegration_rnaseq_tpm_lung','eyeintegration_rnaseq_tpm_minorsalivarygland','eyeintegration_rnaseq_tpm_muscle_skeletal','eyeintegration_rnaseq_tpm_nerve_tibial','eyeintegration_rnaseq_tpm_pancreas','eyeintegration_rnaseq_tpm_pituitary','eyeintegration_rnaseq_tpm_skin_notsunexposed_suprapubic','eyeintegration_rnaseq_tpm_skin_sunexposed_lowerleg','eyeintegration_rnaseq_tpm_smallintestine_terminalileum','eyeintegration_rnaseq_tpm_spleen','eyeintegration_rnaseq_tpm_stomach','eyeintegration_rnaseq_tpm_thyroid','eyeintegration_rnaseq_tpm_wholeblood')
@@ -432,7 +432,8 @@ allX2 <- bind_rows(allX %>% mutate_all(as.character),
                    test_set %>% mutate(DataSet = 'Test Set') %>% mutate_all(as.character), 
                    train_set %>% mutate(DataSet = 'Train Set') %>% mutate_all(as.character),
                    other_set %>% mutate(DataSet = 'Other Set') %>% mutate_all(as.character),
-                   ogvfb_ML_set %>% mutate(DataSet = 'OGVFB Exomes') %>% mutate_all(as.character)) %>% 
+                   ogvfb_ML_set %>% mutate(DataSet = 'OGVFB Exomes') %>% mutate_all(as.character),
+                   colombia_out %>% mutate(DataSet = 'Colombia Exomes') %>% mutate_all(as.character)) %>% 
   mutate_at(vars(one_of(c(numeric_predictors, nn_predictors))), funs(as.numeric(.)))
 allX2[is.na(allX2)] <- -1
 allX <- allX2
@@ -473,6 +474,7 @@ assess_set <- bind_rows(SuperGrimm %>% mutate(DataSet = 'SuperGrimm'),
                         allX %>% filter(DataSet == 'Samocha'),
                         allX %>% filter(DataSet == 'Wellderly'),
                         allX %>% filter(DataSet == 'OGVFB Exomes'),
+                        allX %>% filter(DataSet == 'Colombia Exomes'),
                         allX %>% filter(DataSet == 'UK10K Withheld') %>% filter(!pos_id %in% c(train_set$pos_id, tune_set$pos_id)))
 #allX %>% filter(DataSet == 'UK10K') %>% 
 #  filter(!pos_id %in% (model_data$ML_set__general_TT$train_set$pos_id)) %>% 
@@ -490,5 +492,5 @@ assess_set$Distill <- (assess_set$DeepRNN * (params %>% arrange(-aucpr) %>% head
   (assess_set$xgbTree * (params %>% arrange(-aucpr) %>% head(1))[3] %>% as.numeric())
 
 ###
-save(allX, file='/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/allX_2018_08_08.Rdata')
-save(assess_set, file='/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/assess_2018_08_08.Rdata')
+save(allX, file='/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/allX_2018_08_27.Rdata')
+save(assess_set, file='/data/mcgaugheyd/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/assess_2018_08_27.Rdata')
