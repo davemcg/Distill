@@ -140,7 +140,6 @@ allX <- raw_data %>%
 allX$fitcons_float <- allX$fitcons
 allX[is.na(allX)] <- -1
 
-
 # calculate VPaC scording for allX
 #allX$VPaC_m06_v1 <- sqrt(predict(VPaC_6mtry, allX, type='prob')[,1])
 allX$VPaC<- sqrt(predict(VPaC_12mtry_v11, allX, type='prob')[,1])
@@ -411,6 +410,14 @@ print(params %>% arrange(-aucpr) %>% head(20))
 # DeepRNN * (params %>% arrange(-aucpr) %>% head(1))[1] + VPaC * (params %>% arrange(-aucpr) %>% head(1))[2] + xgbTree * (params %>% arrange(-aucpr) %>% head(1))[3]
 #######
 
+###################
+# Calc for Colombia
+####################
+colombia_out <- colombia_out %>% mutate_at(vars(one_of(numeric_predictors)), funs(as.numeric(.)))
+colombia_out[is.na(colombia_out)] <- -1
+colombia_out$VPaC<- sqrt(predict(VPaC_12mtry_v11, colombia_out, type='prob')[,1])
+colombia_out$xgbTree <- sqrt(predict(xgbTree, colombia_out %>% dplyr::select(one_of(numeric_predictors)) %>% as.matrix()))
+colombia_out$DeepRNN <- scale_predict(colombia_out, model, DeepRNN$predictors, DeepRNN$mean, DeepRNN$std)
 ########################
 # Calculate DeepVPaC on train/test/other
 ########################
