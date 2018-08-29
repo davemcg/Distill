@@ -572,7 +572,7 @@ ggsave(filename = '../figures/wellderly_performance.svg', height=3,width=5,
   ggsci::scale_fill_futurama() +
   xlab('Model (Score Used)') + 
   ylab('log2(Count)') +
-  geom_text(aes(y=log(path_num)+3)) +
+  geom_text(aes(y=log2(path_num)+0.5)) +
   ggtitle('Count of Wellderly Healthy Variants Called Pathogenic') + 
   theme(axis.title.x=element_blank(),
         axis.text.x=element_blank(),
