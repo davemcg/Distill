@@ -16,11 +16,11 @@ library(keras)
 library(tensorflow)
 library(PRROC)
 load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/VPaC_12mtry_v11.Rdata')
-load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/allX_2018_08_08.Rdata')
+load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/allX_2018_08_27.Rdata')
 allX$primatedl  <- as.numeric(allX$primatedl)
 allX[is.na(allX)] <- -1
 
-load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/assess_2018_08_08.Rdata')
+load('/Volumes/data/projects/nei/mcgaughey/eye_var_Pathogenicity/clean_data/assess_2018_08_27.Rdata')
 assess_set$primatedl  <- as.numeric(assess_set$primatedl)
 assess_set[is.na(assess_set)] <- -1
 #allX <- allX %>% mutate_at(vars(contains('VP')), as.numeric) %>% mutate_at(vars(contains('Deep')), as.numeric)
@@ -111,24 +111,26 @@ superheat(cor(dat),
 For random forest model
 
 Mean Decrease Gini
-```{r, fig.height=1.5, fig.width=7}
+```{r, fig.height=1.5, fig.width=3}
 VPaC_12mtry_v11$importance %>% data.frame() %>% rownames_to_column('Predictor') %>% 
+  mutate(Predictor = gsub('_rankscore|_score|_converted','',Predictor)) %>% 
   arrange(MeanDecreaseGini) %>% 
   tail(20) %>% 
   mutate(Predictor = factor(Predictor, levels=unique(Predictor))) %>% 
-  ggplot(aes(x=Predictor, y=MeanDecreaseGini)) +
+  ggplot(aes(x=Predictor, y=log(MeanDecreaseGini))) +
   geom_point() +
   coord_flip() +
   theme_minimal()
 ```
 
 Mean Decrease Accuracy
-```{r, fig.height=1.5, fig.width=7}
+```{r, fig.height=1.5, fig.width=3}
 VPaC_12mtry_v11$importance %>% data.frame() %>% rownames_to_column('Predictor') %>% 
+  mutate(Predictor = gsub('_rankscore|_score|_converted','',Predictor)) %>% 
   arrange(MeanDecreaseAccuracy) %>% 
   tail(20) %>% 
   mutate(Predictor = factor(Predictor, levels=unique(Predictor))) %>% 
-  ggplot(aes(x=Predictor, y=MeanDecreaseAccuracy)) +
+  ggplot(aes(x=Predictor, y=log(MeanDecreaseAccuracy))) +
   geom_point() +
   coord_flip() +
   theme_minimal()
@@ -141,7 +143,7 @@ library(PRROC)
 library(cowplot)
 
 # precision recall AUC
-pr_maker <- function(predictor, data, cutoff=0.5) {
+pr_maker <- function(predictor, data) {
   
   if (class(predictor)=='character'){
     predictor <- enquo(predictor)
@@ -159,7 +161,7 @@ pr_maker <- function(predictor, data, cutoff=0.5) {
 }
 
 # flip path/not path
-pr_makerX <- function(predictor, data, cutoff=0.5) {
+pr_makerX <- function(predictor, data) {
   
   if (class(predictor)=='character'){
     predictor = enquo(predictor)
@@ -177,7 +179,7 @@ pr_makerX <- function(predictor, data, cutoff=0.5) {
 }
 
 # ROC AUC
-roc_maker <- function(predictor, data, cutoff=0.5) {
+roc_maker <- function(predictor, data) {
   
   if (class(predictor)=='character'){
     predictor = enquo(predictor)
@@ -204,18 +206,18 @@ pr_data <- data.frame()
 roc_data <- data.frame()
 
 for (i in model_vec){
-  print(i)
+  #print(i)
   for (j in unique(assess_set %>% filter(DataSet != 'Extra NotPathogenic') %>% 
                    filter(DataSet != 'OGVFB Exomes') %>% pull(DataSet))){
-    print(j)
+    #print(j)
     # Samocha has way more path than not path, so use flipped pr_maker
     if (j=='Samocha'){
       pr <- pr_makerX(i, assess_set %>% filter(DataSet == j))
     } else{
       pr <- pr_maker(i, assess_set %>% filter(DataSet == j))
     }
-    out <- pr$curve[,1:2] %>% data.frame()
-    colnames(out) <- c('Recall','Precision')
+    out <- pr$curve[,1:3] %>% data.frame()
+    colnames(out) <- c('Recall','Precision', 'Score')
     #cm_out <- cm_maker(i, assess_set %>% filter(DataSet == j))
     out$AUC <- pr$auc.integral
     out$Model <- i
@@ -231,8 +233,8 @@ for (i in model_vec){
   for (j in unique(assess_set %>% filter(DataSet != 'Extra NotPathogenic') %>% 
                    filter(DataSet != 'OGVFB Exomes') %>% pull(DataSet))){
     roc <- roc_maker(i, assess_set %>% filter(DataSet == j))
-    out <- roc$curve[,1:2] %>% data.frame()
-    colnames(out) <- c('FPR','Sensitivity')
+    out <- roc$curve[,1:3] %>% data.frame()
+    colnames(out) <- c('FPR','Sensitivity', 'Score')
     out$AUC <- roc$auc
     out$Model <- i
     out$'Model (AUC)' <- paste0(i, ' (',round(roc$auc,5),')' )
@@ -246,7 +248,7 @@ for (i in model_vec){
 ```{r}
 pr_table <- pr_data %>% mutate(Model = factor(Model, levels = model_vec)) %>% 
   dplyr::select(AUC, Model, DataSet) %>% 
-  filter(grepl('Grimm|Test|UniFun|DDL|Sam|Hom|With', DataSet)) %>% 
+  filter(grepl('Grimm|Test|UniFun|DDL|Sam|Hom|With|Col', DataSet)) %>% 
   unique() %>% 
   mutate(AUC=round(AUC,4)) %>% 
   spread(Model, AUC) %>% 
@@ -254,7 +256,7 @@ pr_table <- pr_data %>% mutate(Model = factor(Model, levels = model_vec)) %>%
 
 roc_table <- roc_data %>% mutate(Model = factor(Model, levels = model_vec)) %>% 
   dplyr::select(AUC, Model, DataSet) %>% 
-  filter(grepl('Grimm|Test|UniFun|DDL|Sam|Hom|With', DataSet)) %>% 
+  filter(grepl('Grimm|Test|UniFun|DDL|Sam|Hom|With|Col', DataSet)) %>% 
   unique() %>% 
   mutate(AUC=round(AUC,4)) %>% 
   spread(Model, AUC) %>% 
@@ -285,6 +287,7 @@ roc_table
 ## Homsy and Samocha ROC
 ```{r, fig.height=3, fig.width=3}
 sam <- roc_data %>%  
+  mutate(Model = gsub('_rankscore|_score|_converted','', Model)) %>% 
   mutate(`Model (AUC)` = (paste0(Model, ' (', round(AUC, 2),')'))) %>% 
   filter(grepl('Samoch', DataSet)) %>% 
   filter(!grepl('Deep|VPaC|xgb', Model)) %>% 
@@ -295,6 +298,7 @@ sam <- roc_data %>%
   ggsci::scale_color_futurama()
 
 homs <- roc_data %>%  
+  mutate(Model = gsub('_rankscore|_score|_converted','', Model)) %>% 
   mutate(`Model (AUC)` = (paste0(Model, ' (', round(AUC, 2),')'))) %>% 
   filter(grepl('Homs', DataSet)) %>% 
   filter(!grepl('Deep|VPaC|xgb', Model)) %>% 
@@ -309,8 +313,9 @@ cowplot::plot_grid(homs, sam, ncol = 1)
 ```
 
 ## SuperGrimm, UK10K, DDL NISC RD Cohort, 
-```{r, fig.height=6, fig.width=3}
+```{r, fig.height=7, fig.width=3}
 uk10k <- pr_data %>% 
+  mutate(Model = gsub('_rankscore|_score|_converted','', Model)) %>% 
   mutate(`Model (AUC)` = (paste0(Model, ' (', round(AUC, 2),')'))) %>% 
   filter(grepl('With', DataSet)) %>% 
   filter(!grepl('Deep|VPaC|xgb', Model)) %>% 
@@ -321,6 +326,7 @@ uk10k <- pr_data %>%
   ggtitle('Carss IRD') 
 
 ddl <- pr_data %>% 
+  mutate(Model = gsub('_rankscore|_score|_converted','', Model)) %>% 
   mutate(`Model (AUC)` = (paste0(Model, ' (', round(AUC, 2),')'))) %>% 
   filter(grepl('DDL', DataSet)) %>% 
   filter(!grepl('Deep|VPaC|xgb', Model)) %>% 
@@ -331,6 +337,7 @@ ddl <- pr_data %>%
   ggtitle('NEI IRD') 
 
 superG <- pr_data %>% 
+  mutate(Model = gsub('_rankscore|_score|_converted','', Model)) %>% 
   mutate(`Model (AUC)` = (paste0(Model, ' (', round(AUC, 2),')'))) %>% 
   filter(grepl('Super', DataSet)) %>% 
   filter(!grepl('Deep|VPaC|xgb', Model)) %>% 
@@ -341,6 +348,7 @@ superG <- pr_data %>%
   ggtitle('Super Grimm') 
 
 test_set <- pr_data %>% 
+  mutate(Model = gsub('_rankscore|_score|_converted','', Model)) %>% 
   mutate(`Model (AUC)` = (paste0(Model, ' (', round(AUC, 2),')'))) %>% 
   filter(grepl('Test Set', DataSet)) %>% 
   filter(!grepl('Deep|VPaC|xgb', Model)) %>% 
@@ -349,9 +357,22 @@ test_set <- pr_data %>%
   theme_minimal() + 
   ggsci::scale_color_futurama() + 
   ggtitle('Test Data') 
-  
+
+colombia <- pr_data %>% 
+  mutate(Model = gsub('_rankscore|_score|_converted','', Model)) %>% 
+  mutate(`Model (AUC)` = (paste0(Model, ' (', round(AUC, 2),')'))) %>% 
+  filter(grepl('Colombia', DataSet)) %>% 
+  filter(!grepl('Deep|VPaC|xgb', Model)) %>% 
+  ggplot(aes(x=Recall, y=Precision, colour=`Model (AUC)`)) + 
+  geom_step() + 
+  theme_minimal() + 
+  ggsci::scale_color_futurama() + 
+  coord_cartesian(ylim=c(0,1)) +
+  ggtitle('Colombia Exomes') 
+
+
 title <- ggdraw() + draw_label("Area Under the Precision Recall Curves")
-cowplot::plot_grid(title, uk10k, superG, ddl, test_set, ncol=1)
+cowplot::plot_grid(title, uk10k, colombia, superG, ddl, test_set, ncol=2)
 
 
 ```
@@ -372,12 +393,12 @@ Gpr_data <- data.frame()
 Groc_data <- data.frame()
 
 for (i in model_vec){
-  print(i)
+  #print(i)
   for (j in unique(allX %>% filter(grepl('Grimm', DataSet)) %>% pull(DataSet))){
-    print(j)
-   
+    # print(j)
+    
     pr <- pr_maker(i, allX %>% filter(DataSet == j))
-
+    
     out <- pr$curve[,1:2] %>% data.frame()
     colnames(out) <- c('Recall','Precision')
     #cm_out <- cm_maker(i, allX %>% filter(DataSet == j))
@@ -431,39 +452,78 @@ Groc_table
 
 ## AUC 
 Unimpressive performance for Distill
-```{r}
+```{r, fig.width=5, fig.height=4}
 Groc_data %>%
+  mutate(Model = gsub('_rankscore|_score|_converted','', Model)) %>% 
   mutate(`Model (AUC)` = (paste0(Model, ' (', round(AUC, 2),')'))) %>% 
   #filter(DataSet == 'ExoVar') %>% 
-  filter(!grepl('Deep|VPaC', Model)) %>% 
+  filter(!grepl('Deep|VPaC|xgb', Model)) %>% 
   ggplot(aes(x=FPR, y=Sensitivity, colour=Model)) +
   facet_wrap(~DataSet) +
   geom_line() + 
   theme_minimal() + 
-  ggsci::scale_color_futurama()
+  ggsci::scale_color_futurama() +
+  theme(text = element_text(size=16), axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))
 ```
 
 
 # Find optimal cutoff for DataSet X for model Y
 Plot cutoff against MCC
 ```{r}
-mcc_view <- function(sequence = seq(0,1,by = 0.01), predictor = 'Distill', assess_set = assess_set %>% filter(grepl('UK10', DataSet))){
-  out <- data.frame(cutoff = sequence)
-  mccs <- ''
-  for (i in sequence){
-    capture.output(mccs <- c(mccs, cm_maker(predictor, assess_set, i)$MCC), file='/dev/null')
-  }
-  out$mcc <- mccs[2:length(mccs)]
-  out$mcc[out$mcc == 'NaN'] <- 0
-  out$mcc <- as.numeric(out$mcc)
-  out$cutoff <- as.numeric(out$cutoff)
-  out
-}
-print('Distill, DDL')
-suppressWarnings(mcc_view(predictor='Distill', assess_set = assess_set %>% filter(grepl('DDL', DataSet))) %>% arrange(-mcc) %>% head())
-print('Distill, UK10K')
-suppressWarnings(mcc_view(predictor='Distill', assess_set = assess_set %>% filter(grepl('UK10K', DataSet))) %>% arrange(-mcc) %>% head())
+# mcc_view <- function(sequence = seq(0,1,by = 0.01), predictor = 'Distill', assess_set = assess_set %>% filter(grepl('UK10', DataSet))){
+#   out <- data.frame(cutoff = sequence)
+#   mccs <- ''
+#   for (i in sequence){
+#     capture.output(mccs <- c(mccs, cm_maker(predictor, assess_set, i)$MCC), file='/dev/null')
+#   }
+#   out$mcc <- mccs[2:length(mccs)]
+#   out$mcc[out$mcc == 'NaN'] <- 0
+#   out$mcc <- as.numeric(out$mcc)
+#   out$cutoff <- as.numeric(out$cutoff)
+#   out
+# }
+# print('Distill, DDL')
+# suppressWarnings(mcc_view(predictor='Distill', assess_set = assess_set %>% filter(grepl('DDL', DataSet))) %>% arrange(-mcc) %>% head())
+# print('Distill, UK10K')
+# suppressWarnings(mcc_view(predictor='Distill', assess_set = assess_set %>% filter(grepl('UK10K', DataSet))) %>% arrange(-mcc) %>% head())
+# print('Distill, Colombia')
+# suppressWarnings(mcc_view(sequence = c(0,40, by=1), predictor='cadd_phred', assess_set = assess_set %>% filter(grepl('SuperG', DataSet))) %>% arrange(-mcc) %>% head())
 ```
+
+# Wellderly
+Interesting set, as it is entirely from healthy older people. So no path variants
+
+Pick scoring from average score used in Colombia Exome set for PR from a Recall of 0.15 to 0.3
+```{r}
+optimal_scoring <- pr_data %>% filter(DataSet == 'Colombia Exomes', Recall < 0.30, Recall  > 0.15 ) %>% group_by(Model) %>% summarise(Score = mean(Score)) %>% data.frame()
+
+well <- assess_set %>% filter(DataSet == 'Wellderly') %>% data.frame()
+path_num <- ''
+for (i in 1:nrow(optimal_scoring)){
+  #  var <- quo(color)
+  path_num <- c(path_num, sum(well[,optimal_scoring[i,1]] > optimal_scoring[i,2] ))
+}
+optimal_scoring$path_num <- as.numeric(path_num[2:length(path_num)])
+
+optimal_scoring %>% 
+  mutate(Model = gsub('_rankscore|_score|_converted','', Model)) %>% 
+  mutate(Model = paste0(Model, ' (', round(Score,2),')')) %>% 
+  filter(!grepl('Deep|VPaC|xgb', Model)) %>% 
+  ggplot(aes(x=Model, y=log(path_num), fill=Model, label=path_num)) +
+  geom_bar(stat='identity') + 
+  theme_minimal() + 
+  ggsci::scale_fill_futurama() +
+  xlab('Model (Score Used)') + 
+  ylab('log(Count)') +
+  geom_text(aes(y=log(path_num)+0.3)) +
+  ggtitle('Count of Wellderly Healthy Variants Called Pathogenic') + 
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
+
+```
+
+
 # OGVFB Exomes
 ```{r}
 ogvfb$ogvfb_ML_set$VPaC <-predict(VPaC_6mtry, ogvfb$ogvfb_ML_set, type='prob')[,1]
