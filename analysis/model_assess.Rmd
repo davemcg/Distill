@@ -105,6 +105,18 @@ superheat(cor(dat),
           left.label.text.alignment = 'right', 
           left.label.text.size = 4, 
           left.label.size = 0.2)
+
+# svglite::svglite('figures/predictor_cor.svg', width = 12, height = 10)
+# superheat(cor(dat),
+#           pretty.order.rows = T, row.dendrogram = T,
+#           pretty.order.cols = T,
+#           left.label = 'variable',
+#           force.left.label=T,
+#           bottom.label = 'none',
+#           left.label.text.alignment = 'right',
+#           left.label.text.size = 4,
+#           left.label.size = 0.2)
+# dev.off()
 ```
 
 # Variable Importance
@@ -117,10 +129,23 @@ VPaC_12mtry_v11$importance %>% data.frame() %>% rownames_to_column('Predictor') 
   arrange(MeanDecreaseGini) %>% 
   tail(20) %>% 
   mutate(Predictor = factor(Predictor, levels=unique(Predictor))) %>% 
-  ggplot(aes(x=Predictor, y=log(MeanDecreaseGini))) +
+  ggplot(aes(x=Predictor, y=log2(MeanDecreaseGini))) +
   geom_point() +
   coord_flip() +
   theme_minimal()
+
+ggsave(filename = '../figures/mean_decrease_gini_top20.svg', 
+       VPaC_12mtry_v11$importance %>% data.frame() %>% rownames_to_column('Predictor') %>% 
+         mutate(Predictor = gsub('_rankscore|_score|_converted','',Predictor)) %>% 
+         arrange(MeanDecreaseGini) %>% 
+         tail(20) %>% 
+         mutate(Predictor = factor(Predictor, levels=unique(Predictor))) %>% 
+         ggplot(aes(x=Predictor, y=log2(MeanDecreaseGini))) +
+         geom_point() +
+         coord_flip() +
+         theme_minimal(),
+       height=3,
+       width=4)
 ```
 
 Mean Decrease Accuracy
@@ -130,12 +155,25 @@ VPaC_12mtry_v11$importance %>% data.frame() %>% rownames_to_column('Predictor') 
   arrange(MeanDecreaseAccuracy) %>% 
   tail(20) %>% 
   mutate(Predictor = factor(Predictor, levels=unique(Predictor))) %>% 
-  ggplot(aes(x=Predictor, y=log(MeanDecreaseAccuracy))) +
+  ggplot(aes(x=Predictor, y=log2(MeanDecreaseAccuracy))) +
   geom_point() +
   coord_flip() +
   theme_minimal()
-```
 
+ggsave(filename = '../figures/mean_decrease_accuracy_top20.svg', 
+       VPaC_12mtry_v11$importance %>% data.frame() %>% rownames_to_column('Predictor') %>% 
+         mutate(Predictor = gsub('_rankscore|_score|_converted','',Predictor)) %>% 
+         arrange(MeanDecreaseAccuracy) %>% 
+         tail(20) %>% 
+         mutate(Predictor = factor(Predictor, levels=unique(Predictor))) %>% 
+         ggplot(aes(x=Predictor, y=log2(MeanDecreaseAccuracy))) +
+         geom_point() +
+         coord_flip() +
+         theme_minimal(),
+       height=3,
+       width=4)
+
+```
 
 # AUC-PR AUC-ROC Calculation Functions
 ```{r, fig.width=5, fig.height=1.5}
@@ -309,11 +347,12 @@ homs <- roc_data %>%
   ggsci::scale_color_futurama()
 
 title <- ggdraw() + draw_label("Area Under the ROC Curve")
+ggsave(filename = '../figures/homsy_samocha_roc.svg', cowplot::plot_grid(homs, sam, ncol = 1), width = 6, height = 6)
 cowplot::plot_grid(homs, sam, ncol = 1)
 ```
 
 ## SuperGrimm, UK10K, DDL NISC RD Cohort, 
-```{r, fig.height=7, fig.width=3}
+```{r, fig.height=4, fig.width=6}
 uk10k <- pr_data %>% 
   mutate(Model = gsub('_rankscore|_score|_converted','', Model)) %>% 
   mutate(`Model (AUC)` = (paste0(Model, ' (', round(AUC, 2),')'))) %>% 
@@ -368,11 +407,12 @@ colombia <- pr_data %>%
   theme_minimal() + 
   ggsci::scale_color_futurama() + 
   coord_cartesian(ylim=c(0,1)) +
-  ggtitle('Colombia Exomes') 
+  ggtitle('Colombia') 
 
 
 title <- ggdraw() + draw_label("Area Under the Precision Recall Curves")
-cowplot::plot_grid(title, uk10k, colombia, superG, ddl, test_set, ncol=2)
+ggsave(filename = '../figures/pr_assess_set.svg', cowplot::plot_grid(test_set, uk10k, colombia, ddl, superG, ncol=2), width = 12, height = 8)
+cowplot::plot_grid(title, test_set, uk10k, colombia, ddl, superG, ncol=2)
 
 
 ```
@@ -509,18 +549,34 @@ optimal_scoring %>%
   mutate(Model = gsub('_rankscore|_score|_converted','', Model)) %>% 
   mutate(Model = paste0(Model, ' (', round(Score,2),')')) %>% 
   filter(!grepl('Deep|VPaC|xgb', Model)) %>% 
-  ggplot(aes(x=Model, y=log(path_num), fill=Model, label=path_num)) +
+  ggplot(aes(x=Model, y=log2(path_num), fill=Model, label=path_num)) +
   geom_bar(stat='identity') + 
   theme_minimal() + 
   ggsci::scale_fill_futurama() +
   xlab('Model (Score Used)') + 
-  ylab('log(Count)') +
+  ylab('log2(Count)') +
   geom_text(aes(y=log(path_num)+0.3)) +
   ggtitle('Count of Wellderly Healthy Variants Called Pathogenic') + 
   theme(axis.title.x=element_blank(),
         axis.text.x=element_blank(),
         axis.ticks.x=element_blank())
 
+ggsave(filename = '../figures/wellderly_performance.svg', height=3,width=5,
+       optimal_scoring %>% 
+  mutate(Model = gsub('_rankscore|_score|_converted','', Model)) %>% 
+  mutate(Model = paste0(Model, ' (', round(Score,2),')')) %>% 
+  filter(!grepl('Deep|VPaC|xgb', Model)) %>% 
+  ggplot(aes(x=Model, y=log2(path_num), fill=Model, label=path_num)) +
+  geom_bar(stat='identity') + 
+  theme_minimal() + 
+  ggsci::scale_fill_futurama() +
+  xlab('Model (Score Used)') + 
+  ylab('log2(Count)') +
+  geom_text(aes(y=log(path_num)+3)) +
+  ggtitle('Count of Wellderly Healthy Variants Called Pathogenic') + 
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank()))
 ```
 
 
