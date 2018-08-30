@@ -104,9 +104,10 @@ superheat(cor(dat),
           bottom.label = 'none', 
           left.label.text.alignment = 'right', 
           left.label.text.size = 4, 
-          left.label.size = 0.2)
+          left.label.size = 0.2 )
 
-# svglite::svglite('figures/predictor_cor.svg', width = 12, height = 10)
+# run in console
+# png('figures/predictor_cor.png', width = 3600, height = 2400)
 # superheat(cor(dat),
 #           pretty.order.rows = T, row.dendrogram = T,
 #           pretty.order.cols = T,
@@ -114,7 +115,7 @@ superheat(cor(dat),
 #           force.left.label=T,
 #           bottom.label = 'none',
 #           left.label.text.alignment = 'right',
-#           left.label.text.size = 4,
+#           left.label.text.size = 13,
 #           left.label.size = 0.2)
 # dev.off()
 ```
@@ -132,7 +133,8 @@ VPaC_12mtry_v11$importance %>% data.frame() %>% rownames_to_column('Predictor') 
   ggplot(aes(x=Predictor, y=log2(MeanDecreaseGini))) +
   geom_point() +
   coord_flip() +
-  theme_minimal()
+  theme_minimal() +
+  theme(text=element_text(family = 'mono'))
 
 ggsave(filename = '../figures/mean_decrease_gini_top20.svg', 
        VPaC_12mtry_v11$importance %>% data.frame() %>% rownames_to_column('Predictor') %>% 
@@ -143,7 +145,8 @@ ggsave(filename = '../figures/mean_decrease_gini_top20.svg',
          ggplot(aes(x=Predictor, y=log2(MeanDecreaseGini))) +
          geom_point() +
          coord_flip() +
-         theme_minimal(),
+         theme_minimal() +
+         theme(text=element_text(family = 'mono')),
        height=3,
        width=4)
 ```
@@ -158,7 +161,8 @@ VPaC_12mtry_v11$importance %>% data.frame() %>% rownames_to_column('Predictor') 
   ggplot(aes(x=Predictor, y=log2(MeanDecreaseAccuracy))) +
   geom_point() +
   coord_flip() +
-  theme_minimal()
+  theme_minimal() +
+  theme(text=element_text(family = 'mono'))
 
 ggsave(filename = '../figures/mean_decrease_accuracy_top20.svg', 
        VPaC_12mtry_v11$importance %>% data.frame() %>% rownames_to_column('Predictor') %>% 
@@ -169,7 +173,8 @@ ggsave(filename = '../figures/mean_decrease_accuracy_top20.svg',
          ggplot(aes(x=Predictor, y=log2(MeanDecreaseAccuracy))) +
          geom_point() +
          coord_flip() +
-         theme_minimal(),
+         theme_minimal() +
+         theme(text=element_text(family = 'mono')),
        height=3,
        width=4)
 
@@ -333,7 +338,8 @@ sam <- roc_data %>%
   geom_line() + 
   theme_minimal() + 
   ggtitle('Samocha') +
-  ggsci::scale_color_futurama()
+  ggsci::scale_color_futurama() +
+  theme(text=element_text(family = 'mono'))
 
 homs <- roc_data %>%  
   mutate(Model = gsub('_rankscore|_score|_converted','', Model)) %>% 
@@ -344,7 +350,8 @@ homs <- roc_data %>%
   geom_line() + 
   theme_minimal() + 
   ggtitle('Homsy') +
-  ggsci::scale_color_futurama()
+  ggsci::scale_color_futurama() +
+  theme(text=element_text(family = 'mono'))
 
 title <- ggdraw() + draw_label("Area Under the ROC Curve")
 ggsave(filename = '../figures/homsy_samocha_roc.svg', cowplot::plot_grid(homs, sam, ncol = 1), width = 6, height = 6)
@@ -362,7 +369,8 @@ uk10k <- pr_data %>%
   geom_step() + 
   theme_minimal() + 
   ggsci::scale_color_futurama() + 
-  ggtitle('Carss IRD') 
+  ggtitle('Carss IRD')  +
+  theme(text=element_text(family = 'mono'))
 
 ddl <- pr_data %>% 
   mutate(Model = gsub('_rankscore|_score|_converted','', Model)) %>% 
@@ -373,7 +381,8 @@ ddl <- pr_data %>%
   geom_step() + 
   theme_minimal() + 
   ggsci::scale_color_futurama() + 
-  ggtitle('NEI IRD') 
+  ggtitle('NEI IRD')  +
+  theme(text=element_text(family = 'mono'))
 
 superG <- pr_data %>% 
   mutate(Model = gsub('_rankscore|_score|_converted','', Model)) %>% 
@@ -384,7 +393,8 @@ superG <- pr_data %>%
   geom_step() + 
   theme_minimal() + 
   ggsci::scale_color_futurama() + 
-  ggtitle('Super Grimm') 
+  ggtitle('Super Grimm')  +
+  theme(text=element_text(family = 'mono'))
 
 test_set <- pr_data %>% 
   mutate(Model = gsub('_rankscore|_score|_converted','', Model)) %>% 
@@ -395,7 +405,8 @@ test_set <- pr_data %>%
   geom_step() + 
   theme_minimal() + 
   ggsci::scale_color_futurama() + 
-  ggtitle('Test Data') 
+  ggtitle('Test Data') +
+  theme(text=element_text(family = 'mono'))
 
 colombia <- pr_data %>% 
   mutate(Model = gsub('_rankscore|_score|_converted','', Model)) %>% 
@@ -407,7 +418,8 @@ colombia <- pr_data %>%
   theme_minimal() + 
   ggsci::scale_color_futurama() + 
   coord_cartesian(ylim=c(0,1)) +
-  ggtitle('Colombia') 
+  ggtitle('Colombia') +
+  theme(text=element_text(family = 'mono')) 
 
 
 title <- ggdraw() + draw_label("Area Under the Precision Recall Curves")
@@ -503,7 +515,8 @@ Groc_data %>%
   geom_line() + 
   theme_minimal() + 
   ggsci::scale_color_futurama() +
-  theme(text = element_text(size=16), axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))
+  theme(text = element_text(size=16), axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) +
+  theme(text=element_text(family = 'mono'))
 ```
 
 
@@ -537,7 +550,7 @@ Pick scoring from average score used in Colombia Exome set for PR from a Recall 
 ```{r}
 optimal_scoring <- pr_data %>% filter(DataSet == 'Colombia Exomes', Recall < 0.30, Recall  > 0.15 ) %>% group_by(Model) %>% summarise(Score = mean(Score)) %>% data.frame()
 
-well <- assess_set %>% filter(DataSet == 'Wellderly') %>% data.frame()
+well <- assess_set %>% filter(DataSet == 'Wellderly') %>% select(optimal_scoring[,1]) %>% unique() %>% data.frame()
 path_num <- ''
 for (i in 1:nrow(optimal_scoring)){
   #  var <- quo(color)
@@ -552,31 +565,36 @@ optimal_scoring %>%
   ggplot(aes(x=Model, y=log2(path_num), fill=Model, label=path_num)) +
   geom_bar(stat='identity') + 
   theme_minimal() + 
+  scale_fill_discrete(name = 'Model (Score Cutoff)') +
   ggsci::scale_fill_futurama() +
   xlab('Model (Score Used)') + 
   ylab('log2(Count)') +
-  geom_text(aes(y=log(path_num)+0.3)) +
+  geom_text(aes(y=log2(path_num)+0.3)) +
   ggtitle('Count of Wellderly Healthy Variants Called Pathogenic') + 
   theme(axis.title.x=element_blank(),
         axis.text.x=element_blank(),
-        axis.ticks.x=element_blank())
+        axis.ticks.x=element_blank()) +
+  theme(text=element_text(family = 'mono')) 
 
-ggsave(filename = '../figures/wellderly_performance.svg', height=3,width=5,
+ggsave(filename = '../figures/wellderly_performance.svg', height=1,width=3.5,
        optimal_scoring %>% 
-  mutate(Model = gsub('_rankscore|_score|_converted','', Model)) %>% 
-  mutate(Model = paste0(Model, ' (', round(Score,2),')')) %>% 
-  filter(!grepl('Deep|VPaC|xgb', Model)) %>% 
-  ggplot(aes(x=Model, y=log2(path_num), fill=Model, label=path_num)) +
-  geom_bar(stat='identity') + 
-  theme_minimal() + 
-  ggsci::scale_fill_futurama() +
-  xlab('Model (Score Used)') + 
-  ylab('log2(Count)') +
-  geom_text(aes(y=log2(path_num)+0.5)) +
-  ggtitle('Count of Wellderly Healthy Variants Called Pathogenic') + 
-  theme(axis.title.x=element_blank(),
-        axis.text.x=element_blank(),
-        axis.ticks.x=element_blank()))
+         mutate(Model = gsub('_rankscore|_score|_converted','', Model)) %>% 
+         mutate(Model = paste0(Model, ' (', round(Score,2),')')) %>% 
+         filter(!grepl('Deep|VPaC|xgb', Model)) %>% 
+         ggplot(aes(x=Model, y=log2(path_num), fill=Model, label=path_num)) +
+         geom_bar(stat='identity') + 
+         theme_minimal(base_size = 6) + 
+         ggsci::scale_fill_futurama(name = 'Model (Score Cutoff)') +
+         xlab('Model (Score Used)') + 
+         ylab('log2(Count)') +
+         geom_text(aes(y=log2(path_num)+0.5), family = 'mono', size=2) +
+         ggtitle('Count of Wellderly Healthy Variants Called Pathogenic') + 
+         theme(axis.title.x=element_blank(),
+               axis.text.x=element_blank(),
+               axis.ticks.x=element_blank()) +
+         theme(text=element_text(family = 'mono')) +
+  theme(legend.key.size = unit(0.2, "cm")))
+
 ```
 
 
