@@ -1,5 +1,7 @@
 # Distill
 
+![](src/logo_250px.jpg)
+
 Variant Pathogenicity Classification in rare mendelian disease (no there is no crazy acronyn involved). 
 
 Random Forest + xgboost + Deep LSTM - based pathogenicity classifier of human genetic variation. Uses curated set of ClinVar, solved UK10K eye mendelian disorders, and gnomAD DNA variants with a broad set of *in silico*, population, gene conseequence, and conservation based metrics and annotations to build highly **specific** variant classification score. 
