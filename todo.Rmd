@@ -1,0 +1,11 @@
+---
+title: "To Do"
+author: "David McGaughey"
+date: "9/18/2018"
+output: html_document
+---
+
+1. Update CCR to v2
+2. Pull info on recessive vs dominant genes (incomplete if necessary)
+3. Check Distill scoring on recessive vs dominant genes
+4. Potentially alter model by feeding this info?
