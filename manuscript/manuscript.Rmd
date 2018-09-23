@@ -9,8 +9,19 @@ output:
   Identification of pathogenic variant(s) from human exome or genome sequencing (WGS) is a crucial and difficult task. With the dramatic reduction in sequencing costs, it is an increasingly common task. Even after filtering for rare coding and splicing variants, numerous prioritized variants remain for most patients. Current prioritization strategies use a combination of in silico predictions and knowledge of likely deleterious genes for the condition, along with large variety of scoring metrics. Popular metrics include conservation and in silico functionality scores like GERP, SIFT, GERP, CADD, and REVEL. To better guide variant analysis, we use a novel and broad dataset of rare and richly annotated variants to train a Mendelian disease DNA variant pathogenicity model. We curated a machine learning input dataset including a high quality ClinVar pathogenic/benign dataset, 425 solved retinal degeneration WGS cases, and rare variants from gnomAD. The hundreds of thousands of variants were richly annotated with hundreds of variant metrics including constrained coding regions (ccr), ENCODE chromatin data, gene-level function metrics like pLI, and other pathogenicity metrics (e.g. REVEL, FATHMM, MetaSVM). The significant difference in our approach is the use of a broad, curated set of rare benign variants and a richer set of annotations including Chromatin states and gene constraint metrics . Our dataset, when used with a random forest and xgboost models to predict DNA variant pathogenicity, highlights ccr, the ExAC missense and loss of function gene constraint Z-scores, PhyloP, CADD, and gnomAD population metrics as the most crucial scores. We then trained a deep LSTM neural network model and merged it with the random forest and xgboost models to create an ensemble learner, Distill, with class leading pathogenicity prediction across a diverse set of assessment datasets.
 
 ## Introduction
-
-  *In silico* identification of DNA variants responsible for genetic disease
+  
+  Penetrant mendelian disease affects 1 in every x thousand live births. The process of classification of DNA variation in probands as being pathogenic, that is causing or contributing to the Mendelian disease affecting the proband, is a complex process. The potential pool of DNA variants must be identified by first sequencing the DNA, then aligning the sequence to a reference, and then calling the different DNA variants compared to the reference. Each proband will have thousands of differences, even when constraining the search to the protein coding regions of the genome. The next crucial step is removing the vast majority of DNA variants which have no consequence in Mendelian disease. This is done with two different, but complementing processes. If healthy (or not) parents are also sequenced, this trio approach can dramatically reduce the search space by eliminating (or retaining) shared variation. Next databases of DNA allele frequencies across diverse and healthy human populations, such as 1000 Genomes and gnomAD, are used to remove common variants. 
+  After these steps hundreds of variants will still remain across the protein coding genome, in non-trios, that require manual curation by an analyst. At this stage several more layers of information are often assessed, including evolutionary conservation (e.g. GERP, **ETC**, which assess DNA constraint across close to distant species), *in silico* prediction of protein consequence from DNA variation (e.g. splicing or stop lost from Ensembl's VEP), chromatin modifications (e.g. histone modification mapping from ENCODE), gene level conseqeunce (pLI)..... The analyst must balance these tools against each other in prioritizing which variants to consider calling pathogenic. As there are so much disparate information, this is a difficult process. 
+  A wealth of tools have been created to merge portions of these data types into a single score that is intended to reflect pathogenicity or importance in the DNA variant in protein coding function. One of the earliest and most useful is CADD which, briefly, looks at conservation of DNA across primates and assesses whether the DNA variant is under constraint.  .... Other tools (SIFT) assess whether .... More recently REVEL has taken dozens of variant level metrics along with a labeled (pathogenic or benign) set of variants and build a high performing Random Forest based algorithm that predicts the probability that a variant is pathogenic or benign. 
+  
+  - REVEL
+  - mpc (samocha)
+  - CCR (havrilla)
+  - 
+  
+ Ideally, after filtering for common variants, the algorithms will return about one pathogenic variant. However, in practice this is not the case. The most popular metric, CADD, will return commonly return seve
+  
+  To address this we have created a large training set and trained a tree-based algorithm to distinguish pathogenic variants from many benign variants. Our training set is unique in that it has a 250:1 ratio of of benign to pathogenic variants. Pathogenic variants from come two sources: a whole genome sequence retinal degeneration cohort and ClinVar. The benign variants come from the previous two sources as well as rare (<1% AF) variants from gnomAD. We label each DNA variant with over 400 base pair, region, and gene specific pieces of information. After paring this list down to about 100 of the most useful variants we train a LSTM neural network, a Random Forest, and a xgboost algorithms to best differentiate pathogenic from benign variants. We then blend these three models together on new data and assess performance by using withheld data along with a wide variety of fully independent pathogenicity datasets and exomes. 
 
 ### Assessment of mendelian pathogenic variant involves distilling dozens of potential variants
 
@@ -24,26 +35,89 @@ Non-pathogenic variants selected from alleles with high population allele freque
 
 ### Three different data sources used to build training data
 
+  To train a machine learning algorithm to distinguish pathogenic from benign variants we first must assemble a set of known pathogenic and benign DNA variants. We created our training data from over 400 solved whole genome sequenced retinal degeneration probands, the ClinVar dataset filtered for high quality, non cancer, variants, and the gnomAD dataset. All variants were filtered to have a population allele frequency less than 1% and to be in a coding exon or splice site. In total, we have x thousand variants
 ![](../figures/distill_fig1_draw.io.pdf)
 
-### DNA variants labeled with over one hundred annotations
+### DNA variants labeled with over four hundred annotations
 
+  To richly annotate the variants we put the DNA variants into the VCF format and used the Variant Effect Predictor (VEP), brent pederson variation thing, and GEMINI to tag each variant with over four hundred annotations from a wide variety of sources (Supplemental Table 1). 
 ### Only rare variants used for training and testing
 
+  Rare mendelian disorders will nearly never involve commom variants. It is common to not assess variants with an allele frequency great than 1% or so, depending on the inheritance pattern and prevalance of the disease. For example a disorder with an autosomal recessive inheritance pattern with a population prevalence of less than 1 / 10,000 would expect a DNA variant to have a population allele frequency of less than 1%. While algorithms like CADD and REVEL often assess their pathogenic variants against common variants, we felt it would be more useful to train our algorithm only against variants that an analyst would retain for assessment. 
+  
 ### 250 to 1 ratio of non pathogenic to pathogenic variants used to build training set
 
+  After applying the filters discussed above (coding or splicing variant, population allele frequency < 1%) to the solved retinal degeneration cohort, there were about x thousand pathogenic variants and x thousand remaining (benign) variants, for a benign : pathogenic ratio of 270:1. We rounded down and decided to use a ratio of 250:1 for constructing our training set. After taking the benign variants from the retinal degeneration cohort, and the high quality, non-cancer ClinVar set, we were still short by x hundred thousand variants. We decided to use rare variants from gnomAD, which is not supposed to contain any people with early onset high penetrant mendelian disorders to fill in the remainder. While it is possible pathogenic variants only in recessive situations were included, they would be relatively a small number. 
+  
 ### Three different machine learning algorithms built and combined to create Distill
 
+  Since merging several algorithms often improves performance, we created three pathogenicity labelling models. The first uses Keras to create a seven (*?*) layer deep fully connected LSTM neural network. The next uses the xgboost tree algorithm with *(list some parameters)*. Finally we used a Random Forest algorithm with 1500 trees to train the final model. 10% of the data, unseen in the training phase, was used to merge the three models together. The area under the precision recall curve was maximized by blending amounts ranging from 0.01 to 0.5 for each model step-wise. The highest performance blended model, Distill v1, uses 5% of the LSTM model, 40% of the Random Forest model, and 55% of the xgboost model. 
+  
+### CCR, CADD, pLI, *(?)*, VEP *in silico* predictions, are the most useful scores
+
+  The Random Forest algorith, as part of the training, randomly withholds different score types (e.g. a tree will attempt to predict pathogenicity without CADD). The performance can then be assessed by how much the model perforamnce degrades without the metric. Two different metrics are producted: X and Y. X is a metric of how well a tree can create pure (ideally 100% pathogenic or benign) nodes. Y is a metric of how well . 
+  The most useful metrics are CCR, CADD.
+  
+  Many gene level metrics were highly useful in Distill for labeling variant level pathogenicity. These are likly being used to delineate parts of the genome more or less likely to be important in penetrant mendelian disorders. In that vein we also tried to add GTEx gene expression information. While this improved the performance of the models on the training data, the performane was much worse on the test data; the models were thus overfitting with the gene expression information. 
+    
 ### Diverse set of labeled disease causing DNA variation sources used to validate Distill
 
-### Distill provides slightly better performance in other curated datasets
+  Distill performs far better than any other algorithm on the test data (which Distill has never seen). This highlights how our training data is substantially different than anything used in earlier pathogenicity algorithms. 
+  
+### Distill provides comparable performance in other curated pathogenic variant datasets
 
-### In unbalanced situations, Distill provides more useful scoring than other ensembl metrics
+### In unbalanced, realistic, situations, Distill provides more useful scoring than other ensembl metrics
+
+  Distill was validated on three NGS-based cohorts. First are *xx** withheld WGS retinal degeneration datasets, second are xx retinal degeneration probands from a panel-based targetting known retinal degernation genes. Third is a cohort of probands and trios from developmental disorders from Colombia. 
+  
+### Distill labels the fewest benign variants as pathogenic in a all benign data set
+
+  The DDD (?) cohort (Samocha?) did WGS on x healthy aged individuals. These individuals had *2,00x* rare variants. We tested how many of these highly likely benign variants were called pathogenic by a broad variety of pathogenicity models (Table X). Distill called by far the fewest (4) as pathogenic. CADD, at a high cutoff (>36) had the next best performance, calling *xx* pathogenic. The worse tested was *X* which call >600 as pathgoenic. 
 
 ### Discovery of novel disease causing variants with Distill
 ???
+
+### Autosomal recessive and autosomal dominant disease genes
+
+  Distill is blinded as towards whether a gene or variant is deleterious in an autosomal dominant or autosomal recessive manner. This is, in part, practical, as ClinVar variants are not labeled as heterozygous or homozygous alternative. The variants from the Carrs, NEI, and Colombia cohorts do have information on whether the causativre allele is heterozygous or homozygous alternative. We used these variants (ones not used in training Distill), to determine whether Distill scoring can be improved by knowing whether a variant can only cause disease in an autosomal dominant or recessive pattern. 
+  Distill scores were doubled if the variant was homozygous alternative and the area under the PR curve was compared. We found that ... ?
+  
+  
+
 ## Discussion
 
 ## Methods and Materials
 
+### Carrs et al.
+
+  The UK10K retinal degeneration cohort was obtained by getting permission from *XXXX*. The raw fastq were downloaded, and our NEI processing Snakemake pipeline was lightly adapted (www.github.com/EGAXXXXX/Snakefile) and accessioned at Zenodo to create a genotype calls for all samples in a VCF. Very briefly, the raw sequende data was aligned with BWA, genotypes called with GATK (3.5-0) and the GATK HaploTypeCaller with hard filter (*adfasdfadf*) were used to select the pass variants. For more details refer to the *EGAD12012043* Snakefile. The causative variants were obtained by parsing the excel file provided in Carrs et al. and matched to our processed VCF by chromosome, genomic position, reference allele, and alternative allele. 
+  
+### ClinVar and gnomAD filtering
+
+### Other dataset processing
+
+### Variant processing and labelling
+
+  DNA variants were pulled from a a variety of sources. Whenever possible, VCFs were used as the input format, as this in the required input for our variant annotation pipeline. The Snakemake pipeline that runs this processed is freely availabe at www.github.com/davemcg/variant_prioritiziation and has been accessioned at Zenodo. If the inputted variants were not in a VCF format, then a script was written to convert the variants to a VCF-like format, where the genotype field (GT) was always given as 0/1 (heterozygote) and missing (.) values were given for quality and depth. These fields are not used in Distill model training.  
+    The variant labelling and processing pipeline, briefly, works as follows. VCFs are left-aligned with VT, then VEP is used to label variants with *in silico* predictions for protein impact, as well as many other annotations (see Snakefile). These brent pederson tool is used to complete variant labelling. The fully annotated VCF is loaded into GEMINI and the variants are exported into a tab separated format. 
+  
+### Determination of top annotations with Random Forest variable importance
+
+  As it is often not optimal to retain highly correlated predictors for model performance, the least useful annotations were removed by assessing the Gini variable performance with the Random Forest algorithm. 50 trees were built and we hand-selected a cutoff of *X* that corresponded to an inflection point in the Gini scores (data not shown). This resulted in XXX parameters being retained for the downstream model building. 
+  
+### Model building
+
+### Model blending
+
+  The three models were blended with a simple linear weighted combination of scores and the optimal parameters (a,b) were selected by maximizing the AUCPR for the three models:
+  
+  max(AUCPR((a * X) + (b * Y) + ((1 - a + b) * Z)))
+  
+  X, Y, and Z are the LSTM, Random Forest, and xgboost models, respectively. a and b were iteratively sampled from 0.01 to 0.6 by 0.01 and the AUCPR was calculated for each a, b set. The maximum AUCPR was obtained with a = 0.05 and b = 0.4 (and thus xgboost was given a 0.55 weight) when trained against the validation dataset (data not used in model training).
+  
+### Scoring performance
+
+  Area Under the Reciever Operator Characteristic (AUROC) is most useful when the two categories (e.g. pathogenic and benign) are present in equal numbers. For unbalanced comparison, precision recall (PR). As this is not the case for proband actual assessments, Area Under the Curve for Precision Recall (AUCPR) were used by default. AUROC and AUCPR were calculated by the PRROC R package (*version*). 
+  Precision, recall, false positive rate, matthews correlation coefficient scores were also calculated with the caret R package (*version*) and are given in supplemental table X. 
+  
 ## References
