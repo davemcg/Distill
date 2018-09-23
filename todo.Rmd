@@ -6,6 +6,8 @@ output: html_document
 ---
 
 1. Update CCR to v2
-2. Pull info on recessive vs dominant genes (incomplete if necessary)
+2. Pull info on recessive vs dominant genes (incomplete if necessary, omim?)
 3. Check Distill scoring on recessive vs dominant genes
 4. Potentially alter model by feeding this info?
+5. Contact Genomics England (UK100K)
+  - the CCR poster guy (not Jim)
